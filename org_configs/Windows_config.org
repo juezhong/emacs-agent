@@ -21,6 +21,7 @@
   - [[故障排查入口][故障排查入口]]
 - [[基础环境与软件包][基础环境与软件包]]
   - [[配置入口][配置入口]]
+  - [[Custom 独立保存][Custom 独立保存]]
   - [[网络代理][网络代理]]
   - [[软件包管理][软件包管理]]
     - [[软件源][软件源]]
@@ -40,9 +41,13 @@
     - [[自动目录：toc-org][自动目录：toc-org]]
     - [[标题跳转：org-goto][标题跳转：org-goto]]
     - [[标题与符号索引：Imenu][标题与符号索引：Imenu]]
-  - [[编辑与文本导航（占位）][编辑与文本导航（占位）]]
+  - [[编辑与文本导航][编辑与文本导航]]
     - [[编辑行为与 Vim 模式][编辑行为与 Vim 模式]]
-    - [[搜索、定位与候选界面][搜索、定位与候选界面]]
+      - [[Evil 基本操作][Evil 基本操作]]
+      - [[evil-collection 的工具界面][evil-collection 的工具界面]]
+      - [[Dired 手动体验与帮助][Dired 手动体验与帮助]]
+      - [[evil-surround 的包围符操作][evil-surround 的包围符操作]]
+    - [[搜索、定位与候选界面（占位）][搜索、定位与候选界面（占位）]]
       - [[屏幕内定位：Avy][屏幕内定位：Avy]]
       - [[搜索与选择：Vertico / Orderless / Marginalia / Consult][搜索与选择：Vertico / Orderless / Marginalia / Consult]]
       - [[文本替换][文本替换]]
@@ -54,14 +59,20 @@
     - [[格式化（暂不启用）][格式化（暂不启用）]]
   - [[版本控制（占位）][版本控制（占位）]]
     - [[Git 操作与修改标记][Git 操作与修改标记]]
-  - [[帮助与交互提示（占位）][帮助与交互提示（占位）]]
+  - [[帮助与交互提示][帮助与交互提示]]
     - [[帮助查询][帮助查询]]
     - [[按键提示：which-key][按键提示：which-key]]
-  - [[窗口与缓冲区（占位，暂不启用）][窗口与缓冲区（占位，暂不启用）]]
-  - [[统一快捷键配置（占位，最后配置）][统一快捷键配置（占位，最后配置）]]
+  - [[窗口与缓冲区][窗口与缓冲区]]
+    - [[Winner 布局历史与最大化恢复][Winner 布局历史与最大化恢复]]
+    - [[退出行为][退出行为]]
+  - [[诊断与配置状态][诊断与配置状态]]
+  - [[统一快捷键配置（第一阶段，最后配置）][统一快捷键配置（第一阶段，最后配置）]]
     - [[管理方式：General][管理方式：General]]
+      - [[General 怎么修改：对照示例][General 怎么修改：对照示例]]
     - [[Leader 与键位取舍][Leader 与键位取舍]]
-    - [[分组与命令清单（待实现）][分组与命令清单（待实现）]]
+    - [[第一阶段速查表][第一阶段速查表]]
+    - [[后续分组规划（未绑定）][后续分组规划（未绑定）]]
+    - [[手动启动与体验清单][手动启动与体验清单]]
 - [[配置结束][配置结束]]
 
 * 使用与维护
@@ -71,6 +82,9 @@
 本文件是配置源文件，Emacs Lisp 代码块会生成到仓库根目录的 =init.el=。
 生成路径相对于本 Org 文件，因此 =../init.el= 指向上一级目录。
 请修改本文件，再重新生成，不要直接修改生成的 =init.el=。
+本配置不提供依赖固定 Org 文件名的生成函数。以后将文件改名为 self.org 等名称，
+只要头部的相对生成路径仍正确，就可在该文件中直接调用 org-babel-tangle。
+如果移动文件到其他目录，需要同步调整头部的 :tangle 路径；命令行示例中的源文件路径也需更新。
 
 保存文档、生成配置、加载配置是三件不同的事：
 
@@ -81,7 +95,9 @@
 | 重启 Emacs；或按需 load-file           | 执行 init.el，应用配置           | 不会修改 Org 源文件        |
 
 日常维护顺序：修改 Org → 保存 → 生成 → 检查差异 → 重启验证。
-在 Emacs 中打开本文件，按 =C-c C-v t=（=org-babel-tangle=）生成配置。
+所有配置改动以本 Org 文件为源头，init.el 仅通过 tangle 更新，不手工维护两份代码。
+Emacs 自定义界面的持久化状态单独保存在 custom.el，不再追加到生成文件末尾。
+在 Emacs 中打开本文件，按 =C-c C-v t=，或执行 =M-x org-babel-tangle RET= 生成配置。
 有 Git 基线时，可在仓库根目录执行 =git diff -- org_configs/Windows_config.org init.el=
 检查源文件和生成结果；尚未提交的全新文件也需要直接检查内容。
 
@@ -125,8 +141,8 @@ Org 原生支持按标题组织内容，不需要目录插件。本文件设置�
 | 当前文档的标题索引           | =M-x imenu=                                 |
 | 打开文档中的链接             | =C-c C-o=                                   |
 
-上面是当前尚未安装 Evil 时的 Org 默认操作；后续统一快捷键配置会说明
-Evil / evil-collection 接入后的操作，命令名仍可通过 =M-x= 调用。
+上面是 Org 默认操作；本阶段已经写入 Evil / evil-collection 配置，
+安装后的模式键位以手动体验和当前模式帮助为准，命令名仍可通过 =M-x= 调用。
 
 =#+options: toc:4= 指定导出时自动生成最多四级标题的目录，
 例如使用 =C-c C-e h h= 导出 HTML 时生效。它不会在编辑缓冲区自动插入目录文本，
@@ -202,8 +218,10 @@ emacs -nw --init-directory . --user ""
 ** 当前阶段
 
 基础环境包含代理、软件源和 =use-package=，参考仓库中的
-=example_Emacs_Windows.org=。目前额外启用 Org 导航配置，并声明 =toc-org= 自动目录插件。
-toc-org 未安装时由 use-package 自动安装，已安装则复用；其余功能按下表区分。
+=example_Emacs_Windows.org=。第一阶段已写入 Evil、evil-collection、evil-surround、
+Helpful、General 和内置 which-key 的配置；toc-org 继续提供自动目录。
+尚未安装的包由你手动启动时交给 use-package 安装，已安装则复用。
+本轮只编写配置和生成 init.el，没有加载、安装、编译或交互验证这些插件。
 
 状态用语统一为：已配置、待配置、暂不启用、说明示例。
 “已配置”表示配置已写入，不代表已在每个平台验证或在每台机器安装完成。
@@ -219,11 +237,14 @@ toc-org 未安装时由 use-package 自动安装，已安装则复用；其余�
 | org-num 正文编号              | 已配置   | 本文件头部 num 元数据；无全局编号 hook             |
 | 与正文一致的目录编号         | 待配置   | 需要该功能的文档；当前 toc-org 不提供               |
 | 界面、字体、主题与状态栏     | 待配置   | 字体及图形／终端行为后续分别验证                   |
-| Evil、Avy、搜索与候选界面    | 待配置   | 编辑与导航；当前未启用                             |
+| Evil、evil-collection、surround | 已配置 | Vim 编辑；等待手动启动安装和验证                   |
+| Avy、搜索与候选界面         | 待配置   | 第二阶段；暂不改变 s 的默认编辑操作                 |
 | 文件、项目、保存与刷新       | 待配置   | 当前 Emacs 会话；仍遵守缓冲区冲突保护              |
-| 开发支持、Git、帮助与提示    | 待配置   | 按模式和项目启用，外部工具另行准备                 |
-| General 与自定义快捷键       | 待配置   | 键位统一放在个人配置最后，当前示例不参与生成        |
-| 窗口增强、格式化             | 暂不启用 | 只记录需求                                        |
+| 开发支持、Git               | 待配置   | 按模式和项目启用，外部工具另行准备                 |
+| Helpful 与 which-key        | 已配置   | 帮助查询与按键提示；等待手动启动验证                |
+| General 与第一阶段键位      | 已配置   | 逗号 leader，备用 C-c ,；集中在个人配置最后         |
+| 窗口、布局恢复与退出         | 已配置   | 内置 Winner 与基础操作；等待手动验证               |
+| 格式化                       | 暂不启用 | 只记录需求                                        |
 | 带 :tangle no 的演示代码     | 说明示例 | 不写入 init.el；仍可能手动执行                     |
 
 ** 跨平台迁移
@@ -284,7 +305,7 @@ GPG 先查看实际可执行文件和错误路径；本机 MSYS2 路径问题的
 ;;; init.el --- Generated Emacs configuration -*- lexical-binding: t; -*-
 ;; Generated from org_configs/Windows_config.org. Edit the Org source instead.
 ;; 本文件由 Org 生成；注释也维护在 Org 代码块中，避免下次生成时丢失。
-;; 当前仅启用基础环境和 Org 导航；Evil、搜索、开发等功能仍在源文档中占位。
+;; 已配置基础环境、Org 目录、Vim 编辑、帮助和 leader；搜索与开发等仍占位。
 
 ;;; 基础入口
 
@@ -297,6 +318,29 @@ GPG 先查看实际可执行文件和错误路径；本机 MSYS2 路径问题的
 (setq inhibit-startup-screen t
       initial-scratch-message ";; Org config loaded successfully.\n\n")
 #+end_src
+
+** Custom 独立保存
+
+Emacs 的 Customize 和软件包操作可能保存变量；未设置 custom-file 时，
+它们可能把 custom-set-variables / custom-set-faces 追加到 user-init-file。
+本仓库的 init.el 是生成物，因此必须将这些持久化内容与 Org 主配置分开。
+
+下面在包管理与插件声明之前指定并读取仓库根目录的 custom.el。
+它是本机状态文件，由 Emacs 管理，已加入 .gitignore；文件不存在时不报错，
+后续通过 Customize 保存或软件包操作即可创建。长期功能配置仍写入 Org，
+custom.el 中的同名设置不应当作优先于后续 Org 配置的覆盖层。
+
+#+begin_src emacs-lisp
+;;; Custom 状态独立保存，避免污染由 Org 生成的 init.el。
+;; 尽早设置：首次安装插件时，包选择记录也应写到 custom.el。
+(setq custom-file (expand-file-name "custom.el" my/config-directory))
+(load custom-file 'noerror 'nomessage)
+#+end_src
+
+本次仅迁移 init.el.bak 中的 package-selected-packages 元数据，
+没有恢复已删除的 init.el 尾部，也没有把备份中的任意代码整段载入。
+这份包选择记录用于包管理，不等于插件已加载，也不定义 Evil 的内部变量。
+以后重新生成 init.el 不会覆盖 custom.el；不要把本机密钥或令牌存进版本库。
 
 ** 网络代理
 
@@ -456,7 +500,9 @@ Emacs 29 及以上版本内置 =use-package=，本机 Emacs 31.1 可以直接加
 ** 首次手动启动与检查
 
 在仓库根目录运行前面的启动命令。首次交互启动会下载软件源的索引，
-这是插件目录信息；当前仅声明安装 =toc-org=，不会安装仍未声明的 Evil、Consult 等插件。
+这是插件目录信息；use-package 随后安装本阶段已声明但尚未安装的插件。
+当前包括 toc-org、Evil、evil-collection、evil-surround、Helpful 和 General 及其依赖，
+which-key 使用内置版本。Consult 等后续插件仍未声明，不会因此安装。
 三个源的索引都存在后，后续启动使用缓存；某个源缺失时会重新尝试刷新。
 需要更新目录时运行 =M-x package-refresh-contents=。
 
@@ -496,7 +542,7 @@ Emacs 29 及以上版本内置 =use-package=，本机 Emacs 31.1 可以直接加
    │  ├─ Org / org-goto / Imenu：标题导航与结构索引
    │  ├─ org-num：自动章节编号
    │  └─ toc-org：保存时重建目录链接
-   ├─ 编辑与文本导航（占位）
+   ├─ 编辑与文本导航
    │  ├─ Vim 编辑：Evil / evil-collection / evil-surround
    │  ├─ 屏幕定位：Avy
    │  ├─ 搜索选择：Vertico / Orderless / Marginalia / Consult
@@ -508,9 +554,9 @@ Emacs 29 及以上版本内置 =use-package=，本机 Emacs 31.1 可以直接加
    │  ├─ Eglot / clangd / Corfu / Flymake / Eldoc / Tree-sitter
    │  └─ 格式化（暂不启用）
    ├─ 版本控制：Magit / diff-hl（占位）
-   ├─ 帮助与交互提示：Helpful / 内置帮助 / which-key（占位）
-   ├─ 窗口与缓冲区：Ace Window / Winner（暂不启用）
-   └─ 统一快捷键配置（最后配置，占位）
+   ├─ 帮助与交互提示：Helpful / 内置帮助 / which-key
+   ├─ 窗口与缓冲区：内置窗口操作 / Winner；Ace Window 暂缓
+   └─ 统一快捷键配置（最后配置）
       ├─ General：键位与作用范围
       └─ 逗号 leader、分组提示、直接跳转键、模式专用键、速查表
 #+end_example
@@ -647,6 +693,11 @@ Org 没有用 =#+options: num:4= 设置编辑器编号深度的含义，
 只有未启用时才执行 =M-x toc-org-mode=，避免反而将已启用的模式关闭。
 此后新增、删除或重命名标题，保存文件即可更新目录。
 也可运行 =M-x toc-org-insert-toc= 立即更新；更新只影响文档目录，不执行代码块。
+手动更新方法：打开需要更新目录的 Org 文件，确认已有 TOC 标签，
+执行 =M-x toc-org-insert-toc RET=（也可按 =,,,= 后输入该命令），然后保存。
+正常情况下 toc-org-mode 已在保存前更新目录，无需每次手动调用。
+生成 Lisp 配置是另一件事：在当前 Org 文件里按 =C-c C-v t=，
+或运行 =M-x org-babel-tangle RET=；不会自动加载生成结果，也不会要求固定的 Org 文件名。
 导出时的自动目录仍由 =#+options: toc:4= 独立控制，和本文内的目录用途不同。
 
 *** 标题跳转：org-goto
@@ -670,17 +721,212 @@ Imenu 是 Emacs 内置的“当前缓冲区结构索引”，不是另一个目�
 | 按标题路径定位 Org 章节      | org-goto，选择后跳转      |
 | 查找当前文件的标题／代码符号 | imenu，之后可用 Consult   |
 
-** 编辑与文本导航（占位）
+** 编辑与文本导航
 
 *** 编辑行为与 Vim 模式
 
-Evil、evil-collection、evil-surround。
+状态：已配置，等待手动启动安装和验证。
+使用 [[https://github.com/emacs-evil/evil][Evil]]、[[https://github.com/emacs-evil/evil-collection][evil-collection]] 和 [[https://github.com/emacs-evil/evil-surround][evil-surround]]。
 保留 Vim 普通／插入／可视模式、操作符、文本对象、宏和点号重复。
-evil-surround 用于添加、删除和替换括号／引号等包围符。
 Evil 的 =evil-want-keybinding= 等加载前选项放在其 =use-package :init= 中；
 实际自定义键位放到最后统一定义。
 
-*** 搜索、定位与候选界面
+#+begin_src emacs-lisp
+;;; Vim 编辑：Evil
+;; 必须先关闭 Evil 自带的部分模式键位，交由 evil-collection 统一适配。
+;; 这是加载前选项，必须放在 :init；自定义按键集中在文件末尾。
+(use-package evil
+  :demand t
+  :init
+  (setq evil-want-keybinding nil)
+  :config
+  ;; Evil 1.15.0 仍读取旧的初始化队列；Emacs 31.1 不再创建该变量。
+  ;; 只在已知版本组合且变量未定义时补空队列，不覆盖其他版本或已有状态。
+  (when (and (version= emacs-version "31.1")
+             (string= evil-version "1.15.0")
+             (not (boundp 'evil-mode-buffers)))
+    (set-default 'evil-mode-buffers nil))
+  (evil-mode 1))
+
+;;; 工具界面的 Vim 键位
+;; 为 Dired、帮助等受支持模式适配键位；模式打开时按需应用。
+(use-package evil-collection
+  :after evil
+  :demand t
+  :config
+  (evil-collection-init))
+
+;;; Surround：ys + motion/text-object + 新包围符；ds + 旧包围符；cs + 旧 + 新。
+;; iw/aw 是普通文本对象；ysiw" 包整个词，yse" 包到词尾。详见 Org 中的语法说明。
+(use-package evil-surround
+  :after evil
+  :demand t
+  :config
+  (global-evil-surround-mode 1))
+#+end_src
+
+**** Evil 基本操作
+
+本机日志出现过 =evil-normal-post-command= 报 =void-variable evil-mode-buffers=。
+原因是 Evil 1.15.0 依赖旧的全局模式初始化变量，而本机 Emacs 31.1 不再创建它。
+上面的兼容代码只针对该版本组合补一个空队列，升级版本后不会匹配；
+不修改 ELPA 插件文件、不屏蔽所有 post-command-hook 错误。修复效果需要重启后确认。
+
+| 操作                       | 默认键位或命令                               |
+|----------------------------+----------------------------------------------|
+| 移动                       | h j k l；w / b 按单词移动                     |
+| 进入插入模式／返回普通模式 | i / Esc                                      |
+| 可视选择                   | v；V 按行选择                                |
+| 删除、复制、粘贴           | d、y 配合动作；p 粘贴                         |
+| 修改引号／括号内部内容     | ci"、ci( 等文本对象                           |
+| 撤销／重做／重复上次修改   | u / C-r / .                                  |
+| 当前文件搜索／下个匹配     | / / n；N 反向匹配                             |
+| 保存／退出                 | :w / :q；退出前仍会提示未保存修改             |
+| 临时切换 Emacs 状态        | C-z；再次按 C-z 返回原 Evil 状态               |
+
+这里保留 Evil 默认撤销和滚动行为，不额外覆盖 C-u 等按键。
+Emacs 中按键表示法 =C-r= 指 Ctrl+r，=M-x= 通常指 Alt+x。
+不确定当前状态时查看模式行，或按 Esc 返回普通模式。
+
+**** evil-collection 的工具界面
+
+使用 =, f d= 打开 Dired，或 =, h m= 查看当前模式帮助。
+受支持的列表／只读工具界面可使用适配后的 Vim 导航，常见的 =q= 用于关闭窗口；
+具体操作以当前模式帮助为准。这里启用适配，不为尚未安装的工具额外安装插件。
+Org 原有 =C-c= 操作和 =M-x= 仍可调用，Evil 对模式按键的影响留给手动启动验证。
+
+**** Dired 手动体验与帮助
+
+Dired 是 Emacs 内置的目录列表，像文件管理器一样打开文件和进入子目录。
+本阶段不额外配置它，仅使用内置 Dired 和 evil-collection 的适配。
+安装完成后，先按下面步骤做只读体验，不必创建、删除或移动文件：
+
+1. 普通状态按 =, f d=，输入一个已存在的目录路径并回车，例如本配置仓库。
+   应看到目录路径和文件列表；终端模式也能显示，不依赖图标。
+2. 用 =j=、=k= 移动到文件行，回车打开，例如 =init.el=。
+   用 =, b b= 选择刚才的 Dired 缓冲区返回列表。
+3. 移到子目录（例如 =org_configs/=）并回车进入。
+   要返回父目录，可用 =,,,= 输入 =dired-up-directory= 并回车，避免先记另一套键位。
+4. 在 Dired 中按 =, h m=，或原生 =C-h m=，查看当前模式说明；
+   按 =, h b= 查看有效按键，按 =, h k= 后再按回车可查询打开文件的命令。
+5. 回到 Dired 后，用 =,,,= 执行 =revert-buffer= 刷新列表。
+   这里仅刷新目录缓冲区；其他文件缓冲区中的 revert 会重新读取磁盘文件。
+6. 在 Dired 或帮助窗口中试 =q= 返回；窗口关闭不代表项目文件被删除。
+   leader 不响应时，改用 =C-c , h m= 或 =C-h m= 查询。
+
+以上步骤正常，说明目录显示、Vim 导航、打开文件、切换缓冲区和帮助入口已能协同使用。
+这里不验证复制、重命名、标记删除等写操作；后续需要时先查模式帮助。
+
+**** evil-surround 的包围符操作
+
+先记语法，而不是背组合表：添加用 =ys + 范围 + 新包围符=；
+删除用 =ds + 旧包围符=；替换用 =cs + 旧包围符 + 新包围符=。
+只有添加需要 motion/text object 来选择范围；删除、替换根据旧包围符定位内容，
+不要套成 =ds + motion= 或 =cs + motion=。
+
+添加通过 Evil 的 operator-range 取得范围，所以可以组合大多数可用于操作符的
+motion、计数和文本对象；不是所有普通模式按键都能用，比如切窗、保存不是范围动作。
+范围的 inclusive/exclusive、跨行、块选择行为仍服从 Evil，不能保证任意扩展 motion 都兼容。
+
+| 添加范围 | 含义 | 完整例子 |
+|----------+------+----------|
+| iw / aw | 当前单词内部／含周围空白 | ysiw" / ysaw" |
+| iW / aW | 空白分隔的大 WORD | ysiW" / ysaW" |
+| e / 2e | 从光标到单词尾／第二个单词尾 | yse" / ys2e" |
+| w / b | 向前／向后单词 motion | ysw" / ysb" |
+| $ / 0 | 到行尾／行首 | ys$" / ys0" |
+| f, / t, | 到逗号／逗号前 | ysf," / yst," |
+| i( / a( | 括号内部／含原括号 | ysi(] / ysa(] |
+| i" / a" | 引号内部／含原引号 | ysi"' / ysa"' |
+| ip / ap | 段落内部／含段落边界 | ysip} / ysap} |
+
+这个表覆盖语法类别，不是 motion 的穷举：你已会的范围动作通常可以代入，
+前提是能在 Evil 操作符后产生有效范围。注意 =ysw= 在该插件中有类似 change 操作的
+单词边界处理，不要把所有 motion 的边界都理解成简单字符位移。
+
+操作形态还包括：=yss + 包围符= 包当前行；=ys + 计数 + s + 包围符= 包多行；
+=yS + 范围 + 包围符= 添加带换行的包围；=ySS + 包围符= 是行形式。
+可视模式先选择字符、行或块，再按 =S + 包围符=；=gS + 包围符= 切换换行包围行为。
+删除和替换分别如 =ds)=、=ds"=、=cs)]=、=cs"'=；=dst=、=cst + 新包围符=
+用于已有标签。添加一行／多行及可视选择会根据范围类型进行缩进和换行。
+
+本机 evil-surround 1.0.4 的默认新包围符如下（可通过 evil-surround-pairs-alist 扩展）：
+
+| 触发字符 | 生成方式 |
+|----------+----------|
+| ) / ] / } | 紧贴内容的圆／方／花括号 |
+| ( / [ / { | 括号内侧各有一个空格 |
+| b / B | 分别为紧贴内容的圆／花括号别名 |
+| > | 尖括号 |
+| # | 左边为 #{，右边为 } |
+| t / < | 继续输入 HTML/XML 标签，例如 ysiwt 后输入 em 并确认 |
+| f | 继续输入函数名，生成函数调用，例如 ysiwf 后输入 print 并确认 |
+| 双引号、单引号、反引号等 | 默认两边插入同一字符 |
+| a / w 等未列入配对表的普通字符 | 同样两边插入该字符，不表示 motion |
+
+因此 =ysiw= 还没输入完：iw 是范围，后面仍需包围符。
+=ysea= 已经完整：ys + e + a，在范围两边插入 a。
+=ysew= 同样完整：ys + e + w，在范围两边插入 w。
+二者没有“不行”，只是结果不是引号或括号；=ysiw"= 也完全没有特殊待遇。
+例如光标在 hello 的第一个字母，yse" 得到 "hello"，ysea 得到 ahelloa，ysew 得到 whellow。
+标签／函数触发需要额外输入，Esc 可取消，u 撤销；原生 ds/cs 使用已有文本对象定位，
+新包围符表不意味着任意自定义字符都能自动作为旧包围符被识别。
+
+evil-surround 模仿 Vim 的 surround.vim，核心是“添加／删除／替换操作 + 动作或文本对象 + 包围符”。
+它的按键不是 leader 命令；先按操作前缀，Evil 进入等待动作的 operator-pending 状态，
+再按 motion 或 text object，最后输入分隔符。
+
+拆开 =ysiw"= 看：
+
+| 片段 | 含义 |
+|------+------|
+| =ys= | surround operator，开始给目标添加包围符 |
+| =i=  | inner，选择“内部”文本对象，不包含外层空白或包围符 |
+| =w=  | word，当前单词文本对象 |
+| ="=  | 输入要添加的包围符，这里是双引号 |
+
+所以 =ysiw"= 的完整意思是“给当前单词加双引号”。
+这里的 =i= 不是插入模式；它是文本对象前缀。=a= 表示 around，通常包含对象周围的空白或包围符。
+
+例子 =yse)= 拆成：
+
+- =ys=：开始添加包围符。
+- =e=：motion，移动到当前单词结尾。
+- =)=：选择圆括号这一组包围符，evil-surround 会补上对应左括号。
+
+因此，光标在单词开头时，=yse)= 会用圆括号包住从光标到该单词结尾的范围。
+若要对整个单词操作，不依赖光标刚好位于开头，使用文本对象更明确：=ysiw"= 添加双引号，
+=ysaw)= 添加圆括号。最后的字符是要使用的包围符；左右成对的符号均可作为触发字符。
+
+你问的 =ysew= 也可以被解析，但不是“end word”的组合：=e= 已经完成范围选择，
+后面的 =w= 会被当作包围字符。本机默认包围符表没有 w 的特殊配对，
+因此它会在两侧各插入字母 w，例如光标在 hello 开头时得到 whellow。
+要用双引号包到单词结尾，应输入 =yse"=；要包两个词，可用 =ys2e"=。
+
+=ds"= 拆成 =d=（delete）+ =s=（surround）+ ="=（已有双引号），
+只删除引号并保留内容；=cs"'= 是 =c=（change）+ =s= + 旧双引号 + 新单引号。
+=ys= 沿用 surround.vim 的习惯，用 y 操作符接 s 启动添加操作，并非把文字复制后粘贴。
+括号触发也有区别：右括号 =)= 通常添加紧贴内容的括号，左括号 =(= 会在内侧加空格。
+
+常见操作如下：
+
+| 目标                         | 按键示例                     |
+|------------------------------+------------------------------|
+| 给当前单词加双引号           | =ysiw"=                      |
+| 给当前单词（含 around 范围）加双引号 | =ysaw"=                |
+| 从光标包到当前单词结尾，用括号包围 | =yse)=                   |
+| 给当前单词加圆括号             | =ysiw)=                       |
+| 删除现有双引号               | =ds"=                        |
+| 将双引号改成单引号           | =cs"'=                       |
+| 包围可视选择                 | 先 =v= 选择，再 =S=，输入包围符 |
+| 用换行包围可视选择           | 先 =v= 选择，再 =gS=           |
+
+建议先在临时文件中体验，必要时用 =u= 撤销；句点 =.= 保留重复编辑功能。
+文本对象还包括 =i(=（括号内部）、=a(=（含括号）、=i"=（引号内部）、=ip=（段落内部）。
+可用 =, h f= 查询 =evil-inner-word=、=evil-a-word= 等函数说明，
+或者 =, h k= 查询当前操作键。不要把 =ys=、=ds=、=cs= 和 leader 菜单混在一起记。
+
+*** 搜索、定位与候选界面（占位）
 
 **** 屏幕内定位：Avy
 
@@ -734,7 +980,7 @@ Windows 图形和终端模式分别验证。跨平台配置 clangd 路径，
 Magit 与 diff-hl。
 Magit 用于查看差异、按块暂存和提交；diff-hl 显示行旁修改标记并导航修改块。
 
-** 帮助与交互提示（占位）
+** 帮助与交互提示
 
 *** 帮助查询
 
@@ -743,20 +989,89 @@ Consult 主要负责搜索和选择，不是帮助文档增强包。
 帮助入口覆盖：按键解释、命令／函数说明、变量说明、光标处符号帮助、
 当前模式帮助、当前有效键位列表、根据命令查找按键、Emacs 手册和本 Org 配置。
 
+#+begin_src emacs-lisp
+;;; 帮助增强：调用时加载 Helpful，安装由 use-package 处理。
+;; 实际按键在末尾统一绑定，不在这里覆盖任何模式键位。
+(use-package helpful
+  :commands (helpful-key helpful-callable helpful-command
+             helpful-variable helpful-at-point))
+#+end_src
+
+使用方法：=, h k= 后再按想查询的键，例如 =.=，即可查看它的命令与说明。
+=, h m= 查看当前模式怎么操作，=, h b= 列出当前有效按键，
+=, h w= 根据命令查找已有快捷键。忘记命令名时仍可用 =M-x= 搜索。
+Helpful 中的“光标处符号”主要指 Emacs Lisp 符号，不代替未来 clangd 的代码文档。
+帮助界面使用 evil-collection 适配；常见 =q= 返回，=TAB= 选择链接，回车打开。
+
 *** 按键提示：which-key
 
 which-key 归为交互提示，和帮助文档查询分开：它负责显示当前前缀后可用的按键。
-Emacs 31.1 内置，之后使用 =use-package which-key :ensure nil= 声明。
-本节配置启用方式、提示延时等行为；具体分组名、命令描述放到最后的键位章节。
+Emacs 31.1 内置，使用 =:ensure nil=，不下载另一个版本。
+本节配置启用方式和提示延时；具体分组名、命令描述放到最后的键位章节。
 输入前缀后等待即可提示；没有自定义绑定的命令仍可从 =M-x= 搜索执行。
 
-** 窗口与缓冲区（占位，暂不启用）
+#+begin_src emacs-lisp
+;;; 前缀按键提示：输入 leader 后稍等，显示下一步可用命令。
+(use-package which-key
+  :ensure nil
+  :demand t
+  :custom
+  (which-key-idle-delay 0.5)
+  :config
+  (which-key-mode 1))
+#+end_src
 
-仅占位，暂不配置 Ace Window、Winner 和额外窗口快捷键。
-之后说明窗口与缓冲区的区别、拆分／关闭窗口、方向切换、标签选窗和恢复布局。
-当前 Evil 尚未安装，不能把计划中的 =C-w= 操作当作已生效的配置。
+例如普通模式输入 =,= 后等半秒，会显示文件、缓冲区、帮助等分组。
+接着按 =h= 可看到帮助子菜单，按 =C-g= 取消未完成的按键序列。
+它只提示你已经按下前缀后可用的键，不会给每个普通输入字符弹出说明。
 
-** 统一快捷键配置（占位，最后配置）
+** 窗口与缓冲区
+
+状态：已配置，等待手动启动验证。Window 指 Emacs 内部分割区域，
+Buffer 是打开的内容，Frame 是操作系统中的 Emacs 窗口。关闭 Window 不会删除 Buffer。
+窗口放在 w（Window）分组，退出放在 q（Quit）分组；正式按键定义集中在最后。
+方向切换仍兼容 Evil 的 =C-w h/j/k/l=，这里额外提供带提示的 leader 入口。
+关闭当前窗口用 =, w c=，c 取 Close，调用 Emacs 内置 delete-window；
+最后一个普通窗口无法用此命令关闭，应使用明确的退出操作。
+方向切换统一使用 =, w h/j/k/l=，与原生 Evil 的 =C-w h/j/k/l= 对应。
+左右并排是 vertical split，上下堆叠是 horizontal split。
+
+*** Winner 布局历史与最大化恢复
+
+Winner 是 Emacs 内置的窗口布局历史，不需要安装第三方包。
+=, w m= 第一次只显示当前窗口，再按一次恢复这次最大化前的布局；
+恢复的是窗口与缓冲区布局，不是撤销文件内容。
+最大化期间如果关闭了帧、删除了缓冲区或修改布局，恢复可能无法完全还原。
+其他布局操作仍可通过 =M-x winner-undo= / =winner-redo= 查询和恢复。
+
+#+begin_src emacs-lisp
+;;; Window configuration history：内置 Winner 记录布局历史；最大化切换另存 Frame 布局。
+(use-package winner
+  :ensure nil
+  :demand t
+  :config
+  (winner-mode 1))
+#+end_src
+
+*** 退出行为
+
+=, q q= 使用 evil-quit：多窗口时关闭当前窗口，只有一个窗口时尝试关闭 Frame，
+最后可能退出 Emacs；server/client 场景行为不同，保留 Evil 默认处理。
+=, q a= 使用 save-buffers-kill-terminal，按 Emacs 的退出流程检查未保存内容；
+在 daemon 或多终端场景不一定停止整个后台进程。
+=, q Q= 按你的选择提供 kill-emacs，直接退出进程，不走逐文件保存询问；
+可能丢失所有未保存修改，也会结束后台会话，大小写 Q 用于与常规退出区分。
+这三个入口都不在配置生成时执行，只在你按对应键时调用。
+
+** 诊断与配置状态
+
+查看启动消息、错误和配置状态不属于 Org 操作，独立归到诊断分组。
+d 表示 Diagnostics（诊断），范围比 Debug（调试）更广。
+保留 =, d m=（Messages，查看消息）和 =, d d=（Debug，切换错误回溯）。
+不增加行号、变量、函数、按键查询的额外诊断入口，后续按实际工具需要再安排。
+可用的帮助查询仍保留在 h（Help）分组。候选讨论与审核放在对话里，不写入配置文档。
+
+** 统一快捷键配置（第一阶段，最后配置）
 
 这里集中定义前面所有功能的自定义快捷键，包括 leader、Avy 直达键、
 帮助入口和模式专用绑定。功能章节负责“做什么、如何启用”，本节负责“按什么键”。
@@ -770,71 +1085,312 @@ Emacs 31.1 内置，之后使用 =use-package which-key :ensure nil= 声明。
 它负责定义键位，Evil 提供编辑状态，which-key 展示可用键位，Helpful 解释命令。
 General 不会自动启用 which-key，也不代替插件本身。
 
-以后通过 =use-package= 声明 General，确保在 Evil 之后创建 leader 定义器。
-状态：说明示例。以下代码块不参与生成，不安装 General，也不启用实际键位。
-示例按依赖顺序完整列出：先创建子 keymap 并放入命令，再创建 leader 并绑定分组。
-执行前需要 Evil 和 General 已安装，Evil 已加载；提示弹窗还需要启用 which-key。
+状态：已配置，等待手动启动安装和验证。
+下面创建一份共享 leader keymap，再同时绑定到逗号与备用前缀，避免维护两套菜单。
+先定义子 keymap，再组合分组；对 Helpful 的引用由前面的 =:commands= 提供自动加载。
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
+;;; 窗口布局与文件辅助命令；Org 生成和目录更新直接使用原生命令。
+;; Window maximize：布局保存在当前 Frame 参数中，各 Frame 互不干扰。
+(defun my/toggle-window-maximize ()
+  "Toggle between the current window layout and a single window."
+  (interactive)
+  (let ((saved (frame-parameter nil 'my/window-configuration)))
+    (if (window-configuration-p saved)
+        (progn
+          (set-window-configuration saved)
+          (set-frame-parameter nil 'my/window-configuration nil))
+      (unless (one-window-p)
+        (let ((configuration (current-window-configuration)))
+          (delete-other-windows)
+          (set-frame-parameter nil 'my/window-configuration configuration))))))
+
+;; 只复制当前文件的绝对路径，不修改文件；无文件的缓冲区会明确提示。
+(defun my/copy-file-path ()
+  "Copy the current file's absolute path to the kill ring."
+  (interactive)
+  (unless buffer-file-name
+    (user-error "Current buffer is not visiting a file"))
+  (let ((path (expand-file-name buffer-file-name)))
+    (kill-new path)
+    (message "Copied: %s" path)))
+
+;;; 统一键位：General 管理绑定，which-key 显示随 keymap 保存的中文描述。
 (use-package general
   :after evil
+  :demand t
   :config
+  (defvar my/leader-map (make-sparse-keymap))
+  (defvar my/command-map (make-sparse-keymap))
   (defvar my/file-map (make-sparse-keymap))
+  (defvar my/buffer-map (make-sparse-keymap))
   (defvar my/help-map (make-sparse-keymap))
+  (defvar my/diagnostic-map (make-sparse-keymap))
+  (defvar my/window-map (make-sparse-keymap))
+  (defvar my/quit-map (make-sparse-keymap))
+  (defvar my/org-map (make-sparse-keymap))
 
   (general-def my/file-map
-    "f" '("find file" . find-file)
-    "s" '("save file" . save-buffer))
+    "f" '("打开文件" . find-file)                   ; Find file，打开文件
+    "s" '("保存文件" . save-buffer)                 ; Save，保存
+    "a" '("另存为" . write-file)                    ; Save as，另存为
+    "d" '("目录管理" . dired)                       ; Dired，目录管理
+    ;; 保留内置确认：不要用无提示覆盖方式重新读取有未保存修改的文件。
+    "u" '("重新读取文件" . revert-buffer)           ; Update from disk，重新读取磁盘内容
+    "p" '("复制文件完整路径" . my/copy-file-path))  ; Path，文件完整路径
+
+  (general-def my/buffer-map
+    "b" '("切换缓冲区" . switch-to-buffer)         ; Buffer，选择缓冲区
+    "i" '("缓冲区列表" . ibuffer)                  ; Ibuffer，缓冲区管理列表
+    "k" '("关闭当前缓冲区" . kill-current-buffer)  ; Kill，关闭缓冲区
+    "n" '("下一个缓冲区" . next-buffer)            ; Next，下一个
+    "p" '("上一个缓冲区" . previous-buffer))       ; Previous，上一个
 
   (general-def my/help-map
-    "k" '("describe key" . describe-key)
-    "m" '("describe mode" . describe-mode))
+    "k" '("解释按键" . helpful-key)                          ; Key，按键帮助
+    "f" '("函数帮助" . helpful-callable)                     ; Function，函数帮助
+    "x" '("命令帮助" . helpful-command)                      ; Execute，交互命令帮助
+    "v" '("变量帮助" . helpful-variable)                     ; Variable，变量帮助
+    "." '("光标处 Lisp 符号" . helpful-at-point)             ; At point，光标处符号
+    "m" '("当前模式说明" . describe-mode)                    ; Mode，当前模式
+    "b" '("当前有效键位" . describe-bindings)                ; Bindings，有效键位
+    "w" '("查找命令按键" . where-is)                         ; Where is，查找命令绑定
+    "a" '("按名称找命令" . apropos-command)                  ; Apropos，按名称查找
+    "i" '("Emacs 手册" . info-emacs-manual)                  ; Info，Emacs 手册
+    "g" '("自定义键位清单" . general-describe-keybindings))  ; General，自定义键位
 
-  (general-create-definer my/leader
-    :states '(normal visual)
-    :keymaps 'override
-    :prefix ",")
+  ;; Diagnostics：诊断；Messages 和 Debug 各保留一个入口。
+  (general-def my/diagnostic-map
+    "m" '("查看消息" . view-echo-area-messages)  ; Messages，消息日志
+    "d" '("错误回溯" . toggle-debug-on-error))   ; Debug，错误回溯开关
 
-  (my/leader
-    "f" '("files" . my/file-map)
-    "h" '("help" . my/help-map)))
+  ;; Window，窗口布局；关闭显示区域不关闭其中的 Buffer。
+  (general-def my/window-map
+    "h" '("左侧窗口" . windmove-left)                   ; Left，沿用 Vim 向左键
+    "j" '("下方窗口" . windmove-down)                   ; Down，沿用 Vim 向下键
+    "k" '("上方窗口" . windmove-up)                     ; Up，沿用 Vim 向上键
+    "l" '("右侧窗口" . windmove-right)                  ; Right，沿用 Vim 向右键
+    "c" '("关闭当前窗口" . delete-window)               ; Close，关闭窗口
+    "w" '("下一个窗口" . other-window)                  ; Window，循环切换窗口
+    "s" '("上下拆分" . split-window-below)              ; Split，上下拆分
+    "v" '("左右拆分" . split-window-right)              ; Vertical split，左右拆分
+    "o" '("保留当前窗口" . delete-other-windows)        ; Only，只保留当前窗口
+    "m" '("最大化或恢复" . my/toggle-window-maximize))  ; Maximize，最大化或恢复
+
+  ;; Quit：退出；Q 按用户选择提供强制退出，跳过常规保存询问。
+  (general-def my/quit-map
+    "q" '("退出当前窗口或会话" . evil-quit)             ; Quit，当前窗口或会话
+    "a" '("退出终端会话" . save-buffers-kill-terminal)  ; All，检查保存后退出会话
+    "Q" '("强制退出进程" . kill-emacs))                 ; Force quit，跳过常规保存询问
+
+  ;; Org，文档与配置维护，保留标题与结构导航入口。
+  ;; 标题跳转与代码块编辑在 Org 中调用；生成和目录更新使用原生命令。
+  (general-def my/org-map
+    "b" '("生成当前文档代码" . org-babel-tangle)    ; Babel，提取当前 Org 代码，不执行或加载
+    "g" '("Org 标题跳转" . org-goto)                ; Go to，跳转标题
+    "i" '("当前文件结构索引" . imenu)               ; Index，结构索引
+    "t" '("更新当前文档目录" . toc-org-insert-toc)  ; Table of contents，当前文档目录
+    "s" '("编辑 Org 代码块" . org-edit-special))  ; Special，专用编辑界面
+
+  ;; 根前缀是逗号，再经过两次逗号，得到 ,,,；M-x 本身仍可使用。
+  (general-def my/command-map
+    "," '("执行命令" . execute-extended-command))  ; Command，执行命令
+
+  (general-def my/leader-map
+    "," (cons "命令" my/command-map)     ; Command，命令
+    "f" (cons "文件" my/file-map)        ; File，文件
+    "b" (cons "缓冲区" my/buffer-map)    ; Buffer，缓冲区
+    "h" (cons "帮助" my/help-map)        ; Help，帮助
+    "d" (cons "诊断" my/diagnostic-map)  ; Diagnostics，诊断
+    "w" (cons "窗口" my/window-map)      ; Window，窗口
+    "q" (cons "退出" my/quit-map)        ; Quit，退出
+    "o" (cons "文档与配置" my/org-map))  ; Org，文档与配置
+
+  ;; 普通／可视／motion 状态使用逗号；插入状态不占用逗号。
+  ;; motion 覆盖一些只读工具界面；override 减少局部模式遮挡 leader。
+  (general-define-key
+   :states '(normal visual motion)
+   :keymaps 'override
+   "," my/leader-map)
+
+  ;; 全局备用前缀访问同一份菜单，适用于插入状态及 Emacs 状态。
+  ;; 原生 C-h 前缀保留，只增强其中几个具体帮助命令。
+  (general-def
+    "C-c ," my/leader-map        ; Leader，备用功能前缀
+    "C-h k" #'helpful-key        ; Key，按键帮助
+    "C-h f" #'helpful-callable   ; Function，函数帮助
+    "C-h v" #'helpful-variable   ; Variable，变量帮助
+    "C-h x" #'helpful-command))  ; Execute，交互命令帮助
 #+end_src
 
-=my/leader= 是统一规则：普通／可视模式、逗号前缀，使用 override keymap
-降低被模式局部键位遮挡的概率；它会覆盖本来位于该前缀的按键，需要明确记录取舍。
+这里通过 =my/leader-map= 复用菜单，不需要另外创建 =my/leader= 宏。
+普通／可视／motion 状态使用逗号前缀，override keymap
+降低被模式局部键位遮挡的概率；被覆盖的原操作在下面记录替代键。
 文件等子分组采用命名 keymap，提示名称随绑定保存，配合 which-key 展示。
 General 当前文档推荐这种 keymap 描述方式，而不是到处添加 =:which-key= 替换规则。
 
-这样 =, f s= 对应保存，which-key 在 =,= 后显示 =f → files=，
-在 =, f= 后显示 =s → save file=。以后要换 leader 只需修改定义器的前缀。
-分组 keymap 必须先定义，再绑定到 leader；正式实现会按依赖顺序排列。
+例如 =, f s= 保存，which-key 在 =,= 后显示“文件”等分组，
+在 =, f= 后显示“保存文件”等命令。插入状态下用 =C-c , f s= 调用同一操作。
+以后更换 leader，只需修改绑定根 keymap 的前缀；子菜单无需逐条修改。
+
+**** General 怎么修改：对照示例
+
+下面是修改指南，不是额外生效的配置。请修改上面对应的正式定义，
+再保存、生成并重启；不要只修改说明示例，也不要直接改生成的 init.el。
+
+| 正式定义中的内容                         | 含义                                     |
+|------------------------------------------+------------------------------------------|
+| general-def my/file-map                   | 编辑 f（file）分组的子键                  |
+| "s" '("保存文件" . save-buffer)           | 子键 s、菜单说明、要执行的命令            |
+| "f" (cons "文件" my/file-map)             | 把文件子菜单放到 leader 的 f 下           |
+| general-define-key 中 "," my/leader-map   | 用逗号作为根前缀                         |
+| :states '(normal visual motion)          | 只在这些 Evil 状态启用逗号               |
+| "C-c ," my/leader-map                     | 备用前缀引用同一个菜单                    |
+
+例如想把保存从 =, f s= 改成 =, f w=，在正式的 =my/file-map= 定义中，
+把对应行的 ="s"= 改为 ="w"=，命令名保持不变：
+
+#+begin_src emacs-lisp :tangle no
+;; 修改前："s" '("保存文件" . save-buffer)
+;; 修改后：
+(general-def my/file-map
+  "w" '("保存文件" . save-buffer))
+#+end_src
+
+想增加按键，就在对应分组的正式定义中增加“按键 + 描述和命令”；
+想改提示文案，只改中文字符串；想改操作，就改右侧命令名。
+需要新分组时先创建 sparse keymap，再定义子键，最后挂到 my/leader-map。
+同一个分组内避免重复使用子键，否则后定义的绑定会覆盖前面的绑定。
+删除或改名后请重启验证，因为重新执行部分代码可能保留旧绑定。
+
+分组按英文记忆：f（File，文件）、b（Buffer，缓冲区）、h（Help，帮助）、
+o（Org，文档）、d（Diagnostics，诊断）、w（Window，窗口）、q（Quit，退出）。
+常用子键含义：s（Save，保存）、p（Path，路径）、m（Messages，消息；
+窗口组中为 Maximize，最大化）、c（Close，关闭窗口）、a（All，全部）。
+英文全称只用于这里的说明和代码注释，which-key 菜单描述保持中文。
+这些是记忆提示，不是所有 Emacs 命令都使用相同缩写，具体以菜单和命令名为准。
+子键也优先使用能联想到命令的字母，遇到已有绑定时保留旧入口并明确说明新键。
 
 *** Leader 与键位取舍
 
-逗号 =,= 作为普通／可视模式的 leader，插入模式保留普通逗号输入。
-逗号原有的 Vim 反向重复字符查找需另设按键。
-原生 =C-h= 帮助入口保留；插入模式或不使用 Evil 的界面可提供 =C-c ,= 备用入口。
-计划将普通模式 =s= 用于 Avy，原来的替换字符操作可用 =cl=；
+逗号 =,= 作为普通／可视／motion 状态的 leader，插入状态保留普通逗号输入。
+逗号原有的反向重复字符查找被 leader 覆盖，本阶段不提供替代键；正向重复仍是 =;=。
+原生 =C-h= 帮助入口保留；插入状态或 Emacs 状态使用 =C-c ,= 备用入口。
+Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前缀；手动启动后确认冲突。
+下一阶段计划将普通模式 =s= 用于 Avy，原来的替换字符操作可用 =cl=；
+当前尚未安装 Avy，所以 =s= 暂时保留 Evil 默认行为。
 不采用参考文件把点号 =.= 改成跳转的绑定，以保留 Vim 重复编辑功能。
 
-*** 分组与命令清单（待实现）
+*** 第一阶段速查表
+
+以下是配置写入后的预期操作，需要你启动安装完成后手动确认。
+“交互命令”列就是 M-x 使用的名称：输入 =M-x 命令名 RET= 即可调用，
+也可先按 =,,,= 打开命令输入界面。快捷键只是调用同一个命令的另一种方式。
+调用时仍需处于合适的缓冲区，例如 Org 目录命令应在带 TOC 标签的 Org 文档中使用。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| ,,, | execute-extended-command | 打开命令输入界面，等同 M-x |
+| , f f | find-file | 打开文件 |
+| , f s | save-buffer | 保存当前文件 |
+| , f a | write-file | 另存为 |
+| , f d | dired | 打开目录管理 |
+| , f u | revert-buffer | 从磁盘重新读取当前缓冲区，保留确认提示 |
+| , f p | my/copy-file-path | 复制当前文件完整路径 |
+| , b b | switch-to-buffer | 切换缓冲区 |
+| , b i | ibuffer | 显示缓冲区管理列表 |
+| , b k | kill-current-buffer | 关闭当前缓冲区 |
+| , b n | next-buffer | 下一个缓冲区 |
+| , b p | previous-buffer | 上一个缓冲区 |
+| , h k | helpful-key | 查询接下来按下的键 |
+| , h f | helpful-callable | 函数与宏帮助 |
+| , h x | helpful-command | 交互命令帮助 |
+| , h v | helpful-variable | 变量帮助 |
+| , h . | helpful-at-point | 光标处的 Emacs Lisp 符号帮助 |
+| , h m | describe-mode | 当前模式的说明与操作 |
+| , h b | describe-bindings | 当前有效键位列表 |
+| , h w | where-is | 根据命令查询快捷键 |
+| , h a | apropos-command | 按名称搜索命令 |
+| , h i | info-emacs-manual | Emacs 手册 |
+| , h g | general-describe-keybindings | General 定义的键位清单 |
+| , o b | org-babel-tangle | 按当前 Org 文档属性生成代码文件，不加载 |
+| , o g | org-goto | 当前 Org 文档标题跳转 |
+| , o i | imenu | 当前缓冲区的结构索引 |
+| , o t | toc-org-insert-toc | 更新当前 Org 文档的目录 |
+| , o s | org-edit-special | 进入 Org 代码块专用编辑缓冲区 |
+| C-c '（代码块编辑缓冲区） | org-edit-src-exit | 将编辑结果写回 Org 并返回，不执行代码 |
+| , d m | view-echo-area-messages | 查看 Emacs 消息 |
+| , d d | toggle-debug-on-error | 切换错误回溯 |
+| , w h | windmove-left | 焦点移到左侧窗口 |
+| , w j | windmove-down | 焦点移到下方窗口 |
+| , w k | windmove-up | 焦点移到上方窗口 |
+| , w l | windmove-right | 焦点移到右侧窗口 |
+| , w w | other-window | 焦点移到下一个窗口 |
+| , w s | split-window-below | 上下拆分窗口 |
+| , w v | split-window-right | 左右拆分窗口 |
+| , w c | delete-window | 关闭当前窗口，保留缓冲区 |
+| , w o | delete-other-windows | 只保留当前窗口 |
+| , w m | my/toggle-window-maximize | 最大化当前窗口或恢复布局 |
+| , q q | evil-quit | 关闭当前窗口、帧或退出，取决于当前会话 |
+| , q a | save-buffers-kill-terminal | 按保存确认流程退出当前终端会话 |
+| , q Q | kill-emacs | 强制退出进程，不逐文件询问保存 |
+
+=C-c ,= 是备用 leader，后接同样的子键；它绑定的是 keymap，
+不是单个交互命令，因此没有单独的 M-x 函数名。
+例如 =, o b= 与 =M-x org-babel-tangle RET= 调用同一命令，
+=, o t= 与 =M-x toc-org-insert-toc RET= 也一样。
+想知道其他模式中某个键对应什么命令，可用 =, h k=；
+反过来根据命令查快捷键，用 =, h w=（=M-x where-is RET=）。
+
+例如 =, h k= 进入按键查询后，输入 =, f s= 可以查看保存命令的绑定。
+=,,,= 是普通／可视／motion 状态下连续输入三次逗号，不需要同时按键；
+插入状态仍可用原生 =M-x=，或者备用前缀后再输入两个逗号：=C-c , , ,=。
+配置生成使用 =, o b= 或 =C-c C-v t=，也可执行 =M-x org-babel-tangle RET=，
+作用于当前 Org 缓冲区，建议先保存源文件；输出由当前文档的 :tangle 属性决定，
+不固定源文件名，也不会额外保存源文件、执行代码块或加载生成结果。
+目录随保存自动更新；需要立即更新时按 =, o t=，或执行 =M-x toc-org-insert-toc RET=，
+作用于当前带 TOC 标签的 Org 文档，不需要包装函数或固定路径。
+
+=, f u= 会重新读取磁盘内容，可能替换缓冲区里未保存的修改；保留 Emacs 的确认提示，
+确认前先判断是否要保存当前修改。它与未来自动刷新未修改缓冲区的功能不同。
+=, f p= 用于当前正在访问文件的缓冲区，复制绝对路径到 kill ring，
+系统剪贴板是否同步取决于 Emacs 的图形／终端环境；无文件的缓冲区会提示不能复制。
+=, o s=（=M-x org-edit-special RET=）在 Org 代码块内调用，进入对应语言的专用编辑缓冲区，
+完成后用 =C-c '=（=M-x org-edit-src-exit RET=）返回；
+返回只更新 Org 中的代码文字，不会执行或生成配置。
+
+最近文件入口暂缓，后续随 dashboard 设计；交互替换与正则替换的额外绑定暂缓，
+等搜索／替换方案确定后再安排。其他候选键位不添加。
+
+*** 后续分组规划（未绑定）
 
 | 分组 | 覆盖功能                                                 |
 |------+----------------------------------------------------------|
-| f    | 打开、保存、最近文件、Dired                               |
-| b    | 缓冲区切换、关闭                                         |
 | s    | 当前文件搜索、项目搜索、交互替换                          |
 | j    | Avy 字符和行定位                                         |
 | p    | 项目文件与项目切换                                       |
 | c    | 定义、引用、重命名、代码动作、诊断和文档；格式化暂不绑定   |
 | g    | Magit、修改块导航                                        |
-| h    | 按键／命令／变量帮助、当前模式、有效键位、手册             |
-| e    | 打开 Org 配置、重新生成、查看启动消息                     |
-| o    | Org 标题导航、Imenu 结构索引和立即更新目录                |
-| w    | 窗口操作仅预留名称，暂不启用绑定                          |
 
-实际绑定时，每个常用入口都写明命令名和提示名称，并在本节附速查表。
-不为每个插件的所有低频命令硬造快捷键；插件默认操作保留，通过帮助查询即可发现。
+最近文件、项目搜索等命令等对应功能实现后再加入；目前菜单中没有空分组。
+不为低频命令强行创建按键，插件默认操作仍通过模式帮助和 M-x 查询。
+
+*** 手动启动与体验清单
+
+本轮没有加载新 init.el，没有安装或编译插件，也没有进行交互验证。
+保持代理运行，从仓库根目录用前面的启动命令打开 Emacs，等待包安装结束。
+根据 *Messages* 判断安装情况；首次安装依赖可能需要一些时间。
+
+- 在临时文件体验 i、Esc、hjkl、文本对象、撤销和句点重复。
+- 试用 ysiw"、ds"、cs"'，确认 surround 行为。
+- 普通状态按逗号，确认半秒后出现菜单；插入状态输入逗号仍应是普通文字。
+- 用 C-c , 访问同一菜单，试用文件保存、切换缓冲区和帮助查询。
+- 在 Dired、Helpful 中体验导航与退出，遇到不确定的操作使用 , h m 或 C-h m。
+- 图形 Emacs 和 emacs -nw 分别试用，特别检查 Esc、逗号、中文提示和帮助界面。
+- 用 , w v 拆分，, w h/j/k/l 切换，, w m 最大化后再次调用恢复，, w c 关闭当前窗口。
+- 先在临时缓冲区熟悉操作，关闭窗口不会关闭其中的缓冲区。
+- 退出使用 , q a；只有打算放弃未保存内容并结束进程时才用 , q Q。
+- 退出并重启一次确认启动行为；Ace Window 和格式化仍未加入。
 
 * 配置结束
 
