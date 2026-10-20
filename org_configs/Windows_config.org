@@ -1,0 +1,803 @@
+#+title: Windows Emacs 配置
+#+property: header-args:emacs-lisp :tangle ../init.el :mkdirp yes
+#+startup: overview num
+#+options: toc:4 num:4
+
+* 目录 :TOC_4_org:
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+- [[使用与维护][使用与维护]]
+  - [[配置生成][配置生成]]
+    - [[代码块编辑、执行与生成][代码块编辑、执行与生成]]
+  - [[目录与大纲导航][目录与大纲导航]]
+    - [[“目录”后面的标签是什么][“目录”后面的标签是什么]]
+    - [[章节索引与跳转][章节索引与跳转]]
+      - [[待完成：目录中的章节编号][待完成：目录中的章节编号]]
+    - [[Org 的行内标记][Org 的行内标记]]
+  - [[启动时选择本配置目录][启动时选择本配置目录]]
+  - [[当前阶段][当前阶段]]
+  - [[跨平台迁移][跨平台迁移]]
+  - [[故障排查入口][故障排查入口]]
+- [[基础环境与软件包][基础环境与软件包]]
+  - [[配置入口][配置入口]]
+  - [[网络代理][网络代理]]
+  - [[软件包管理][软件包管理]]
+    - [[软件源][软件源]]
+    - [[本机特例：MSYS2 GPG 路径兼容修复][本机特例：MSYS2 GPG 路径兼容修复]]
+    - [[通用 GPG 密钥环与软件源初始化][通用 GPG 密钥环与软件源初始化]]
+    - [[use-package][use-package]]
+  - [[首次手动启动与检查][首次手动启动与检查]]
+- [[配置关系总览][配置关系总览]]
+- [[个人配置][个人配置]]
+  - [[界面与显示（占位）][界面与显示（占位）]]
+    - [[基础界面与提示行为][基础界面与提示行为]]
+    - [[字体与文字显示][字体与文字显示]]
+    - [[主题与状态栏][主题与状态栏]]
+  - [[Org 文档编辑与导航][Org 文档编辑与导航]]
+    - [[Org 内置功能][Org 内置功能]]
+    - [[自动编号与目录如何配合][自动编号与目录如何配合]]
+    - [[自动目录：toc-org][自动目录：toc-org]]
+    - [[标题跳转：org-goto][标题跳转：org-goto]]
+    - [[标题与符号索引：Imenu][标题与符号索引：Imenu]]
+  - [[编辑与文本导航（占位）][编辑与文本导航（占位）]]
+    - [[编辑行为与 Vim 模式][编辑行为与 Vim 模式]]
+    - [[搜索、定位与候选界面][搜索、定位与候选界面]]
+      - [[屏幕内定位：Avy][屏幕内定位：Avy]]
+      - [[搜索与选择：Vertico / Orderless / Marginalia / Consult][搜索与选择：Vertico / Orderless / Marginalia / Consult]]
+      - [[文本替换][文本替换]]
+  - [[文件与项目管理（占位）][文件与项目管理（占位）]]
+    - [[文件与项目操作][文件与项目操作]]
+    - [[保存、恢复与外部修改刷新][保存、恢复与外部修改刷新]]
+  - [[开发支持（占位）][开发支持（占位）]]
+    - [[代码理解、补全与诊断][代码理解、补全与诊断]]
+    - [[格式化（暂不启用）][格式化（暂不启用）]]
+  - [[版本控制（占位）][版本控制（占位）]]
+    - [[Git 操作与修改标记][Git 操作与修改标记]]
+  - [[帮助与交互提示（占位）][帮助与交互提示（占位）]]
+    - [[帮助查询][帮助查询]]
+    - [[按键提示：which-key][按键提示：which-key]]
+  - [[窗口与缓冲区（占位，暂不启用）][窗口与缓冲区（占位，暂不启用）]]
+  - [[统一快捷键配置（占位，最后配置）][统一快捷键配置（占位，最后配置）]]
+    - [[管理方式：General][管理方式：General]]
+    - [[Leader 与键位取舍][Leader 与键位取舍]]
+    - [[分组与命令清单（待实现）][分组与命令清单（待实现）]]
+- [[配置结束][配置结束]]
+
+* 使用与维护
+
+** 配置生成
+
+本文件是配置源文件，Emacs Lisp 代码块会生成到仓库根目录的 =init.el=。
+生成路径相对于本 Org 文件，因此 =../init.el= 指向上一级目录。
+请修改本文件，再重新生成，不要直接修改生成的 =init.el=。
+
+保存文档、生成配置、加载配置是三件不同的事：
+
+| 操作                                  | 改变什么                         | 不会做什么                 |
+|---------------------------------------+----------------------------------+----------------------------|
+| 保存 Org；toc-org 更新目录             | Org 文件及其中的目录链接         | 不会自动生成或加载 init.el |
+| C-c C-v t；org-babel-tangle             | 按代码块顺序生成 init.el         | 不会自动加载新配置         |
+| 重启 Emacs；或按需 load-file           | 执行 init.el，应用配置           | 不会修改 Org 源文件        |
+
+日常维护顺序：修改 Org → 保存 → 生成 → 检查差异 → 重启验证。
+在 Emacs 中打开本文件，按 =C-c C-v t=（=org-babel-tangle=）生成配置。
+有 Git 基线时，可在仓库根目录执行 =git diff -- org_configs/Windows_config.org init.el=
+检查源文件和生成结果；尚未提交的全新文件也需要直接检查内容。
+
+简单参数变更可以用 =M-x load-file RET= 选择生成的 =init.el= 进行试验，
+但重新加载不等于全新启动：从源文件删除 hook、键位或模式启用代码，
+不会自动撤销旧会话里已生效的设置。调整加载顺序、删除配置或修改模式启用方式后，
+以重启验证为准。例如删除编号 hook 后，旧会话可能仍保留它，重启才能确认新默认行为。
+
+也可以在仓库根目录使用命令行生成：
+
+#+begin_src sh :tangle no
+emacs -Q --batch --load org --eval '(org-babel-tangle-file "org_configs/Windows_config.org")'
+#+end_src
+
+*** 代码块编辑、执行与生成
+
+| 写法或操作                    | 含义                                                   |
+|-------------------------------+--------------------------------------------------------|
+| begin_src emacs-lisp           | Lisp 代码块，按本文件头部属性默认参与生成                |
+| :tangle no                    | 不参与生成；仍可手动执行，不代表禁止执行                 |
+| begin_example                 | 纯说明示例，不是可执行的 Babel 代码块                    |
+| 代码块内 C-c '                | 在专用编辑缓冲区编辑代码；完成后再按 C-c ' 返回           |
+| 代码块内 C-c C-c              | 通常执行当前代码块，与生成 init.el 不同                  |
+| C-c C-v t                     | 提取代码生成文件，不执行这些 Lisp 表达式                 |
+
+本文件通过 =header-args:emacs-lisp :tangle ../init.el= 指定生成位置。
+生成时按源文件中代码块的出现顺序拼接，因此移动代码块也可能改变初始化顺序。
+标为说明示例的代码块不要当作已经启用的配置；是否参与生成，以块上的参数为准。
+
+** 目录与大纲导航
+
+Org 原生支持按标题组织内容，不需要目录插件。本文件设置了
+=#+startup: overview num=，重新打开时默认显示顶层标题及自动章节号，便于先看结构。
+
+| 操作                         | 按键或命令                                  |
+|------------------------------+---------------------------------------------|
+| 折叠／展开当前标题           | 光标位于标题时按 =TAB=                       |
+| 切换全文概览、标题和完整内容 | =S-TAB=，或 =M-x org-shifttab=               |
+| 搜索标题并跳转               | =C-c C-j=，或 =M-x org-goto=                 |
+| 回到上一级标题               | =C-c C-u=                                   |
+| 当前文档的标题索引           | =M-x imenu=                                 |
+| 打开文档中的链接             | =C-c C-o=                                   |
+
+上面是当前尚未安装 Evil 时的 Org 默认操作；后续统一快捷键配置会说明
+Evil / evil-collection 接入后的操作，命令名仍可通过 =M-x= 调用。
+
+=#+options: toc:4= 指定导出时自动生成最多四级标题的目录，
+例如使用 =C-c C-e h h= 导出 HTML 时生效。它不会在编辑缓冲区自动插入目录文本，
+因此文档开头另提供了可直接点击的章节链接。
+这些链接由下面的 =toc-org= 配置在保存时自动更新，不需要手工维护。
+
+*** “目录”后面的标签是什么
+
+=* 目录 :TOC_4_org:= 的标题名称只有“目录”，后面的是 Org 标签，不属于标题文字。
+=toc-org= 依靠该标签识别应该在哪个章节生成目录：
+
+- =TOC=：这是目录生成位置；只写 =* 目录= 时插件不会识别。
+- =4=：生成到四级标题，覆盖“个人配置”增加的一层。
+- =org=：使用 Org 原生标题链接。
+
+可以改成更短的 =:TOC:=，但它会使用插件默认的两级目录和 GitHub 风格链接。
+本文件保留显式标签，让文件离开这套配置后仍能清楚表达目录深度和链接格式。
+
+*** 章节索引与跳转
+
+Org 内置的 =org-num-mode= 在标题前显示 =1=、=1.1=、=1.1.1= 等编号，
+插入或移动章节时自动更新；这些编号是编辑器显示效果，不写入标题源文本。
+目录的 =UNNUMBERED= 属性用于导出时排除编号；编辑器内是否跳过该标题，
+由 =org-num-skip-unnumbered= 决定，本配置不再全局修改它。
+导出时的 =num:4= 也会生成四级章节号；toc-org 目录仍按标题生成链接，
+目录链接文字以及 org-goto / Imenu 的候选不自动带上 org-num 的显示编号。
+需要跳转时使用目录链接、=org-goto= 或 Imenu；章节号用于阅读定位和沟通，
+不是输入一个数字就自动跳转的命令。
+
+**** 待完成：目录中的章节编号
+
+状态：待配置。目前 toc-org 只生成无序标题链接，目录没有与正文对应的章节号。
+目标是目录与正文使用一致编号，并在章节增删、移动后自动更新。
+实现前需要统一目录标题是否计数、UNNUMBERED 属性和导出行为；
+不得通过全局编号 hook 改变所有 Org 文件的默认行为。
+不手工给生成目录加数字，因为下次保存会覆盖它们。
+
+*** Org 的行内标记
+
+Org 的等号包围语法类似 Markdown 的反引号，用来区分普通文字和字面内容。
+下面用示例块展示源文本，避免它们被直接显示成格式化文字：
+
+#+begin_example
+=org-goto=       字面文本（verbatim），适合命令名、路径、按键
+~(message "Hi")~ 行内代码（code），适合代码片段
+*加粗*           粗体
+/强调/           斜体
+_下划线_         下划线
++删除线+         删除线
+#+end_example
+
+等号和波浪号都常显示为等宽文本，内部不会继续按普通强调语法解释。
+它们只是排版标记，不会执行内容；具体颜色和字体取决于主题，
+标记符号是否隐藏则取决于 =org-hide-emphasis-markers=。
+Markdown 的反引号不是 Org 默认的行内代码标记，所以本文使用等号来标出命令和路径。
+
+** 启动时选择本配置目录
+
+如果 =~/.emacs.d/= 已存在，Emacs 会优先使用该目录，因而不会自动
+读取本仓库的 =~/.config/emacs/init.el=。即使旧目录只有缓存也会如此。
+可以在仓库根目录显式指定配置目录启动：
+
+#+begin_src sh :tangle no
+emacs --init-directory . --user ""
+emacs -nw --init-directory . --user ""
+#+end_src
+
+从其他目录启动时，将 =.= 替换为本仓库的绝对路径。
+本机 Emacs 31.1 实测还需要 =--user ""=，否则仅修改了
+=user-emacs-directory=，启动文件搜索仍然使用旧目录。
+启动后可用 =M-: user-init-file RET= 查看实际读取的配置文件。
+
+** 当前阶段
+
+基础环境包含代理、软件源和 =use-package=，参考仓库中的
+=example_Emacs_Windows.org=。目前额外启用 Org 导航配置，并声明 =toc-org= 自动目录插件。
+toc-org 未安装时由 use-package 自动安装，已安装则复用；其余功能按下表区分。
+
+状态用语统一为：已配置、待配置、暂不启用、说明示例。
+“已配置”表示配置已写入，不代表已在每个平台验证或在每台机器安装完成。
+本表是功能状态清单；后面的关系树只展示设计职责，不重复维护安装状态。
+
+| 功能                         | 状态     | 作用范围与约束                                    |
+|------------------------------+----------+---------------------------------------------------|
+| 代理、软件源、use-package     | 已配置   | 当前 Emacs 会话；代理须有对应本机服务               |
+| MSYS2 GPG 路径修复            | 已配置   | 仅匹配本机已知问题路径时启用                       |
+| Org 标题导航与 Imenu 深度     | 已配置   | Org 缓冲区                                        |
+| toc-org 自动目录              | 已配置   | Org 缓冲区启用；仅带 TOC 标签的文档生成目录         |
+| org-num 正文编号              | 已配置   | 本文件头部 num 元数据；无全局编号 hook             |
+| 与正文一致的目录编号         | 待配置   | 需要该功能的文档；当前 toc-org 不提供               |
+| 界面、字体、主题与状态栏     | 待配置   | 字体及图形／终端行为后续分别验证                   |
+| Evil、Avy、搜索与候选界面    | 待配置   | 编辑与导航；当前未启用                             |
+| 文件、项目、保存与刷新       | 待配置   | 当前 Emacs 会话；仍遵守缓冲区冲突保护              |
+| 开发支持、Git、帮助与提示    | 待配置   | 按模式和项目启用，外部工具另行准备                 |
+| General 与自定义快捷键       | 待配置   | 键位统一放在个人配置最后，当前示例不参与生成        |
+| 窗口增强、格式化             | 暂不启用 | 只记录需求                                        |
+| 带 :tangle no 的演示代码     | 说明示例 | 不写入 init.el；仍可能手动执行                     |
+
+** 跨平台迁移
+
+文件名保留 =Windows_config.org=，但当前生成的基础配置也按跨平台方式编写。
+建议各平台使用 Emacs 29 或更新版本；目前实际验证环境是 Windows Emacs 31.1，
+没有在 Linux / macOS 真机运行验证。
+
+- Windows 默认使用系统可发现的 GPG；下面的 Git GPG 修复仅适用于已复现问题的本机环境。
+- Linux / macOS 使用 Emacs PATH 中的 =gpg2= 或 =gpg=，需要自行安装 GnuPG。
+  macOS 从桌面启动 Emacs 时，PATH 可能不包含 Homebrew 的程序目录，
+  应先检查 =(executable-find "gpg")=；后续平台环境章节再处理路径继承。
+- 代理是本机服务；其他电脑也需要相同端口的代理，或者修改／关闭下面的代理设置。
+- 迁移源文件和生成的 =init.el=，插件和本地缓存应在目标系统重新生成，
+  不要复制 =elpa/=、=eln-cache/= 或 GPG 运行目录。
+- 自动识别配置目录仍受旧 =~/.emacs=、=~/.emacs.d/= 的影响；可显式使用
+  前面的启动命令。macOS 需要使用实际安装的 Emacs 可执行文件。
+
+Linux / macOS 不会执行本机特有的 Windows GPG 路径修复，因此不会因为这段配置
+产生同样的盘符拼接问题。但缺少 GPG、PATH 不正确、公钥过期或缺失，仍可能造成
+签名校验失败；不能保证任何系统都永远不会出现 GPG 错误。
+
+** 故障排查入口
+
+先确认“读的是哪份配置、失败在哪一步”，再按错误定位。
+实际命令和表达式如下；这里是操作说明，没有增加自定义键位。
+
+| 情况                         | 检查入口                                                |
+|------------------------------+---------------------------------------------------------|
+| 怀疑配置没有加载             | M-: user-init-file RET                                   |
+| 查看启动或下载消息           | C-h e，或者切换到 *Messages*                             |
+| 已启动，重现操作错误         | M-x toggle-debug-on-error，开启后重现以查看回溯           |
+| 启动时配置报错               | 在启动命令中加 --debug-init                              |
+| 找不到外部工具               | M-: (executable-find "gpg") RET；clangd、rg 同理           |
+| 下载失败                     | 查看 url-proxy-services、package-archives 及具体错误      |
+| 生成结果与预期不符           | 核对代码块 :tangle 参数、顺序和实际生成的 init.el          |
+| 删除配置后旧行为仍存在       | 重启再验证，避免把旧会话状态当作新配置行为                |
+
+例如在仓库根目录启动诊断：
+
+#+begin_src sh :tangle no
+emacs --init-directory . --user "" --debug-init
+#+end_src
+
+排查结束后可再次执行 =M-x toggle-debug-on-error= 关闭调试。
+GPG 先查看实际可执行文件和错误路径；本机 MSYS2 路径问题的修复仅见包管理章节，
+其他机器不直接套用本机特例，也不以关闭 TLS 或签名校验作为通用解决方式。
+
+* 基础环境与软件包
+
+本章配置启动入口、网络和包管理，必须先于功能插件执行。
+
+** 配置入口
+
+软件包统一安装在本仓库的 =elpa/= 目录，不依赖启动时的工作目录。
+
+#+begin_src emacs-lisp
+;;; init.el --- Generated Emacs configuration -*- lexical-binding: t; -*-
+;; Generated from org_configs/Windows_config.org. Edit the Org source instead.
+
+(defconst my/config-directory
+  (file-name-directory (or load-file-name user-init-file))
+  "Directory containing this configuration's generated init.el.")
+
+(setq inhibit-startup-screen t
+      initial-scratch-message ";; Org config loaded successfully.\n\n")
+#+end_src
+
+** 网络代理
+
+使用本地 HTTP 代理 =127.0.0.1:10808=。先设置代理，再访问软件源。
+=http= 和 =https= 都通过同一个代理端口，访问本机地址则不走代理。
+启动 Emacs 前，请先启动提供该端口的代理程序。
+
+这里配置的是 Emacs URL 库的代理，适用于软件包下载等操作；
+不会自动修改外部 Git、clangd 等程序的代理环境。
+迁移时可以修改 =my/proxy-address= 的默认值；无需代理时把它设为 =nil=。
+这里的 =nil= 清除这份配置设置的显式 URL 代理，不会清除进程已有的代理环境变量。
+
+#+begin_src emacs-lisp
+(require 'url-vars)
+
+(defvar my/proxy-address "127.0.0.1:10808"
+  "Local HTTP proxy address, or nil to omit explicit URL proxies.")
+
+(setq url-proxy-services
+      (when my/proxy-address
+        `(("http" . ,my/proxy-address)
+          ("https" . ,my/proxy-address)
+          ("no_proxy" . "\\`\\(localhost\\|127\\.0\\.0\\.1\\|\\[::1\\]\\)\\'"))))
+#+end_src
+
+** 软件包管理
+
+*** 软件源
+
+配置 GNU ELPA、NonGNU ELPA 和 MELPA，分别命名为 =gnu=、=nongnu= 和
+=melpa=。同一个包存在于多个源时，优先选择 GNU，其次 NonGNU，再其次 MELPA。
+Org 随 Emacs 提供，本阶段不额外配置旧的独立 Org 软件源。
+
+#+begin_src emacs-lisp
+(require 'package)
+
+(setq package-user-dir (expand-file-name "elpa/" my/config-directory)
+      package-archives
+      '(("gnu" . "https://elpa.gnu.org/packages/")
+        ("nongnu" . "https://elpa.nongnu.org/nongnu/")
+        ("melpa" . "https://melpa.org/packages/"))
+      package-archive-priorities
+      '(("gnu" . 30) ("nongnu" . 20) ("melpa" . 10)))
+
+#+end_src
+
+*** 本机特例：MSYS2 GPG 路径兼容修复
+
+这不是 Windows 通用问题，不能仅凭操作系统为 Windows 就强制替换 GPG。
+已在当前机器的 Windows Emacs + MSYS2 GPG 组合中复现：
+默认 PATH 中的 MSYS2 GPG 无法正确处理 Emacs 传入的 Windows 路径，
+会将 =d:/...= 当作相对路径拼接，导致密钥环无法创建，继而报缺少公钥。
+Git 自带的 GPG 已实测可处理同一路径。
+
+下面只在默认发现的程序恰好是本机已知的问题路径，并且替代程序存在时启用修复。
+其他 Windows、Linux、macOS 保留默认 GPG 选择，不要求安装在 =D:/Software/Git/=。
+迁移后若有不同的 GPG 问题，应重新诊断；不要直接照搬本机路径。
+
+使用 =customize-set-variable= 是因为 EasyPG 会检查该变量是否经过自定义；
+仅用 =setq= 可能仍然让它从 PATH 自动选择其他 GPG。
+
+#+begin_src emacs-lisp
+(require 'epg-config)
+
+(when (eq system-type 'windows-nt)
+  (let ((detected (executable-find epg-gpg-program))
+        (affected "D:/Software/Msys2/usr/bin/gpg.exe")
+        (replacement "D:/Software/Git/usr/bin/gpg.exe"))
+    (when (and detected
+               (string-equal (downcase detected) (downcase affected))
+               (file-executable-p replacement))
+      (customize-set-variable 'epg-gpg-program replacement)
+      ;; Discard a cached configuration pointing to the affected executable.
+      (setq epg--configurations nil))))
+#+end_src
+
+*** 通用 GPG 密钥环与软件源初始化
+
+各平台都需要可用的 GPG，并在空密钥环上导入 Emacs 自带的可信 ELPA 公钥。
+保留签名校验；本节与上面的本机路径修复分开。
+
+#+begin_src emacs-lisp
+(setq package-gnupghome-dir (expand-file-name "gnupg/" package-user-dir))
+
+(require 'epg)
+
+(unless (epg-find-configuration 'OpenPGP)
+  (error "GnuPG not found or unusable; install GnuPG and check Emacs exec-path"))
+
+(let ((context (epg-make-context 'OpenPGP)))
+  (setf (epg-context-home-directory context) package-gnupghome-dir)
+  ;; A failed earlier attempt may have left an empty keybox behind.
+  (unless (epg-list-keys context)
+    (package-import-keyring (expand-file-name "package-keyring.gpg" data-directory))))
+
+(package-initialize)
+
+;; Fetch metadata if any configured archive is missing its cached index.
+;; Refresh manually later with M-x package-refresh-contents.
+(when (and (not noninteractive)
+           (not (seq-every-p
+                 (lambda (archive)
+                   (file-exists-p
+                    (expand-file-name
+                     (concat "archives/" (car archive) "/archive-contents")
+                     package-user-dir)))
+                 package-archives)))
+  (package-refresh-contents))
+#+end_src
+
+*** use-package
+
+Emacs 29 及以上版本内置 =use-package=，本机 Emacs 31.1 可以直接加载。
+如果以后使用较旧版本，才通过 =package.el= 安装它。
+
+=use-package-always-ensure= 让第三方插件默认自动安装；内置功能需要显式写
+=:ensure nil=，避免误装 ELPA 上的其他版本。
+保留软件包签名校验，不通过关闭校验绕过下载问题。
+
+#+begin_src emacs-lisp
+(unless (require 'use-package nil t)
+  (unless package-archive-contents
+    (package-refresh-contents))
+  (package-install 'use-package)
+  (require 'use-package))
+
+(setq use-package-always-ensure t)
+#+end_src
+
+声明第三方插件时，之后统一使用这种形式；本段只是示例，不生成配置：
+
+#+begin_src emacs-lisp :tangle no
+(use-package some-package
+  :defer t)
+
+(use-package some-built-in-feature
+  :ensure nil
+  :defer t)
+#+end_src
+
+** 首次手动启动与检查
+
+在仓库根目录运行前面的启动命令。首次交互启动会下载软件源的索引，
+这是插件目录信息；当前仅声明安装 =toc-org=，不会安装仍未声明的 Evil、Consult 等插件。
+三个源的索引都存在后，后续启动使用缓存；某个源缺失时会重新尝试刷新。
+需要更新目录时运行 =M-x package-refresh-contents=。
+
+可以使用以下命令检查；=M-:= 表示按 =Alt+Shift+;=，输入表达式后按回车：
+
+| 检查内容                  | 命令或表达式                           |
+|---------------------------+----------------------------------------|
+| 实际启动配置              | =M-: user-init-file RET=                |
+| 当前代理                  | =M-: url-proxy-services RET=            |
+| 软件源                    | =M-: package-archives RET=              |
+| 插件安装目录              | =M-: package-user-dir RET=              |
+| use-package 是否加载      | =M-: (featurep 'use-package) RET=       |
+| 查看软件包目录            | =M-x list-packages RET=                 |
+| 手动刷新软件源索引        | =M-x package-refresh-contents RET=     |
+| 查看启动及下载消息        | =C-h e=，或者切换到 =*Messages*= 缓冲区 |
+
+如果软件源访问失败，先确认代理端口工作，再查看 =*Messages*= 中的具体错误。
+此前 Windows 签名问题已通过选择 Git GPG 和导入内置公钥修复，
+并用实际 GNU / NonGNU 索引验证签名通过。若出现其他联网错误，
+应按新的具体错误排查，不关闭 TLS 或签名校验。
+
+* 配置关系总览
+
+本节独立展示整份配置的职责关系，不隶属于某个编辑插件。
+基础初始化先执行；具体功能归入“个人配置”，自定义键位放在该章最后。
+下面是设计关系，不表示安装状态；实际状态以“当前阶段”清单为准。
+本树是说明文本，不会生成到 =init.el=；章节导航由前面的自动目录提供。
+
+#+begin_example
+配置文档
+├─ 使用与维护：生成、导航、迁移
+├─ 基础环境与软件包：代理、ELPA、GPG、use-package
+├─ 配置关系总览
+└─ 个人配置
+   ├─ 界面与显示：界面行为、字体、主题、状态栏（占位）
+   ├─ Org 文档编辑与导航
+   │  ├─ Org / org-goto / Imenu：标题导航与结构索引
+   │  ├─ org-num：自动章节编号
+   │  └─ toc-org：保存时重建目录链接
+   ├─ 编辑与文本导航（占位）
+   │  ├─ Vim 编辑：Evil / evil-collection / evil-surround
+   │  ├─ 屏幕定位：Avy
+   │  ├─ 搜索选择：Vertico / Orderless / Marginalia / Consult
+   │  └─ 文本替换：Evil 与内置命令
+   ├─ 文件与项目管理（占位）
+   │  ├─ project.el / Dired / recentf / savehist / saveplace
+   │  └─ 自动保存、恢复与外部修改刷新
+   ├─ 开发支持（占位）
+   │  ├─ Eglot / clangd / Corfu / Flymake / Eldoc / Tree-sitter
+   │  └─ 格式化（暂不启用）
+   ├─ 版本控制：Magit / diff-hl（占位）
+   ├─ 帮助与交互提示：Helpful / 内置帮助 / which-key（占位）
+   ├─ 窗口与缓冲区：Ace Window / Winner（暂不启用）
+   └─ 统一快捷键配置（最后配置，占位）
+      ├─ General：键位与作用范围
+      └─ 逗号 leader、分组提示、直接跳转键、模式专用键、速查表
+#+end_example
+
+* 个人配置
+
+本章按功能分类。标为占位的章节暂不启用，只记录需求、参数与启用方式。
+所有自定义快捷键统一放到本章最后的“统一快捷键配置”小节。
+插件默认键位不重复定义；必须在加载前设置的选项或依赖初始化顺序的设置，
+才保留在插件声明旁，并注明原因。
+
+** 界面与显示（占位）
+
+本章尚无生效代码，不额外安装主题、图标或界面插件。
+
+*** 基础界面与提示行为
+
+启动欢迎页、铃声、工具栏、滚动条等按实际编辑需要配置；
+不批量关闭恢复、文件冲突检测等仍有用的保护功能。
+原先的最小启动配置仍位于前面的配置入口。
+
+*** 字体与文字显示
+
+预留等宽字体、中文字体、字号和图形／终端显示差异的配置位置。
+具体字体尚未确定，不复制参考文件中的机器专用字体名称。
+
+*** 主题与状态栏
+
+预留配色、行号、当前行提示和状态栏配置，暂不安装装饰性插件。
+
+** Org 文档编辑与导航
+
+本节集中配置 Org 的阅读、文档导航和辅助插件；实际快捷键仍集中在最后配置。
+目前只添加自动目录与标题导航，其他 Org 插件按后续需求补充。
+状态：已配置。范围：内置导航配置用于 Org；编号是否启用由各文档头部决定。
+
+*** Org 内置功能
+
+使用随 Emacs 提供的 Org，不额外下载另一版 Org。
+=org-imenu-depth= 设为 4，让标题索引覆盖增加“个人配置”父章节后的四级结构。
+
+#+begin_src emacs-lisp
+(use-package org
+  :ensure nil
+  :defer t
+  :custom
+  (org-imenu-depth 4))
+
+(use-package org-goto
+  :ensure nil
+  :defer t
+  :custom
+  (org-goto-interface 'outline-path-completion)
+  (org-goto-max-level 4))
+#+end_src
+
+*** 自动编号与目录如何配合
+
+这两项是独立功能，不是 toc-org 标签同时控制的：
+
+| 配置                     | 负责内容                                     | 何时更新             |
+|--------------------------+----------------------------------------------+----------------------|
+| org-num-mode             | 编辑器中显示章节号，不修改标题文本             | 标题增删、移动后更新 |
+| TOC_4_org + toc-org-mode  | 在目录章节生成最多四级的 Org 标题链接          | 保存文件前更新       |
+| options 中 toc:4 num:4   | 导出文档时生成四级目录与编号                   | 每次导出时生成       |
+
+自动编号根据标题的星号层级和出现顺序计算，例如父标题用 =*=，子标题用 =**=。
+将两个同级章节交换位置，org-num 会重新计算它们及其子章节的显示编号；
+随后保存文件，toc-org 再按新顺序重建目录。无需手工修改标题中的数字。
+
+不使用全局编号 hook，也不全局设置编号深度。需要编号的 Org 文档，
+只需在文件头写下这些元数据；下面是说明示例，不生成 Lisp 配置：
+
+#+begin_example
+#+startup: overview num
+#+options: toc:4 num:4
+#+end_example
+
+- =startup= 中的 =overview=：打开时折叠到顶层概览。
+- =startup= 中的 =num=：只为这个文档启用内置的自动编号。
+- 不想显示编号时，改为 =#+startup: overview nonum=。
+- =options= 中的 =toc:4 num:4=：只控制导出目录和编号到四级，
+  不控制编辑缓冲区的编号深度。
+
+修改头部后重新打开文件，或者执行 =M-x org-mode= 重新读取启动选项。
+仅想临时开关当前缓冲区的编号，可以执行 =M-x org-num-mode=。
+不写 =num= 的其他 Org 文档不会因为本配置而默认开启编号。
+
+编辑器编号采用 Org 默认值：所有层级都可编号，目录标题也可能计入。
+如需当前缓冲区最多四级、跳过带 =UNNUMBERED= 属性的目录，可以按需执行
+下面的局部设置（=:tangle no=，不会自动启用，也不会影响其他文件）：
+
+#+begin_src emacs-lisp :tangle no
+(setq-local org-num-max-level 4
+            org-num-skip-unnumbered t)
+(org-num-mode -1)
+(org-num-mode 1)
+#+end_src
+
+Org 没有用 =#+options: num:4= 设置编辑器编号深度的含义，
+因此不把导出选项与上述局部设置混为一谈。
+
+*** 自动目录：toc-org
+
+[[https://github.com/snosov1/toc-org][toc-org]] 在保存 Org 文件前，根据实际标题重建目录。
+只有含目录标签的文件才会插入目录，不会给所有 Org 文件强加一个目录。
+本文件使用 =TOC_4_org= 标签：最多四级标题，生成 Org 原生标题链接，
+可用 =C-c C-o= 打开，不依赖 GitHub 风格锚点。
+“目录”是标题，=:TOC_4_org:= 是机器识别标签，二者各有用途。
+
+#+begin_src emacs-lisp
+(use-package toc-org
+  :hook (org-mode . toc-org-mode))
+#+end_src
+
+插件未安装时由 use-package 自动安装。安装完成后重新打开 Org 文件，
+或者先通过 =M-x describe-variable RET toc-org-mode RET= 查看当前状态；
+只有未启用时才执行 =M-x toc-org-mode=，避免反而将已启用的模式关闭。
+此后新增、删除或重命名标题，保存文件即可更新目录。
+也可运行 =M-x toc-org-insert-toc= 立即更新；更新只影响文档目录，不执行代码块。
+导出时的自动目录仍由 =#+options: toc:4= 独立控制，和本文内的目录用途不同。
+
+*** 标题跳转：org-goto
+
+=org-goto= 是主动调用的 Org 标题导航命令，不是根据光标自动跳转的后台功能。
+这里选择 =outline-path-completion= 界面：执行 =C-c C-j= 或 =M-x org-goto=，
+输入标题路径、使用补全选择，再确认跳转。它读取当前文档标题，无需维护目录。
+以后安装 Vertico / Orderless 后可进一步配合候选界面；当前使用内置补全。
+
+*** 标题与符号索引：Imenu
+
+Imenu 是 Emacs 内置的“当前缓冲区结构索引”，不是另一个目录插件。
+在 Org 中列标题，在编程模式中通常列函数、类型等符号，内容由当前模式提供。
+执行 =M-x imenu=，选择索引项并跳转，不会在文件中插入或更新文字。
+以后 Consult 安装完成后可以使用 =consult-imenu= 提供带预览的选择界面。
+
+| 需要做的事                   | 使用功能                 |
+|------------------------------+--------------------------|
+| 文档里有一份自动更新的目录   | toc-org，保存时更新       |
+| 按标题路径定位 Org 章节      | org-goto，选择后跳转      |
+| 查找当前文件的标题／代码符号 | imenu，之后可用 Consult   |
+
+** 编辑与文本导航（占位）
+
+*** 编辑行为与 Vim 模式
+
+Evil、evil-collection、evil-surround。
+保留 Vim 普通／插入／可视模式、操作符、文本对象、宏和点号重复。
+evil-surround 用于添加、删除和替换括号／引号等包围符。
+Evil 的 =evil-want-keybinding= 等加载前选项放在其 =use-package :init= 中；
+实际自定义键位放到最后统一定义。
+
+*** 搜索、定位与候选界面
+
+**** 屏幕内定位：Avy
+
+Avy 使用 =avy-goto-char-timer= 输入字符、选择标签跳转，另提供按行跳转。
+
+**** 搜索与选择：Vertico / Orderless / Marginalia / Consult
+
+Vertico、Orderless、Marginalia、Consult 作为一组配置。
+覆盖文件／命令候选、多关键词匹配、候选说明、缓冲区切换、当前文件搜索、
+最近文件、符号列表和基于 ripgrep 的项目文本搜索。
+屏幕内定位用 Avy，文件内搜索用 =consult-line=，项目搜索用 =consult-ripgrep=。
+**** 文本替换
+
+替换保留 Evil 的 =:s= / =:%s= 和内置 =query-replace=、
+=query-replace-regexp=、=project-query-replace-regexp=，不把搜索当作替换功能。
+
+** 文件与项目管理（占位）
+
+*** 文件与项目操作
+
+project.el、Dired、recentf、savehist、saveplace。
+补充打开、显式保存、关闭文件缓冲区、项目文件选择和项目切换入口。
+
+*** 保存、恢复与外部修改刷新
+
+自动保存计划使用 =auto-save-visited-mode=，空闲时直接写回已访问文件；
+它与用于崩溃恢复的自动保存副本是两件事，实施时分别说明和配置。
+外部修改刷新适用于任何外部程序，不限于 agent；有未保存修改时不强行覆盖。
+恢复文件集中放置，避免在项目中散落 =#file#=；关闭 =file~= 编辑备份。
+
+** 开发支持（占位）
+
+*** 代码理解、补全与诊断
+
+Eglot、clangd、Corfu、Flymake、Eldoc 与语法高亮。
+查看内核代码时，还需根据实际内核构建环境准备 =compile_commands.json=。
+通过 Eglot 提供定义／引用跳转、符号重命名与代码动作；Corfu 显示补全，
+Flymake 展示诊断，Eldoc 展示函数签名和文档。
+Tree-sitter 框架内置，但语言语法库需另行安装；语法库不可用时保留常规高亮。
+Windows 图形和终端模式分别验证。跨平台配置 clangd 路径，
+内核的目标架构、编译参数和生成头文件来自实际构建环境，不能仅靠安装 clangd。
+
+*** 格式化（暂不启用）
+
+仅占位，暂不配置格式化器或保存时格式化。
+
+** 版本控制（占位）
+
+*** Git 操作与修改标记
+
+Magit 与 diff-hl。
+Magit 用于查看差异、按块暂存和提交；diff-hl 显示行旁修改标记并导航修改块。
+
+** 帮助与交互提示（占位）
+
+*** 帮助查询
+
+Helpful 增强按键、函数和变量帮助，=describe-mode= 查看当前模式说明；
+Consult 主要负责搜索和选择，不是帮助文档增强包。
+帮助入口覆盖：按键解释、命令／函数说明、变量说明、光标处符号帮助、
+当前模式帮助、当前有效键位列表、根据命令查找按键、Emacs 手册和本 Org 配置。
+
+*** 按键提示：which-key
+
+which-key 归为交互提示，和帮助文档查询分开：它负责显示当前前缀后可用的按键。
+Emacs 31.1 内置，之后使用 =use-package which-key :ensure nil= 声明。
+本节配置启用方式、提示延时等行为；具体分组名、命令描述放到最后的键位章节。
+输入前缀后等待即可提示；没有自定义绑定的命令仍可从 =M-x= 搜索执行。
+
+** 窗口与缓冲区（占位，暂不启用）
+
+仅占位，暂不配置 Ace Window、Winner 和额外窗口快捷键。
+之后说明窗口与缓冲区的区别、拆分／关闭窗口、方向切换、标签选窗和恢复布局。
+当前 Evil 尚未安装，不能把计划中的 =C-w= 操作当作已生效的配置。
+
+** 统一快捷键配置（占位，最后配置）
+
+这里集中定义前面所有功能的自定义快捷键，包括 leader、Avy 直达键、
+帮助入口和模式专用绑定。功能章节负责“做什么、如何启用”，本节负责“按什么键”。
+即使某个模式需要延迟绑定，也在本节使用 =with-eval-after-load= 等机制处理，
+不因为需要等它加载就把键位散回功能章节。
+
+*** 管理方式：General
+
+建议采用 [[https://github.com/noctuid/general.el][general.el]]。它不是必须插件，内置键位 API 与 Evil 也能完成绑定；
+但本配置涉及多个 Evil 状态、逗号 leader、前缀分组和提示名称，General 能统一这些声明。
+它负责定义键位，Evil 提供编辑状态，which-key 展示可用键位，Helpful 解释命令。
+General 不会自动启用 which-key，也不代替插件本身。
+
+以后通过 =use-package= 声明 General，确保在 Evil 之后创建 leader 定义器。
+状态：说明示例。以下代码块不参与生成，不安装 General，也不启用实际键位。
+示例按依赖顺序完整列出：先创建子 keymap 并放入命令，再创建 leader 并绑定分组。
+执行前需要 Evil 和 General 已安装，Evil 已加载；提示弹窗还需要启用 which-key。
+
+#+begin_src emacs-lisp :tangle no
+(use-package general
+  :after evil
+  :config
+  (defvar my/file-map (make-sparse-keymap))
+  (defvar my/help-map (make-sparse-keymap))
+
+  (general-def my/file-map
+    "f" '("find file" . find-file)
+    "s" '("save file" . save-buffer))
+
+  (general-def my/help-map
+    "k" '("describe key" . describe-key)
+    "m" '("describe mode" . describe-mode))
+
+  (general-create-definer my/leader
+    :states '(normal visual)
+    :keymaps 'override
+    :prefix ",")
+
+  (my/leader
+    "f" '("files" . my/file-map)
+    "h" '("help" . my/help-map)))
+#+end_src
+
+=my/leader= 是统一规则：普通／可视模式、逗号前缀，使用 override keymap
+降低被模式局部键位遮挡的概率；它会覆盖本来位于该前缀的按键，需要明确记录取舍。
+文件等子分组采用命名 keymap，提示名称随绑定保存，配合 which-key 展示。
+General 当前文档推荐这种 keymap 描述方式，而不是到处添加 =:which-key= 替换规则。
+
+这样 =, f s= 对应保存，which-key 在 =,= 后显示 =f → files=，
+在 =, f= 后显示 =s → save file=。以后要换 leader 只需修改定义器的前缀。
+分组 keymap 必须先定义，再绑定到 leader；正式实现会按依赖顺序排列。
+
+*** Leader 与键位取舍
+
+逗号 =,= 作为普通／可视模式的 leader，插入模式保留普通逗号输入。
+逗号原有的 Vim 反向重复字符查找需另设按键。
+原生 =C-h= 帮助入口保留；插入模式或不使用 Evil 的界面可提供 =C-c ,= 备用入口。
+计划将普通模式 =s= 用于 Avy，原来的替换字符操作可用 =cl=；
+不采用参考文件把点号 =.= 改成跳转的绑定，以保留 Vim 重复编辑功能。
+
+*** 分组与命令清单（待实现）
+
+| 分组 | 覆盖功能                                                 |
+|------+----------------------------------------------------------|
+| f    | 打开、保存、最近文件、Dired                               |
+| b    | 缓冲区切换、关闭                                         |
+| s    | 当前文件搜索、项目搜索、交互替换                          |
+| j    | Avy 字符和行定位                                         |
+| p    | 项目文件与项目切换                                       |
+| c    | 定义、引用、重命名、代码动作、诊断和文档；格式化暂不绑定   |
+| g    | Magit、修改块导航                                        |
+| h    | 按键／命令／变量帮助、当前模式、有效键位、手册             |
+| e    | 打开 Org 配置、重新生成、查看启动消息                     |
+| o    | Org 标题导航、Imenu 结构索引和立即更新目录                |
+| w    | 窗口操作仅预留名称，暂不启用绑定                          |
+
+实际绑定时，每个常用入口都写明命令名和提示名称，并在本节附速查表。
+不为每个插件的所有低频命令硬造快捷键；插件默认操作保留，通过帮助查询即可发现。
+
+* 配置结束
+
+#+begin_src emacs-lisp
+;;; init.el ends here
+#+end_src

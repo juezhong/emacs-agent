@@ -1,0 +1,10 @@
+# Installed packages and Emacs runtime caches.
+/elpa/
+/eln-cache/
+/auto-save-list/
+/.cache/
+
+# Editor backup, recovery, and lock files.
+*~
+\#*\#
+.\#*
