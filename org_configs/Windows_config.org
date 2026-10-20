@@ -213,7 +213,8 @@ toc-org 未安装时由 use-package 自动安装，已安装则复用；其余�
 |------------------------------+----------+---------------------------------------------------|
 | 代理、软件源、use-package     | 已配置   | 当前 Emacs 会话；代理须有对应本机服务               |
 | MSYS2 GPG 路径修复            | 已配置   | 仅匹配本机已知问题路径时启用                       |
-| Org 标题导航与 Imenu 深度     | 已配置   | Org 缓冲区                                        |
+| Org 标题导航                 | 说明示例 | 内置功能直接使用，声明块不参与生成                 |
+| Org 导航层级设置             | 说明示例 | :tangle no，仅供按文档局部设置                     |
 | toc-org 自动目录              | 已配置   | Org 缓冲区启用；仅带 TOC 标签的文档生成目录         |
 | org-num 正文编号              | 已配置   | 本文件头部 num 元数据；无全局编号 hook             |
 | 与正文一致的目录编号         | 待配置   | 需要该功能的文档；当前 toc-org 不提供               |
@@ -282,11 +283,17 @@ GPG 先查看实际可执行文件和错误路径；本机 MSYS2 路径问题的
 #+begin_src emacs-lisp
 ;;; init.el --- Generated Emacs configuration -*- lexical-binding: t; -*-
 ;; Generated from org_configs/Windows_config.org. Edit the Org source instead.
+;; 本文件由 Org 生成；注释也维护在 Org 代码块中，避免下次生成时丢失。
+;; 当前仅启用基础环境和 Org 导航；Evil、搜索、开发等功能仍在源文档中占位。
 
+;;; 基础入口
+
+;; 以 init.el 所在目录为配置根目录，避免依赖启动时的工作目录。
 (defconst my/config-directory
   (file-name-directory (or load-file-name user-init-file))
   "Directory containing this configuration's generated init.el.")
 
+;; 关闭欢迎页，在 scratch 中显示加载提示。
 (setq inhibit-startup-screen t
       initial-scratch-message ";; Org config loaded successfully.\n\n")
 #+end_src
@@ -303,11 +310,15 @@ GPG 先查看实际可执行文件和错误路径；本机 MSYS2 路径问题的
 这里的 =nil= 清除这份配置设置的显式 URL 代理，不会清除进程已有的代理环境变量。
 
 #+begin_src emacs-lisp
+;;; 网络代理
+;; 仅影响 Emacs URL 库，不会替 Git、clangd 等外部程序设置代理。
 (require 'url-vars)
 
+;; 不需要显式代理时改为 nil；已有的进程代理环境变量不受此设置清除。
 (defvar my/proxy-address "127.0.0.1:10808"
   "Local HTTP proxy address, or nil to omit explicit URL proxies.")
 
+;; HTTP/HTTPS 共用本地 HTTP 代理，本机地址绕过代理。
 (setq url-proxy-services
       (when my/proxy-address
         `(("http" . ,my/proxy-address)
@@ -324,8 +335,10 @@ GPG 先查看实际可执行文件和错误路径；本机 MSYS2 路径问题的
 Org 随 Emacs 提供，本阶段不额外配置旧的独立 Org 软件源。
 
 #+begin_src emacs-lisp
+;;; 软件包目录与 ELPA 软件源
 (require 'package)
 
+;; 插件安装在配置目录下的 elpa/；同名包优先 GNU，其次 NonGNU，再其次 MELPA。
 (setq package-user-dir (expand-file-name "elpa/" my/config-directory)
       package-archives
       '(("gnu" . "https://elpa.gnu.org/packages/")
@@ -352,6 +365,9 @@ Git 自带的 GPG 已实测可处理同一路径。
 仅用 =setq= 可能仍然让它从 PATH 自动选择其他 GPG。
 
 #+begin_src emacs-lisp
+;;; 本机特例：MSYS2 GPG 路径兼容
+;; 仅修复当前已复现问题的可执行文件路径，不是所有 Windows 都需要此设置。
+;; 其他 Windows、Linux、macOS 保留默认 GPG 选择；不关闭签名校验。
 (require 'epg-config)
 
 (when (eq system-type 'windows-nt)
@@ -361,8 +377,9 @@ Git 自带的 GPG 已实测可处理同一路径。
     (when (and detected
                (string-equal (downcase detected) (downcase affected))
                (file-executable-p replacement))
+      ;; EasyPG 会检查自定义状态；仅 setq 可能仍让它重新从 PATH 选择程序。
       (customize-set-variable 'epg-gpg-program replacement)
-      ;; Discard a cached configuration pointing to the affected executable.
+      ;; 清除指向旧 GPG 的配置缓存，让后续校验使用替代程序。
       (setq epg--configurations nil))))
 #+end_src
 
@@ -372,6 +389,8 @@ Git 自带的 GPG 已实测可处理同一路径。
 保留签名校验；本节与上面的本机路径修复分开。
 
 #+begin_src emacs-lisp
+;;; 通用签名密钥环与软件源初始化
+;; 各平台共用独立的 ELPA 密钥环，不修改个人日常使用的 GPG 密钥环。
 (setq package-gnupghome-dir (expand-file-name "gnupg/" package-user-dir))
 
 (require 'epg)
@@ -381,14 +400,15 @@ Git 自带的 GPG 已实测可处理同一路径。
 
 (let ((context (epg-make-context 'OpenPGP)))
   (setf (epg-context-home-directory context) package-gnupghome-dir)
-  ;; A failed earlier attempt may have left an empty keybox behind.
+  ;; 初次使用或之前初始化失败留下空密钥环时，导入 Emacs 自带的 ELPA 公钥。
   (unless (epg-list-keys context)
     (package-import-keyring (expand-file-name "package-keyring.gpg" data-directory))))
 
+;; 激活已经安装的插件；此操作本身不更新或升级它们。
 (package-initialize)
 
-;; Fetch metadata if any configured archive is missing its cached index.
-;; Refresh manually later with M-x package-refresh-contents.
+;; 仅在交互启动且某个源缺少缓存索引时刷新，不在每次启动时联网。
+;; 更新索引可用 M-x package-refresh-contents；刷新索引不等于升级插件。
 (when (and (not noninteractive)
            (not (seq-every-p
                  (lambda (archive)
@@ -410,12 +430,15 @@ Emacs 29 及以上版本内置 =use-package=，本机 Emacs 31.1 可以直接加
 保留软件包签名校验，不通过关闭校验绕过下载问题。
 
 #+begin_src emacs-lisp
+;;; use-package 声明管理
+;; Emacs 29+ 使用内置版本；旧版本缺失时才从软件源安装。
 (unless (require 'use-package nil t)
   (unless package-archive-contents
     (package-refresh-contents))
   (package-install 'use-package)
   (require 'use-package))
 
+;; 后续第三方插件默认自动安装；内置功能应显式声明 :ensure nil。
 (setq use-package-always-ensure t)
 #+end_src
 
@@ -521,27 +544,39 @@ Emacs 29 及以上版本内置 =use-package=，本机 Emacs 31.1 可以直接加
 ** Org 文档编辑与导航
 
 本节集中配置 Org 的阅读、文档导航和辅助插件；实际快捷键仍集中在最后配置。
-目前只添加自动目录与标题导航，其他 Org 插件按后续需求补充。
-状态：已配置。范围：内置导航配置用于 Org；编号是否启用由各文档头部决定。
+目前启用 toc-org 自动目录；内置标题导航直接使用默认行为，声明仅作为说明示例。
+不全局指定导航层级，编号是否启用由各文档头部决定。
 
 *** Org 内置功能
 
 使用随 Emacs 提供的 Org，不额外下载另一版 Org。
-=org-imenu-depth= 设为 4，让标题索引覆盖增加“个人配置”父章节后的四级结构。
+这里不设置 =org-imenu-depth= 或 =org-goto-max-level=，保留 Org 自带默认值；
+这表示不由本配置统一限制为四级，并不表示 Org 所有接口都默认没有深度限制。
 
-#+begin_src emacs-lisp
+以下声明仅供参考，不参与生成；默认可用的内置功能无需在 init.el 中重复声明。
+
+#+begin_src emacs-lisp :tangle no
+;;; Org 文档导航
+;; 使用内置 Org；不全局设置 Imenu 或 org-goto 的导航深度。
 (use-package org
   :ensure nil
-  :defer t
-  :custom
-  (org-imenu-depth 4))
+  :defer t)
 
+;; C-c C-j / M-x org-goto：选择标题路径后跳转，深度保留 Org 默认值。
 (use-package org-goto
   :ensure nil
   :defer t
   :custom
-  (org-goto-interface 'outline-path-completion)
-  (org-goto-max-level 4))
+  (org-goto-interface 'outline-path-completion))
+#+end_src
+
+如果某份文档需要四级索引，可以在它的缓冲区按需执行下面的局部设置。
+状态：说明示例。=:tangle no= 不会生成到 =init.el=，也不会在生成时执行。
+这两个变量不是 =#+options: toc:4= 等导出元数据的一部分。
+
+#+begin_src emacs-lisp :tangle no
+(setq-local org-imenu-depth 4
+            org-goto-max-level 4)
 #+end_src
 
 *** 自动编号与目录如何配合
@@ -599,6 +634,10 @@ Org 没有用 =#+options: num:4= 设置编辑器编号深度的含义，
 “目录”是标题，=:TOC_4_org:= 是机器识别标签，二者各有用途。
 
 #+begin_src emacs-lisp
+;;; Org 自动目录
+;; Org 缓冲区启用 toc-org，但只为带 TOC 标签的文档在保存时更新目录。
+;; 本配置文档使用 :TOC_4_org:；目前目录只有标题链接，不包含章节编号。
+;; 不配置全局 org-num hook；正文编号由每份文件的 #+startup: num 决定。
 (use-package toc-org
   :hook (org-mode . toc-org-mode))
 #+end_src
@@ -613,9 +652,10 @@ Org 没有用 =#+options: num:4= 设置编辑器编号深度的含义，
 *** 标题跳转：org-goto
 
 =org-goto= 是主动调用的 Org 标题导航命令，不是根据光标自动跳转的后台功能。
-这里选择 =outline-path-completion= 界面：执行 =C-c C-j= 或 =M-x org-goto=，
-输入标题路径、使用补全选择，再确认跳转。它读取当前文档标题，无需维护目录。
-以后安装 Vertico / Orderless 后可进一步配合候选界面；当前使用内置补全。
+执行 =C-c C-j= 或 =M-x org-goto= 使用 Org 默认的大纲定位界面。
+前面的说明示例展示了可选的 =outline-path-completion= 界面，当前并未启用；
+需要时可用它选择标题路径后跳转，再配合 Vertico / Orderless 改善候选界面。
+这两种方式都读取当前文档标题，无需维护目录。
 
 *** 标题与符号索引：Imenu
 
