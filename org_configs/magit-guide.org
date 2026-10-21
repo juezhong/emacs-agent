@@ -1,0 +1,1161 @@
+#+title: Magit 与 Git 操作手册
+#+property: header-args :tangle no
+#+startup: overview num
+#+options: toc:3 num:3
+
+本文是 [[file:Windows_config.org::*版本控制][主配置版本控制章节]] 的子文档，面向尚不熟悉 Magit 的使用者。
+配置声明、可调参数与自定义键位的实际定义仍在主配置；本文不生成配置代码。
+按键核对 Magit 4.7.1 与本机 evil-collection 3.0.3 的适配；diff-hl 核对 1.11.2。
+安装或升级后，以实际菜单和 =, h k=（=M-x helpful-key RET=）查询结果为准。
+配置已写入；用户已反馈能够通过 , g s 进入状态页、再 l l 进入日志页。
+其他步骤未由 agent 加载配置或进行运行验证，不把这条反馈扩大为全部工作流已验证。
+本文的操作按本机已安装源码核对；可跟随步骤练习，但不把源码核对视为交互验证。
+远端名、分支名、提交内容和已有菜单参数会影响提示，请先核对每节的前提和预期结果。
+
+参考：[[https://github.com/magit/magit/tree/v4.7.1/lisp][Magit 4.7.1 源码]]、
+[[https://magit.vc/manual/magit.html][Magit 官方手册]]、
+[[https://github.com/emacs-evil/evil-collection/blob/3.0.3/modes/magit/evil-collection-magit.el][evil-collection 的 Magit 适配]]、
+[[https://elpa.gnu.org/packages/diff-hl.html][diff-hl]]。
+
+* 目录 :TOC_3_org:
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+
+- [[学习路线与操作覆盖表][学习路线与操作覆盖表]]
+- [[先认识几个对象][先认识几个对象]]
+  - [[三种界面分别怎样操作][三种界面分别怎样操作]]
+  - [[阅读和练习约定][阅读和练习约定]]
+  - [[所有页面通用的查阅与取消方法][所有页面通用的查阅与取消方法]]
+- [[状态页：认识区域、选择对象与返回文件][状态页：认识区域、选择对象与返回文件]]
+- [[第一次练习：从一个文件到本地提交][第一次练习：从一个文件到本地提交]]
+  - [[暂存之后又编辑了同一个文件怎么办][暂存之后又编辑了同一个文件怎么办]]
+  - [[新文件和未跟踪文件][新文件和未跟踪文件]]
+- [[Git 入口：状态页与直接操作][Git 入口：状态页与直接操作]]
+- [[查看差异、暂存与取消暂存][查看差异、暂存与取消暂存]]
+  - [[在文件选择框中多选：TAB、逗号、最后 RET][在文件选择框中多选：TAB、逗号、最后 RET]]
+  - [[Embark 的 C-. SPC 能否用于这里][Embark 的 C-. SPC 能否用于这里]]
+  - [[在 Magit 状态页连续选择多个文件或修改块][在 Magit 状态页连续选择多个文件或修改块]]
+- [[提交说明、Signed-off-by 与取消提交][提交说明、Signed-off-by 与取消提交]]
+- [[抓取、拉取与推送][抓取、拉取与推送]]
+  - [[先认识 upstream 和 push remote][先认识 upstream 和 push remote]]
+  - [[Fetch：只更新远端信息，先不整合][Fetch：只更新远端信息，先不整合]]
+  - [[Pull：把远端变化整合进当前分支][Pull：把远端变化整合进当前分支]]
+  - [[Push：已有上游与首次推送][Push：已有上游与首次推送]]
+  - [[被拒绝、改写历史与中止的区别][被拒绝、改写历史与中止的区别]]
+- [[修改标记与外部环境排查][修改标记与外部环境排查]]
+- [[日志列表与提交详情：l l 之后怎样继续][日志列表与提交详情：l l 之后怎样继续]]
+  - [[从状态页进入当前分支历史][从状态页进入当前分支历史]]
+  - [[从提交详情继续看文件][从提交详情继续看文件]]
+  - [[换范围、找旧提交、过滤日志][换范围、找旧提交、过滤日志]]
+  - [[日志中的提交可以作为后续操作目标][日志中的提交可以作为后续操作目标]]
+- [[差异查看与版本比较][差异查看与版本比较]]
+  - [[三种未提交差异分别看什么][三种未提交差异分别看什么]]
+  - [[比较两个分支或提交][比较两个分支或提交]]
+- [[修改最近提交与整理提交][修改最近提交与整理提交]]
+  - [[补进最近提交：Amend；只改说明：Reword][补进最近提交：Amend；只改说明：Reword]]
+  - [[给旧提交做补丁：Fixup 与 Squash][给旧提交做补丁：Fixup 与 Squash]]
+- [[创建、切换与管理分支][创建、切换与管理分支]]
+  - [[从当前位置创建 practice 并切换][从当前位置创建 practice 并切换]]
+  - [[基于远端分支创建本地跟踪分支][基于远端分支创建本地跟踪分支]]
+  - [[重命名、删除和配置跟踪关系][重命名、删除和配置跟踪关系]]
+- [[Stash：收起、查看、恢复与清理][Stash：收起、查看、恢复与清理]]
+  - [[收起当前修改][收起当前修改]]
+  - [[Apply、Pop、Drop 分别做什么][Apply、Pop、Drop 分别做什么]]
+- [[合并与冲突处理][合并与冲突处理]]
+  - [[把 topic 合到 main][把 topic 合到 main]]
+  - [[手动解决冲突并完成合并][手动解决冲突并完成合并]]
+  - [[放弃正在进行的合并][放弃正在进行的合并]]
+- [[Rebase：换基准与交互式整理][Rebase：换基准与交互式整理]]
+  - [[把 topic 的提交搬到新的 main 后面][把 topic 的提交搬到新的 main 后面]]
+  - [[交互式整理：重排、改说明、合并、删除][交互式整理：重排、改说明、合并、删除]]
+- [[从历史提交继续操作：分支、Cherry-pick 与 Revert][从历史提交继续操作：分支、Cherry-pick 与 Revert]]
+  - [[以旧提交为起点创建分支][以旧提交为起点创建分支]]
+  - [[Cherry-pick：把另一条工作线上的提交拿过来][Cherry-pick：把另一条工作线上的提交拿过来]]
+  - [[Revert：保留历史，追加反向修改][Revert：保留历史，追加反向修改]]
+- [[撤销与恢复：丢弃、Reset 和 Reflog][撤销与恢复：丢弃、Reset 和 Reflog]]
+  - [[先按要改变的对象选择命令][先按要改变的对象选择命令]]
+  - [[丢弃指定未提交修改][丢弃指定未提交修改]]
+  - [[Reset：Soft、Mixed、Hard][Reset：Soft、Mixed、Hard]]
+  - [[从 Reflog 找回旧提交，先建分支][从 Reflog 找回旧提交，先建分支]]
+- [[当前文件历史与 Blame][当前文件历史与 Blame]]
+  - [[追踪文件与历史版本][追踪文件与历史版本]]
+  - [[查某一行来自哪次提交][查某一行来自哪次提交]]
+- [[远端、标签与 Worktree][远端、标签与 Worktree]]
+  - [[新增、修改和删除远端][新增、修改和删除远端]]
+  - [[创建标签并单独推送][创建标签并单独推送]]
+  - [[Worktree：同时保留两个分支的工作目录][Worktree：同时保留两个分支的工作目录]]
+- [[进程输出、认证与常见故障][进程输出、认证与常见故障]]
+  - [[先看实际执行了什么][先看实际执行了什么]]
+- [[补丁、Clone、初始化与子模块][补丁、Clone、初始化与子模块]]
+  - [[导出未提交差异和已提交补丁][导出未提交差异和已提交补丁]]
+  - [[应用普通补丁与邮件格式补丁][应用普通补丁与邮件格式补丁]]
+  - [[Clone 与初始化新仓库][Clone 与初始化新仓库]]
+  - [[子模块：初始化、更新与提交指针][子模块：初始化、更新与提交指针]]
+  - [[运行其他 Git 命令][运行其他 Git 命令]]
+- [[为什么 Magit 的 s 没有被 Avy 占用][为什么 Magit 的 s 没有被 Avy 占用]]
+- [[常见疑问与练习顺序][常见疑问与练习顺序]]
+  - [[正在进行的操作，应该怎样继续或放弃][正在进行的操作，应该怎样继续或放弃]]
+  - [[常见疑问][常见疑问]]
+  - [[做完一轮以后检查自己是否理解][做完一轮以后检查自己是否理解]]
+
+* 学习路线与操作覆盖表
+
+第一次用 Magit，先做“基本概念 → 状态页 → 第一次提交 → 日志与差异”。
+其余章节按当天任务查阅即可，不需要先记完全部按键。
+每个例子里的“检查结果”都是继续下一步的条件；不符合时先看进程输出，不照着往下按。
+
+| 编号 | 要完成的任务 | 阅读章节 |
+|------+--------------+----------|
+| 1 | 认识状态页、刷新、回文件 | [[*状态页：认识区域、选择对象与返回文件][状态页与通用操作]] |
+| 2 | l l 后读历史、详情和过滤 | [[*日志列表与提交详情：l l 之后怎样继续][日志列表与提交详情]] |
+| 3 | 比较工作区、暂存区和两个版本 | [[*差异查看与版本比较][差异查看与版本比较]] |
+| 4 | 文件、修改块、部分行和多文件选择 | [[*查看差异、暂存与取消暂存][暂存与多选]] |
+| 5 | 创建提交、完成或取消编辑 | [[*第一次练习：从一个文件到本地提交][完整练习]]、[[*提交说明、Signed-off-by 与取消提交][提交说明与参数]] |
+| 6 | 补进最近提交、改说明、fixup | [[*修改最近提交与整理提交][Amend、Reword、Fixup 与 Squash]] |
+| 7 | 抓取、拉取、首次或日常推送 | [[*抓取、拉取与推送][远端同步]] |
+| 8 | 创建、切换、重命名和删除分支 | [[*创建、切换与管理分支][分支管理]] |
+| 9 | 暂时收起修改并恢复 | [[*Stash：收起、查看、恢复与清理][Stash]] |
+| 10 | 合并分支、解决冲突或中止 | [[*合并与冲突处理][Merge]] |
+| 11 | 换基准、重排或合并提交 | [[*Rebase：换基准与交互式整理][Rebase]] |
+| 12 | 从历史建分支、摘取或反向提交 | [[*从历史提交继续操作：分支、Cherry-pick 与 Revert][历史提交上的操作]] |
+| 13 | 丢弃、回退与找回旧提交 | [[*撤销与恢复：丢弃、Reset 和 Reflog][撤销与恢复]] |
+| 14 | 查文件或某行的历史 | [[*当前文件历史与 Blame][文件历史与 Blame]] |
+| 15 | 管理远端、标签和多个工作目录 | [[*远端、标签与 Worktree][远端、标签与 Worktree]] |
+| 16 | 检查 Git 输出、认证和失败原因 | [[*进程输出、认证与常见故障][进程与排查]] |
+| 17 | 导入导出补丁、Clone、Init 和子模块 | [[*补丁、Clone、初始化与子模块][补丁与其他操作]] |
+
+* 先认识几个对象
+
+Emacs 窗口是显示区域，缓冲区是其中展示的内容。打开 Org、代码文件、Magit 状态页时，
+你是在切换不同用途的缓冲区；Magit 状态页不是普通文件，也不是独立启动的程序。
+同一个 Git 仓库可以同时有文件缓冲区、Magit 状态缓冲区、日志缓冲区和提交说明缓冲区。
+
+| 对象 | 保存什么 | 常见误解 |
+|------+----------+----------|
+| 文件缓冲区 | 正在编辑的内容，可能尚未写入磁盘 | Emacs 中改了文字不等于 Git 已看到 |
+| 工作区 | 仓库目录中磁盘上的文件 | 保存文件不等于暂存 |
+| 暂存区（index） | 下一次提交准备包含的内容 | 暂存后再改文件，新改动不会自动进入暂存区 |
+| 本地提交（commit） | 已写入本地仓库的快照与说明 | 提交成功不等于远端已更新 |
+| 远端跟踪分支 | 最近抓取时看到的远端分支状态 | 不是持续联网更新的远端实时状态 |
+| 推送（push） | 向选定远端发送本地提交并更新引用 | 不会直接上传尚未提交的普通文件修改 |
+
+典型流程：编辑 → 保存 → 查看差异 → 暂存 → 审阅暂存区 → 提交 → 按需推送。
+本配置已启用本地文件延迟写回，但仍应在提交前检查文件和暂存范围。
+
+** 三种界面分别怎样操作
+
+| 当前界面 | 进入方式 | 输入与确认 | 退出或取消 |
+|----------+----------+------------+------------|
+| Magit 状态／日志／差异缓冲区 | , g s 或对应查看入口 | j / k 移动，TAB 展开，按对象选择动作 | q（magit-mode-bury-buffer）返回 |
+| Transient 参数菜单 | , g c c、, g r p 等 | 参数键切换选项，操作键执行相应命令 | C-g 退出尚未执行的菜单 |
+| 提交说明编辑缓冲区 | 提交菜单再选择 c | 按 i 进入输入状态，填写标题和正文；C-c C-c 完成 | C-c C-k 取消提交 |
+
+Transient 是 Magit 调用的菜单工具。先打开提交菜单，再按 c 创建提交，是两个不同步骤；
+在菜单里看到 --signoff 高亮表示选中了参数，并不表示已经提交。
+which-key 的中文 leader 菜单只负责帮助找到入口，不替代这些参数菜单。
+
+** 阅读和练习约定
+
+文中的 =l l= 表示依次按两次小写 l，不是同时按；=C-c C-c= 表示先按 Ctrl+c，再按 Ctrl+c。
+=, g s= 是本配置的 leader 入口；=M-x magit-status RET= 是同一功能的命令入口。
+下文写“菜单内按 c”时，必须已经打开该菜单；在文件正文中直接按 c 不会执行同一功能。
+本机启用 Evil，普通状态中的 j / k 用于移动，插入状态中的普通字母用于输入。
+
+每个例子先说明当前分支、工作区状态和所选对象。完成后用状态页或日志检查结果，
+符合预期再继续下一步。例子中的 topic、practice 等名称是练习名，换成自己的名字时前后要一致。
+如果输入框显示了默认值，先读清楚再 RET；文件、提交和分支都可能从光标位置取得默认值。
+
+文件选择框中 C-n / C-p 移动、TAB 填入、RET 确认、C-g 取消；新文件名被旧候选吸附时，
+可用 M-RET（vertico-exit-input）提交实际输入。yes-or-no 确认按提示输入 yes 或 no，
+y-or-n 确认输入 y 或 n，不把所有确认都当作 RET。
+
+练习新功能可先从 =M-x magit-init RET= 选择一个新建的空目录，
+在其中保存 notes.txt，按下文做首次提交；不要拿已有重要工作区做丢弃或 hard reset 练习。
+本手册只说明操作，不由 agent 创建练习提交、连接远端或执行这些命令。
+
+** 所有页面通用的查阅与取消方法
+
+进入陌生页面，先按 =, h l=（which-key-show-major-mode）看当前主模式键位，
+=, h m=（describe-mode）读模式说明；退出帮助提示后再操作。
+已知按键时用 =, h k=（helpful-key）查最终命令，已知命令名时用
+=, h x=（helpful-command）查用途。更详细说明见 [[file:faq.org][使用常见问题]]。
+
+C-g 可以取消尚未完成的按键或输入；它不等于撤销已经执行的 Git 操作。
+正在编辑提交说明用 C-c C-k（with-editor-cancel）；Git 已处于合并、变基或 am 状态时，
+须用相应菜单的 abort。具体 continue / abort 命令在对应章节给出。
+q 通常退出当前 Magit 查看缓冲区；状态页、日志页和详情页可能显示在不同窗口，
+因此 q 后不保证恰好回到你期待的窗口。用 =, w w=（other-window）切换，
+或 =, b b=（consult-buffer）选择原来的 Magit／文件缓冲区；必要时 =, g s= 重开状态页。
+
+Transient 菜单也有自己的帮助：菜单已打开时按 ?（transient-help），再按要查询的选项键，
+查看其帮助而非执行它；返回菜单可用 M-x transient-resume RET，必要时重新打开原菜单。
+选项被显示级别隐藏时，在菜单按 C-x a（transient-toggle-level-limit）显示更多项，
+再次按同一键恢复；这里只临时查看，不修改主配置或把所有高级参数永久铺开。
+某些参数帮助会调用 Git man 手册；缺少本机 man 程序时，可用 , h x 查询对应命令或阅读 Magit Info 手册。
+
+* 状态页：认识区域、选择对象与返回文件
+
+前提：打开一个 Git 项目文件，或者在 Dired 中进入仓库目录。
+
+1. =, g s=（=M-x magit-status RET=）打开状态页。先读顶部 Head（当前分支／提交）、
+   Merge（上游）或 Push（推送目标）等实际显示的信息，确认操作的是正确仓库。
+2. 用 j / k 逐行移动；gj / gk（magit-section-forward-sibling / magit-section-backward-sibling）
+   按同级对象移动。文件标题与展开后的差异正文不是同一个层级。
+3. 在区域或文件标题按 TAB（magit-section-toggle）展开／折叠。
+   在文件或差异行按 RET 访问该位置，Magit 将 magit-visit-thing 分派到相应访问命令。
+4. 编辑并保存文件后，回到状态页按 gr（magit-refresh）刷新；gR（magit-refresh-all）刷新多个 Magit 缓冲区。
+5. q 退出当前状态页。若只是想换到旁边的文件窗口，用 , w w，不必关闭状态页。
+
+| 区域 | 含义 | 在这里常做什么 |
+|------+----------+----------------|
+| Untracked files | 尚未加入 Git 的新文件 | 审阅后 s 加入暂存区 |
+| Unstaged changes | 工作区相对暂存区的修改 | 展开差异，s 暂存 |
+| Staged changes | 暂存区相对当前提交的修改 | 审阅下一次提交；u 取消暂存 |
+| Unmerged paths | Git 尚未认为已解决的冲突文件 | 编辑解决后保存并 s 暂存 |
+| Unpushed / Unpulled commits | 相对指定推送／跟踪目标的本地／远端提交 | RET 查看；决定是否同步 |
+| Stashes | 已贮藏修改 | RET 查看，再选择 apply／pop |
+
+区域可能为空而不显示，标题也会附带分支名或计数。没有 Unpushed 区域不代表刚刚推送成功：
+也可能未设置目标，或远端引用尚未刷新。操作是否成功仍看进程结果和实际分支关系。
+
+| 快捷键（Magit 普通状态） | 交互命令 | 作用 |
+|-------------------------+----------+------|
+| j / k | evil-next-line / evil-previous-line | 逐行移动 |
+| gj / gk | magit-section-forward-sibling / magit-section-backward-sibling | 同级对象移动 |
+| TAB | magit-section-toggle | 展开／折叠当前对象 |
+| RET | magit-visit-thing，按对象重映射 | 访问文件、提交等对象 |
+| gr / gR | magit-refresh / magit-refresh-all | 刷新当前／多个 Magit 缓冲区 |
+| s / u | magit-stage / magit-unstage | 暂存／取消暂存当前对象或选区 |
+| c | magit-commit | 打开提交菜单 |
+| p | magit-push | 打开推送菜单，注意 Evil 适配改了原生 P |
+| 反引号键 | magit-process-buffer | 查看 Git 命令与进程结果 |
+| q | magit-mode-bury-buffer | 退出当前 Magit 查看缓冲区 |
+
+自查：修改一个文件并保存后，应先在 Unstaged changes 出现；按 s 后转入 Staged changes。
+如果同一文件同时出现在两处，阅读下节“暂存之后又编辑”再决定是否继续暂存。
+
+* 第一次练习：从一个文件到本地提交
+
+建议在已有的临时 Git 仓库中准备一个已跟踪文本文件，例如 notes.txt。
+不必先推送，也不必给练习仓库配置远端。以下操作由用户在 Emacs 中手动完成。
+
+1. 用 =, f f=（=M-x find-file RET=）打开 notes.txt，修改两三行，
+   用 =, f s=（=M-x save-buffer RET=）保存，确保练习内容已写入磁盘。
+2. 按 =, g s=（=M-x magit-status RET=），确认页面顶部的仓库和当前分支是练习仓库。
+   找到 Unstaged changes，用 j / k 移到 notes.txt，TAB 展开差异。
+   差异中的 - 行表示旧内容，+ 行表示新内容；这些符号本身不是文件正文的一部分。
+3. 光标放在文件标题时按 s（magit-stage），整份文件修改进入 Staged changes。
+   若只想提交一个修改块，先展开文件，把光标移到该块再按 s。
+4. 再展开 Staged changes 检查内容。发现范围不对时在对应对象上按 u（magit-unstage），
+   返回 Unstaged changes 重新选择；取消暂存会保留文件修改。
+5. 按 c（magit-commit）打开提交菜单，再按 c（magit-commit-create）。
+   输入一行简短标题；需要正文时空一行再写。若光标不能输入，先按 i 进入 Evil 插入状态。
+6. 按 =C-c C-c=（=M-x with-editor-finish RET=）完成编辑并让 Git 继续提交。
+   返回状态页后确认新提交出现；若失败，查看进程输出，不能仅凭说明缓冲区关闭就判断成功。
+7. 按 q（magit-mode-bury-buffer）回到文件。此时只完成本地提交；没有远端也能完成这套流程。
+
+再做一次取消练习：修改、保存并暂存，再打开提交说明，按 =C-c C-k=
+（=M-x with-editor-cancel RET=）取消。回到状态页后，暂存内容仍在，可继续编辑或取消暂存。
+不要用关闭 Emacs 或强制终止 Git 代替取消提交。
+
+** 暂存之后又编辑了同一个文件怎么办
+
+假设先把第一处修改暂存，然后又修改并保存第二处，同一个文件可以同时出现在
+Staged changes 和 Unstaged changes。这是正常状态：前者是已选入下次提交的版本，
+后者是暂存后新增的差异。普通提交只包含暂存内容；需要一起提交时再暂存第二处。
+想确认 Git 最后收到什么，应查看 Staged changes，不能只看文件当前显示的全文。
+
+** 新文件和未跟踪文件
+
+新建并保存文件后，Magit 通常将其列在 Untracked files。
+光标在该文件上按 s（magit-stage），会把它加入暂存区；随后才可能进入提交。
+被 .gitignore 忽略的文件通常不会出现在未跟踪列表；先核对是否应当跟踪，
+不要为让列表出现就删除整个忽略规则。用户参考文件、备份和本机缓存继续按仓库约定处理。
+
+
+* Git 入口：状态页与直接操作
+
+普通／可视／motion 状态输入 =, g=，等待 which-key 显示中文菜单；
+插入状态使用 =C-c , g=。=g= 是新增分组，不覆盖已有 leader 入口。
+例如 =, g r p=（=M-x magit-push RET=）直接打开推送菜单，无须先进入状态页；
+仍需在菜单里选择推送目标并执行。=, g c c= 打开提交菜单，之后再选择创建提交。
+命令使用当前缓冲区所属仓库；非仓库目录按 Magit 的提示选择仓库或处理错误，
+不自动执行 git init，也不固定当前 Emacs 配置仓库。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| , g s | magit-status | 打开当前仓库状态页 |
+| , g g | magit-dispatch | 完整 Git 操作总菜单 |
+| , g f | magit-file-dispatch | 当前文件操作菜单 |
+| , g v d | magit-diff | 选择差异查看方式 |
+| , g v l | magit-log | 选择日志查看方式 |
+| , g v f | magit-log-buffer-file | 当前文件历史 |
+| , g c s | magit-stage-files | 选择文件并暂存，当前文件作为可用的默认候选 |
+| , g c u | magit-unstage-files | 选择文件并取消暂存，不丢弃工作区修改 |
+| , g c c | magit-commit | 提交参数与操作菜单 |
+| , g r f | magit-fetch | 抓取远端引用 |
+| , g r l | magit-pull | 拉取并按所选方式整合 |
+| , g r p | magit-push | 选择目标并推送 |
+| , g r r | magit-remote | 查看和管理远端 |
+| , g b b | magit-branch | 创建、切换和管理分支 |
+| , g b m | magit-merge | 合并菜单 |
+| , g b r | magit-rebase | 变基菜单 |
+| , g b z | magit-stash | 贮藏与恢复修改 |
+| , g b t | magit-tag | 标签操作 |
+| , g b w | magit-worktree | 工作树操作 |
+| , g h n | diff-hl-next-hunk | 下一修改块 |
+| , g h p | diff-hl-previous-hunk | 上一修改块 |
+| , g h s | diff-hl-show-hunk | 查看光标处或附近修改块 |
+
+总菜单还提供 cherry-pick、reset、revert、补丁和 Git 命令等入口；
+不为每个低频操作重复建立 leader 绑定。它覆盖 Magit 提供的操作，
+不是 Git 所有命令行选项的逐项映射；额外参数仍可从相应菜单或 Git 命令入口输入。
+针对选区、修改块和状态页 section 的命令依赖光标上下文，不把它们包装成全局即时操作。
+
+* 查看差异、暂存与取消暂存
+
+工作区是磁盘文件；暂存区决定下次提交内容；提交记录保存在本地仓库；
+推送才会把本地提交发送到远端。保存文件不会自动暂存，暂存也不会自动提交或推送。
+现有自动写回可能在停止输入后保存文件；审阅时以实际磁盘差异和暂存区为准。
+
+1. 在项目文件中按 =, g s=（=M-x magit-status RET=）进入状态页，
+   用 j / k 移动，TAB（magit-section-toggle）展开／折叠文件和修改块。
+   RET（magit-visit-thing）访问光标对应对象；在文件或修改块上通常跳到文件位置。
+2. 在 Unstaged changes 的文件 section 上按 s（magit-stage）暂存整个文件；
+   展开后在 hunk 上按 s 只暂存该块。在差异内容行使用 v 选区后按 s，可暂存部分行。
+   Untracked files 中 s 可加入新文件；确认所选范围后再操作。
+3. 在 Staged changes 中按 u（magit-unstage）取消对应文件、修改块或选区的暂存；
+   原文件修改保留。再次审阅 staged 内容，它才是下一次提交的范围。
+4. 不打开状态页时，用 =, g c s=（magit-stage-files）或 =, g c u=（magit-unstage-files），
+   在文件选择中输入／选择文件后 RET 确认，C-g 取消。当前文件符合候选条件时作为默认值，
+   留空 RET 可采用默认值；命令也支持多文件选择，以提示及补全界面为准。
+
+本机 evil-collection 3.0.3 将刷新改为 gr（magit-refresh）、全部刷新改为 gR（magit-refresh-all），
+推送菜单为 p（magit-push，原生为 P），q（magit-mode-bury-buffer）退出 Magit 界面。
+默认 s / u 暂存与取消暂存保留；x 是 magit-delete-thing，会按对象执行丢弃或删除操作，
+不是取消暂存。不确定当前对象时用 =, h k=（helpful-key）查实际按键。
+现有普通模式 s 跳转在 Magit 缓冲区中让位于其局部暂存键；需要 Avy 时仍可用
+=, j j=（avy-goto-char-timer）。其他缓冲区的普通模式 s 继续用于 Avy。
+
+** 在文件选择框中多选：TAB、逗号、最后 RET
+
+=, g c s=（=M-x magit-stage-files RET=）使用多项补全输入；
+当前默认以英文逗号分隔文件名。它不是 Dired 那种逐项按 m 打标记的列表。
+
+例如同时暂存 a.txt 和 src/b.c：
+
+1. 输入 a 的一部分，用 C-n / C-p 选中 a.txt，按 TAB（vertico-insert）把完整候选填入输入框。
+2. 输入英文逗号 =,=，继续输入 b 的一部分，选择 src/b.c，再按 TAB。
+3. 确认输入框为 =a.txt,src/b.c=，最后按 RET 提交整个列表并暂存这两个文件。
+   也可在选中最后一个候选时直接 RET；前面的候选用 TAB 和逗号继续添加。
+4. 还需要更多文件就重复“TAB 填入 → 逗号 → 下一个”；C-g 取消整次选择。
+
+TAB 只填入候选，不执行暂存；RET 完成整次多选，所以选第一个文件时先不要按 RET。
+输入框中的逗号分隔表示已加入的项目，光标高亮的补全候选只是当前待选择项。
+Orderless 的空格用于筛选当前项，不是这里的文件分隔符。
+=, g c u=（magit-unstage-files）采用相同输入方法，作用改为取消暂存。
+文件名本身含逗号时这套默认分隔不方便，可到 Magit 状态页逐个或连续选择操作。
+
+** Embark 的 C-. SPC 能否用于这里
+
+可以在 =, g c s= 的补全候选中用 =C-. SPC=（embark-select）逐项选中／取消选中，
+但这些项目保存在 Embark 自己的选择集合中，不自动填成 Magit 多项输入的逗号列表。
+因此选完后只在原输入框按 RET，不会自动把 Embark 的全部选中项交给 Magit。
+
+若要通过 Embark 批量暂存：
+
+1. =, g c s=（magit-stage-files）打开候选，移动到第一个文件，按 =C-. SPC=。
+2. 用 C-n / C-p 移到其他候选，重复 =C-. SPC=；同一项再选一次会取消选择。
+3. 按 =C-. A=（embark-act-all），进入对选中集合执行动作的菜单。
+4. 检查 RET 对应的默认动作是否为 magit-stage-files；确认后按 RET，
+   再按批量确认提示确认执行。该默认动作继承自打开原输入框的命令。
+5. 返回 Magit 状态页检查 Staged changes。按本机 Embark 1.2 源码，
+   这里会对每个选中文件分别调用暂存命令，不是拼成一次多文件提交给原输入框。
+
+这条路径基于本机源码核对，尚待用户交互验证；若菜单 RET 显示的是其他动作，先取消并查明上下文。
+Embark 没有选中项时，act-all 会使用当前候选集合；执行前检查提示中的动作和数量。
+=, g c u= 同理，但默认动作应为 magit-unstage-files，效果是批量取消暂存。
+
+在 Magit 状态页直接用 C-. SPC 也不会建立 Magit 的 section 选区。
+它选择的是 Embark 识别的光标目标；随后单独按 s，Magit 不会读取这个 Embark 集合。
+连续文件或修改块的原生批量操作仍使用下一节的 section 选区；
+Embark 选择集合则由 Embark 的 A / S / E 等操作消费，二者需要分别理解。
+
+** 在 Magit 状态页连续选择多个文件或修改块
+
+Magit 按 section（章节对象）识别选区：选择文件时，选区两端应位于同组、同级文件标题行。
+先折叠文件可看清选择范围，不要从文件正文拖到另一个文件的正文来猜测会选中什么。
+
+例如暂存 Unstaged changes 下相邻的三个文件：
+
+1. =, g s=（magit-status）进入状态页，把光标放在第一个文件的标题行。
+2. 按 =C-SPC=（set-mark-command）设置选区起点。
+3. 用 gj（magit-section-forward-sibling）移到下一个同级文件，继续 gj 到最后一个要选的文件标题。
+   端点保留在文件标题行；如果移动到不合适的位置，用 C-g 取消后重选。
+4. 确认这些文件被 Magit 作为 section 选中，再按 s（magit-stage）批量暂存。
+   在 Staged changes 中同样选文件后按 u（magit-unstage），则批量取消暂存。
+
+选择同一文件中相邻的多个 hunk 时，同样让两端位于同级 hunk 标题，再按 s / u。
+只选择某些差异内容行时，用 v（evil-visual-char）选中相应连续行后按 s / u，操作范围是部分行。
+文件 section 选择、hunk section 选择和差异正文选区是不同范围，不要混在一次选择中。
+
+原生 section 选区是连续范围。若只要第一个和第三个、不想包含第二个，
+可分别在两个文件上按 s，或用 =, g c s= 的逗号多文件输入；不按 Dired 的 m 标记方式操作。
+若想暂存整个 Unstaged changes 组，可在该组标题上按 s；该范围不包括单独的 Untracked files 组。
+每次批量操作后展开 Staged changes 复核结果；这些选择步骤尚待用户交互验证。
+
+* 提交说明、Signed-off-by 与取消提交
+
+在状态页按 c（magit-commit），或直接 =, g c c=（=M-x magit-commit RET=），
+查看本次参数，再按 c（magit-commit-create）创建普通提交。
+未选择 --all 时普通提交以暂存区为准；菜单里的 amend、fixup 等是其他操作，按需选择。
+打开提交说明后输入标题、空行和正文；若当前处于 Evil 普通状态，先按 i 输入。
+完成用 =C-c C-c=（with-editor-finish），取消用 =C-c C-k=（with-editor-cancel），
+两者都作用于提交编辑缓冲区；单纯保存说明或关闭窗口不等于完成提交。
+取消提交不会撤销已暂存的修改，可返回状态页继续检查。
+
+Magit 调用 git commit，并沿用 Git 配置；不需要手写一条替代提交命令。
+提交菜单中的 --signoff 添加 Signed-off-by；本机 Magit 4.7.1 的菜单键是 +s，
+可能因显示级别而隐藏，可在打开菜单后按 C-x a（transient-toggle-level-limit）显示更多选项，
+核对 --signoff 后再按 +s 切换。这里的菜单键 +s 对应 Git 参数 -s / --signoff，
+不能因为 Git 用 -s 就认定菜单也按 -s。
+身份由 Git 确定；--gpg-sign / -S 是加密签名，二者不是同一功能。
+本配置不默认添加 -s，也不强制打开或关闭签名。若已有 commit.gpgsign=true，
+Git 仍可能要求密钥；失败时查看进程输出，不由配置自动改全局签名设置。
+
+参数只临时选择时用于当次流程。希望以后默认启用 --signoff，可在提交菜单里选择它，
+然后按 =C-x C-s=（transient-save）持久保存当前菜单值；
+=C-x s=（transient-set）仅保存到本会话，=C-x C-k=（transient-reset）清除该菜单保存的值。
+这是在 Transient 参数菜单中操作，与提交编辑缓冲区的完成／取消按键不同。
+持久保存的值属于当前 Emacs 的菜单状态，可能作用于其他仓库，不是某个仓库的 Git 配置。
+
+本 Emacs 配置仓库的手动提交说明可按以下格式填写；这里只提供示例，不安装模板：
+
+#+begin_example
+feat(config): 补充某项配置
+
+What:
+- 描述实际提交的配置和文档改动。
+
+Why:
+- 解释改动解决的使用需求。
+#+end_example
+
+用户手动操作采用 Magit 标准流程；agent 代为提交仍遵循 AGENTS.md 的独立消息文件、
+中文 Conventional Commits 和 git commit -s -F 约定，不能将此教程视为自动提交授权。
+
+* 抓取、拉取与推送
+
+前提：仓库有可访问的远端，例如 origin；远端分支示例为 origin/main。
+本文不假设所有仓库的上游分支都叫 main；执行前读清菜单里的真实目标。
+
+** 先认识 upstream 和 push remote
+
+upstream 是当前本地分支跟踪的分支，例如 main 跟踪 origin/main，常用于拉取和比较领先／落后。
+push remote 是默认推送的远端，可以与 upstream 所属远端不同；fork 工作流常从 upstream 抓取、向 origin 推送。
+菜单里的 p、u 会显示当前解析出的目标，未配置时可能变成“先设置再执行”的提示。
+不要因为习惯按某个字母就跳过目标检查。
+
+** Fetch：只更新远端信息，先不整合
+
+1. =, g r f=（magit-fetch）打开抓取菜单，按 e（magit-fetch-other）选择远端。
+2. 输入／选择 origin，RET 执行。若取消，在选择框按 C-g。
+3. 完成后看 magit-process-buffer：确认 fetch 已结束且没有错误；gr 刷新状态页。
+4. 在状态页的远端提交区域 RET 查看新增提交；也可用日志菜单的 o（magit-log-other）输入
+   =HEAD..origin/main=，只看远端有而当前 HEAD 没有的提交。
+
+预期：origin/main 等远端跟踪引用更新，当前分支和工作区不会因普通 fetch 自动合并。
+要抓取所有远端，可在 fetch 菜单按 a（magit-fetch-all）；-p 表示清理远端已删除的跟踪引用，
+不是删除自己的普通本地分支。第一次练习可先不选额外参数。
+
+** Pull：把远端变化整合进当前分支
+
+练习前先提交或 stash 本地修改；先 fetch 并读过待整合提交。
+
+1. =, g r l=（magit-pull）打开菜单，读标题中的“拉入哪个本地分支”。
+2. 简单练习选 -f（--ff-only），如果 -r 已选择 rebase 则先取消相冲突选项。
+   ff-only 只在可以快进时移动当前分支，出现分叉就停止，让你另行决定整合方式。
+3. 按 u（magit-pull-from-upstream）从已配置 upstream 拉取；没有 upstream 时，
+   用 e（magit-pull-branch）按提示选择远端和分支，逐个 RET 确认。
+4. 查看进程结果和新日志。ff-only 被拒绝时没有完成整合，先比较双方提交，
+   再使用本文的合并或变基流程，不用强制参数代替判断。
+
+需要 pull 时直接变基，可在 -r 选项选择 true；需要普通 merge 可选择 false，
+未明确选择时 Git 配置仍可能决定方式。进行中的 merge / rebase 分别按相应章节完成或 abort。
+pull 自带 fetch；先单独 fetch 是为了让你有机会在整合前审阅，并非每次必须做两次抓取。
+
+** Push：已有上游与首次推送
+
+已有目标时：=, g r p=（magit-push）打开菜单，检查顶部当前分支及 u／p 显示的目标，
+选择 u（magit-push-current-to-upstream）或 p（magit-push-current-to-pushremote）执行。
+例如本地 main 应推到 origin/main，就先核对菜单确实显示这个目标。
+本机 Magit 状态页的 p 也能打开这个菜单，菜单内再按 p 是执行操作，两个阶段不同。
+
+首次发布练习分支 practice：
+
+1. 用状态页确认当前分支是 practice，日志中已有准备推送的本地提交。
+2. 打开推送菜单，选 u。若提示设置 upstream 并推送，输入／选择 origin/practice，
+   确认这是要创建的远端分支；新目标未出现在候选时按实际输入确认，不误选旧分支。
+3. 读清随后的确认提示再执行，检查进程成功结果。
+4. 回到状态页检查跟踪目标；必要时再 fetch，日志中本地和远端标签应到达预期提交。
+
+如果要一次性选择其他推送目标，用菜单 e（magit-push-current），
+按提示选目标分支。它不等于总会设置 upstream；读清是否选择了 --set-upstream 参数。
+菜单 -n（--dry-run）可先预演，仍会访问远端；带着 dry-run 执行成功不会实际更新远端。
+
+** 被拒绝、改写历史与中止的区别
+
+non-fast-forward 通常表示目标有本地尚未整合的提交：先 fetch、比较，再 merge 或 rebase。
+Permission denied、认证失败、超时则看进程输出排查连接和权限，重做 commit 不能解决它们。
+已经改写并推送过的个人分支需要更新远端时，先 fetch 并核对远端没有他人新提交，
+再在 push 菜单选择 -f（--force-with-lease）及正确目标；它仍会覆盖远端历史，需与协作者约定。
+-F 是更直接的 --force，和 -f 不同；普通练习保持两者关闭。
+
+C-g 只取消尚未执行的菜单或输入。Git 进程运行中不要把 C-g 当作回滚；
+失败后先看进程是否仍在运行、远端是否已改变，再决定下一步。
+提交成功、推送成功、远端网站显示更新是三件分别检查的事。
+
+* 修改标记与外部环境排查
+
+diff-hl 1.11.2 默认包含已暂存修改；本配置显式保留 diff-hl-show-staged-changes=t，
+因此 Git 文件暂存后仍显示相对当前提交的修改，提交后再随刷新消失。
+改为 nil 可只显示相对暂存区的修改；标记不是“所有尚未推送的提交”。
+未保存内容不保证立即反映，保存后更新；
+Magit 暂存、提交等操作刷新后，也会触发标记同步。
+在受控文件中用 =, g h n / p=（diff-hl-next-hunk / diff-hl-previous-hunk）定位修改，
+=, g h s=（diff-hl-show-hunk）查看具体差异；弹出的查看界面可用 C-g 退出。
+导航到文件边界没有更多修改块时提示结束，不强行循环。
+非 Git 文件可能由其他 VC 后端提供标记；不受任何 VC 管理的普通文件不显示标记。
+
+恢复修改块可用 =M-x diff-hl-revert-hunk RET=，它会改回文件内容，不是取消暂存；
+不额外绑定，先在临时仓库熟悉。行块暂存仍推荐在 Magit 中审阅后操作。
+图形界面使用左侧 fringe，终端自动回退到 margin；若以后诊断图标与 fringe 冲突，
+再按需考虑 =M-x diff-hl-margin-mode RET=，本轮不预设未来诊断界面的选择。
+
+在 Emacs 用 =M-: (executable-find "git") RET= 检查实际 Git 路径，
+=M-x magit-version RET= 查看 Magit 与 Git 版本。Shell 中能找到 Git 不保证图形 Emacs 的 PATH 相同；
+本配置不硬编码 Git 路径，缺失时先修正启动环境。
+当前仓库 origin 使用 SSH。推送依赖 Emacs 启动环境中的 SSH 程序、密钥和 agent；
+HTTPS 远端则依赖 Git 已有凭据助手。Emacs 的 URL 代理不会自动配置 Git 或 SSH。
+认证失败先检查 magit-process-buffer 的输出，再核对同一环境的 Git / SSH 配置，
+不在 Org 中存储令牌、密码或私钥，也不自动更换远端协议。
+
+* 日志列表与提交详情：l l 之后怎样继续
+
+** 从状态页进入当前分支历史
+
+1. =, g s= 进入状态页，按 l（magit-log）打开日志菜单，再按 l（magit-log-current）。
+   从文件缓冲区也可 =, g v l= 打开同一个日志菜单，再选 l。
+2. 现在是提交列表。默认图形线条表示父子关系，短哈希标识提交，文字是提交标题；
+   main、origin/main、标签等装饰表示这些引用目前指向哪次提交。
+3. 用 j / k 逐行或 gj / gk 在提交之间移动。只移动不会切换分支或修改文件。
+4. 光标放在一条提交上按 RET（magit-show-commit，经 magit-visit-thing 重映射）查看详情。
+   读提交说明和改动文件列表，再在文件标题按 TAB 展开 hunk。
+5. 阅读完按 q 退出当前详情；若日志仍在另一个窗口，用 , w w 切回日志，继续选择下一条。
+   需要直接回仓库状态时用 , g s，不必反复猜 q 会选哪个窗口。
+
+HEAD 表示当前检出位置；分支标签只是指向提交的名字。
+看到远端跟踪标签并不代表当前联网查询过远端；普通日志使用本地已有引用。
+默认日志通常新提交在上；参数 --reverse 可改变顺序，作者日期也不保证严格对应父子顺序，
+判断关系要看提交图，不只看时间。
+
+** 从提交详情继续看文件
+
+在详情的文件差异正文上 RET（magit-diff-visit-file）访问差异对应的文件位置。
+历史提交的访问可能打开该版本的只读文件缓冲区；看缓冲区名称与模式提示，
+不要把历史文件显示误认为工作区文件已经恢复。
+只想跳到工作区的当前文件，可在该差异上 =M-x magit-diff-visit-worktree-file RET=。
+回原日志用 , b b 选择日志缓冲区，或在 Magit 查看缓冲区 q 后切回已有窗口。
+
+** 换范围、找旧提交、过滤日志
+
+| 入口（日志菜单内） | 交互命令 | 显示范围 |
+|--------------------+----------+----------|
+| l | magit-log-current | 当前分支，detached HEAD 时为 HEAD |
+| o | magit-log-other | 输入分支、提交或范围 |
+| L | magit-log-branches | 本地分支 |
+| b | magit-log-all-branches | 本地与远端跟踪分支 |
+| a | magit-log-all | 所有引用可达的历史 |
+| r | magit-reflog-current | 当前引用的移动记录，供恢复使用 |
+| 日志页 + | magit-log-double-commit-limit | 增大当前日志显示数量 |
+
+例子：比较自己的 feature 分支比 main 多了哪些提交。
+打开日志菜单，按 o，输入 =main..feature=，RET；结果只包含 feature 可达而 main 不可达的提交。
+输入 =main...feature= 则看双方独有提交；这些语法限定日志集合，不会合并分支。
+已在日志页时可重新用 , g v l 打开菜单选择范围；L（magit-log-refresh）用于调整当前日志显示参数。
+
+例子：找提交说明中含 parser 的提交。
+打开日志菜单，选择标有 --grep 的选项（本版 -F，先核对菜单），输入 parser 并 RET，
+再按 l 执行查询。按作者查用 -A（magit:--author），输入作者后 RET；
+按文件查用 --（magit:--），输入或补全一个路径，RET 确认后再 l。
+在过滤后的列表按 RET 继续查看详情。查完重新打开菜单，再按 -F 编辑搜索值，
+删除输入并以空值确认以清除 --grep；核对该选项不再带值，再 l，避免误以为其他提交消失。
+可选参数的具体键及显示级别以菜单为准；如某项没显示，查询对应 Transient 菜单帮助，
+不把普通正文中的 / 搜索等同于 Git 的 --grep 筛选。
+
+** 日志中的提交可以作为后续操作目标
+
+查看详情不修改仓库；基于提交建分支、cherry-pick、revert、reset 则会改变引用或文件。
+先把光标放在目标提交，读一次 RET 详情，回到日志再打开相应菜单。
+输入框可能默认采用该提交；执行前核对哈希和标题。
+具体流程见 [[*从历史提交继续操作：分支、Cherry-pick 与 Revert][从历史提交继续操作]] 与 [[*撤销与恢复：丢弃、Reset 和 Reflog][撤销与恢复]]。
+
+练习：在当前分支日志选一条旧提交，打开详情、展开一个文件，再返回日志。
+检查当前分支与工作区未改变；这说明完成的是查看，而非 checkout 或 reset。
+
+* 差异查看与版本比较
+
+** 三种未提交差异分别看什么
+
+前提：在仓库中改好并保存 notes.txt，把一部分修改暂存，再继续改另一处并保存。
+
+1. =, g v d=（magit-diff）打开差异菜单，按 u（magit-diff-unstaged），
+   查看工作区相对暂存区的差异，即“尚未选入下次提交”的部分。
+2. q 退出该差异后再次打开菜单，按 s（magit-diff-staged），
+   查看暂存区相对 HEAD 的差异，即“普通提交将包含”的部分。
+3. 再打开菜单，按 w（magit-diff-working-tree），默认直接以 HEAD 为基准，
+   看工作区相对 HEAD 的整体差异；它不是把 staged 和 unstaged 两份输出简单拼接。
+   需要输入其他基准时用 C-u M-x magit-diff-working-tree RET，再选择提交。
+4. 对比三次结果；同一行若先暂存又改回原样，整体差异可能为空，而前两种仍有差异。
+
+查看差异不会自动暂存；在适用的 unstaged / staged 差异中才可按 s / u 操作对应对象。
+已提交版本之间的差异不是“待暂存修改”，不要在历史差异中用 s 猜测会恢复文件。
+
+** 比较两个分支或提交
+
+1. =, g v d= 后按 r（magit-diff-range），输入 =main..feature= 并 RET。
+   差异显示从 main 的树变到 feature 的树要改什么，旧侧为 main，新侧为 feature。
+2. 文件标题 TAB 展开，hunk 的 @@ 标头说明两边行号，- 是旧侧、+ 是新侧。
+3. 若只看 feature 从分叉点以来的变化，输入 =main...feature=，
+   它比较共同祖先与 feature；注意日志中的三个点和 diff 的三个点含义不同。
+4. 哈希同样可用：输入 =旧提交..新提交=；不要直接把这里的中文占位文字输入进去。
+5. q 退出；需要改变比较方向可重新调用命令交换两端，结果中的增删方向也会反过来。
+
+差异菜单的 -- 路径参数可只看某些文件，-w 可忽略空白差异。
+审阅暂存区前注意清除不需要的过滤参数，否则只看到部分内容，不代表提交只包含这些部分。
+本机 Evil 的 = 是减少上下文，+ 增加上下文；为免记错，可用
+=M-x magit-diff-default-context RET= 恢复默认上下文。
+
+| 快捷键（差异菜单内） | 交互命令 | 作用 |
+|-----------------------+----------+------|
+| u | magit-diff-unstaged | 工作区对暂存区 |
+| s | magit-diff-staged | 暂存区对 HEAD |
+| w | magit-diff-working-tree | 工作区对 HEAD；带前缀参数时选择其他版本 |
+| r | magit-diff-range | 两个版本或范围的差异 |
+| c | magit-show-commit | 某次提交的详情 |
+| 差异正文 RET | magit-diff-visit-file | 访问差异对应文件位置 |
+
+* 修改最近提交与整理提交
+
+前提：这些练习只整理自己尚未发布的练习分支。amend、reword、rebase 会产生新提交标识，
+已发布分支需先与协作者约定，不把普通 push 被拒绝当作必须强推的理由。
+
+** 补进最近提交：Amend；只改说明：Reword
+
+例如刚提交 A，发现漏了一行：
+
+1. 修改、保存，按 s 暂存漏掉的改动；展开 Staged changes 确认没有夹带其他内容。
+2. 状态页 c 打开 magit-commit 菜单，按 a（magit-commit-amend）。
+3. 保留或修改原提交说明，C-c C-c 完成；若放弃编辑用 C-c C-k。
+4. 看日志：最近提交哈希改变，内容包含新修改，但不会多出一条普通追加提交。
+
+只想改最近提交说明时，先取消不想参与的选区，在 c 菜单按 w（magit-commit-reword），
+修改说明后 C-c C-c。它保留原提交的树，不把暂存区新内容并进去。
+c 菜单的 e（magit-commit-extend）则把暂存内容并入 HEAD，通常不打开说明编辑；
+先理解差异再使用，初学优先 a。
+取消说明编辑不会自动撤销已暂存内容；真正执行成功后若要找旧提交，查 reflog。
+
+** 给旧提交做补丁：Fixup 与 Squash
+
+1. 保存并只暂存要修正的改动，打开 c 菜单，按 f（magit-commit-fixup）。
+2. 在目标提交选择界面按提示选择被修正的提交；本版可能进入日志选择页，
+   用 j / k 定位，按该页提示的 C-c C-c 确认（magit-log-select-pick），C-c C-k 取消。
+3. 看日志出现 =fixup! 原提交标题=。此时它仍是一条独立提交，原目标尚未被改写。
+4. 再按下文的交互式 rebase 教程，在日志中选中要修正的原提交，
+   在 rebase 菜单选 -a（--autosquash）再 i；本机默认包含选中的原提交，
+   核对待办列表包含原提交及 fixup，并已将 fixup 排在目标后面，才确认执行。
+5. 检查新历史：修正内容进入目标，独立 fixup 提交消失；需要时检查完整差异。
+
+c 菜单 s（magit-commit-squash）创建 squash! 提交，后续合并时可编辑合并后的说明；
+fixup 通常丢弃补丁提交自己的说明，保留目标说明。
+这里说的是创建 fixup! / squash! 提交；c 菜单大写 F / S 的即时整理会连带启动历史改写，
+初次练习不要把大小写当成同一动作。
+
+* 创建、切换与管理分支
+
+** 从当前位置创建 practice 并切换
+
+前提：仓库至少有一次提交，工作区和暂存区干净；新分支 practice 尚不存在。
+
+1. =, g b b=（magit-branch），菜单内 c（magit-branch-and-checkout）。
+2. 输入 practice，RET；起点选择当前分支或 HEAD，RET。
+3. =, g s= 检查 Head 已变为 practice。编辑并提交后，新提交属于 practice。
+4. 回分支菜单 l（magit-branch-checkout），选择原分支，RET；检查 Head 回到原分支。
+5. 再切回 practice，确认之前的练习提交仍在。切换不会把两个分支自动合并。
+
+菜单 n（magit-branch-create）只创建而不切换。菜单 b（magit-checkout）也能选择提交哈希，
+选非分支目标可能进入 detached HEAD；想继续开发时优先“创建并切换分支”。
+未提交修改有时可随切换带走，有时被 Git 拒绝；先保存、提交或 stash 可让练习结果清楚。
+
+** 基于远端分支创建本地跟踪分支
+
+先 fetch。分支菜单 c，输入本地分支名，例如 review，起点选择 origin/review。
+按实际提示决定是否设置该远端分支为 upstream；完成后在状态页或分支配置核对跟踪关系。
+不要仅 checkout 远端跟踪引用后就在 detached HEAD 上继续提交。
+
+** 重命名、删除和配置跟踪关系
+
+分支菜单 m（magit-branch-rename）按提示选择旧分支、输入新名字；日志与 Head 核对结果。
+本地改名不等于远端分支也被改名，远端发布和删除需分别处理。
+
+删除练习分支前先切到其他分支，分支菜单 k（magit-branch-delete），选择 practice，
+读清是否已合并及是否要求强制删除的提示，再确认。Git 拒绝删除未合并分支时先审阅独有提交。
+删除分支引用不等于创建反向提交，也不删除你当前另一个分支的文件。
+
+分支菜单 C（magit-branch-configure）进入配置，选择目标分支，
+调整 upstream、pushRemote 或拉取是否 rebase；修改的是 Git 配置，不是一次性菜单参数。
+不确定时 C-g 退出输入，避免把“设置并执行”误当成单纯查看。
+
+* Stash：收起、查看、恢复与清理
+
+** 收起当前修改
+
+前提：练习分支中有已保存修改，可以同时有已暂存和未暂存内容。
+
+1. =, g b z=（magit-stash）打开菜单。新文件也要收起时先选 -u（--include-untracked）；
+   不选时普通新文件通常留在工作区。-a 还包含忽略文件，范围更大，初次不要选。
+2. 按 z（magit-stash-both），输入说明，例如“练习：暂停修改 notes”，RET。
+3. 状态页应出现 stash 条目，受影响的工作区修改被收起。仍有新文件时检查是否选了 -u。
+4. 在 stash 条目 RET（magit-stash-show）审阅，q 返回；不要仅凭 stash 编号猜内容。
+
+其他收起方式：i（magit-stash-index）只收起已暂存修改，
+w（magit-stash-worktree）收起未暂存部分，x（magit-stash-keep-index）保留暂存区在工作区中。
+相互重叠的修改可能导致某些部分收起方式失败，查看进程输出后再决定，不强行重复执行。
+
+** Apply、Pop、Drop 分别做什么
+
+1. 恢复前先让工作区干净。光标移到要恢复的 stash，打开 stash 菜单按 a（magit-stash-apply），
+   若提示候选则选择已核对的那条，RET 执行。
+2. 状态页重新出现文件修改，stash 条目仍在；审阅并保存／提交后，再考虑清理该条目。
+3. 若选择 p（magit-stash-pop），成功恢复后会移除条目；冲突时检查条目是否仍保留，
+   不假设 pop 失败就什么也没改变。
+4. 确认条目内容已不需要时，在 stash 菜单 k（magit-stash-drop）选择条目并读清确认提示。
+   stash@{0} 等编号会随新增、删除变化，每次都核对说明和内容。
+
+apply／pop 发生冲突时，编辑冲突文件、保存、暂存并审阅，不存在通用的 stash --continue 流程。
+不要照搬 rebase 的 continue；要撤回恢复结果，先检查是否混有原本的工作区修改，
+再按本文撤销章节选择处理范围。保留原 stash 有助于核对，stash 不是远端备份。
+
+* 合并与冲突处理
+
+** 把 topic 合到 main
+
+前提：topic 有待合入提交，main 是接收分支，当前工作区干净。
+
+1. 分支菜单 l 切到 main，状态页确认 Head；“把 topic 合到 main”必须站在 main 上执行。
+2. =, g b m=（magit-merge），可先 p（magit-merge-preview）选择 topic 查看预览，q 返回。
+3. 重新打开菜单，按 m（magit-merge-plain），选择 topic，RET 执行。
+4. 无冲突时可能快进，也可能直接使用默认说明创建合并提交；此命令不保证停下来编辑说明。
+   想明确创建合并提交并编辑说明，用 e（magit-merge-editmsg），它会采用 --no-ff。
+5. 看进程结果和日志；主分支包含 topic 提交。合并不会自动删除 topic 分支。
+
+菜单 -f 是只允许快进，-n 是禁用快进；菜单小写 n（magit-merge-nocommit）表示先不提交。
+注意参数键带短横线，动作键不带；选择参数后还要选择动作才开始。
+
+** 手动解决冲突并完成合并
+
+1. 如果状态页出现 Unmerged paths，RET 打开其中一个冲突文件。
+2. 找到 <<<<<<<、=======、>>>>>>> 标记，读两边及上下文，编辑成最终应保留的内容，
+   删除冲突标记。存在祖先段 ||||||| 时也要处理；不能只删标记、不判断内容。
+3. , f s 保存，回状态页 gr 刷新，对该文件 s（magit-stage）。这一步告诉 Git 已解决，
+   Git 不会证明代码逻辑正确，需自行检查最终内容。
+4. 逐个处理其他文件，确认不再有未解决对象，再审阅 staged 差异。
+5. 合并菜单 m 在进行中变为 Commit merge（magit-commit-create）。完成说明并 C-c C-c，
+   看日志出现合并结果、进行中状态消失。
+
+有删除／重命名冲突时文件里可能没有文本标记，应按实际需要保留、移动或删除对应文件，
+再暂存处理结果。二进制冲突需选正确文件内容，不能用文字编辑步骤强行解决。
+需要可视化比较时在冲突文件 =M-x magit-ediff RET= 打开菜单，按 M（magit-ediff-resolve-all），
+按 Ediff 控制缓冲区帮助选择版本、编辑结果，退出后保存并回 Magit 检查；本配置没有另绑 Ediff 键。
+
+** 放弃正在进行的合并
+
+合并菜单 a（magit-merge-abort），读清确认再执行；检查回到合并前的分支状态。
+它只用于仍在进行的合并，已成功完成的合并需用 revert 或历史恢复处理。
+有合并开始前就存在的未提交修改时，不保证 abort 能无损重建所有内容，所以练习从干净工作区开始。
+
+* Rebase：换基准与交互式整理
+
+** 把 topic 的提交搬到新的 main 后面
+
+前提：当前在自己的 topic 分支，工作区干净；main 已更新，topic 的提交尚未共享。
+
+1. =, g b r=（magit-rebase），按 e（magit-rebase-branch），选择 main，RET。
+2. Git 将 topic 独有提交逐个重放到 main 后面；无冲突时直接完成，topic 仍是当前分支。
+3. 看日志核对 main 在下面、topic 新提交接在后面；原有提交通常变成新哈希。
+4. 有冲突时按上节编辑、保存并 s 暂存；回 rebase 菜单 r（magit-rebase-continue）继续。
+   说明编辑出现时 C-c C-c 完成，后续提交可能再次停下，重复直至结束。
+
+rebase 菜单 s（magit-rebase-skip）表示丢弃当前正在重放的提交，不是“跳过这个错误继续保留内容”。
+放弃整次变基用 a（magit-rebase-abort）。本版默认菜单可能带 --autostash，
+它可能在结束后恢复修改并再产生冲突；练习从干净工作区开始，仍要核对当前选项。
+
+** 交互式整理：重排、改说明、合并、删除
+
+例子：练习分支顶端有连续三条尚未发布提交 A、B、C，A 最早，C 最新。
+
+1. , g s 后 l l 看日志，将光标放在最早想整理的 A，打开 rebase 菜单按 i
+   （magit-rebase-interactive）。本机默认包含选中的 A；若配置或提示不同，
+   按提示选择起点，最终以待办列表是否含 A、B、C 为准。列表不符先取消，不能带错范围继续。
+2. 现在是 git-rebase-todo 编辑缓冲区，顺序通常为旧到新，与默认日志相反。
+   每行包含动作词、哈希、说明；不要改哈希和标题来代替动作命令。
+3. 保留 A 为 pick；想把 B 合进 A，在 B 行执行 M-x git-rebase-squash RET；
+   想丢弃 B 的说明则改用 git-rebase-fixup。首个提交不能 squash 到不存在的前一条。
+4. 想只改 C 的说明，在 C 行 M-x git-rebase-reword RET；
+   想停下来修改内容，用 git-rebase-edit。移动顺序用 git-rebase-move-line-up / down，
+   删除一条用 git-rebase-kill-line，并检查该行显示为被注释／不再执行。
+5. 核对列表，C-c C-c（with-editor-finish）让 Git 按顺序执行。
+   合并／改说明会打开新的说明编辑框，填好后再 C-c C-c；reword 不要求你修改文件。
+6. edit 停下时，修改文件、保存、暂存，再用 c a（magit-commit-amend）修正当前提交，
+   然后 rebase 菜单 r 继续。冲突停下时按冲突步骤处理，不另做普通追加提交。
+7. 完成后检查提交数量、顺序、说明及最终文件内容；只重排提交也可能引入冲突或改变含义。
+
+在 todo 列表按 C-c C-k 取消编辑后，检查 Git 是否仍处在 rebase 状态；
+仍在进行时用 rebase 菜单 a 中止。进行中时 C-g 不等于放弃变基。
+todo 中 s、r、f 等可能被现有 Evil／Avy 绑定遮挡，因此上面使用 M-x 给出明确入口，
+没有为了教程新增或改写键位。常用原生键可在该缓冲区 , h k 核对后使用。
+
+| 调用位置或快捷键 | 交互命令 | 作用 |
+|------------------+----------+------|
+| Rebase 菜单 e | magit-rebase-branch | 选择新的基准 |
+| Rebase 菜单 i | magit-rebase-interactive | 编辑提交待办列表 |
+| 进行中菜单 r / a | magit-rebase-continue / magit-rebase-abort | 继续／中止 |
+| todo 中 M-x | git-rebase-reword | 该提交执行时修改说明 |
+| todo 中 M-x | git-rebase-squash / git-rebase-fixup | 与前一条合并，保留／丢弃自身说明 |
+| todo 中 M-x | git-rebase-move-line-up / git-rebase-move-line-down | 移动待办行 |
+
+* 从历史提交继续操作：分支、Cherry-pick 与 Revert
+
+** 以旧提交为起点创建分支
+
+在日志上选目标提交 RET 读完详情，返回日志，分支菜单 c 创建 review-old，
+起点确认目标哈希而非当前 HEAD。完成后在新分支查看文件，原分支仍保留在原位置。
+这是从旧位置分出工作线；它不会把原分支回退。
+
+** Cherry-pick：把另一条工作线上的提交拿过来
+
+前提：接收分支干净，目标提交尚未包含在接收分支中；先切到接收分支。
+
+1. l 菜单 o 输入来源分支，显示它的历史。选中需要的提交，RET 先审阅，返回日志。
+2. =M-x magit-cherry-pick RET= 打开菜单，按 A（magit-cherry-copy），
+   核对目标提交并确认。也可从 , g g 的 cherry-pick 入口进入。
+3. 单提交无冲突时通常直接产生新提交；本版默认 --ff 在允许时也可能快进，
+   不保证每次都创建不同哈希。想明确重做提交时先检查该参数。
+4. 多提交时用 C-SPC 从第一条提交标题选到最后一条同级提交标题，
+   先检查选中集合再 A。Git 按依赖顺序重放，默认日志从新到旧的显示顺序不等于执行顺序。
+5. 冲突后编辑、保存并暂存，在 cherry-pick 菜单 A（magit-sequencer-continue）继续，
+   a（magit-sequencer-abort）放弃，s（magit-sequencer-skip）丢弃当前那条。
+6. 回接收分支日志检查提交及内容。来源分支不会因 Pick 被删除；菜单 Harvest 等是其他操作。
+
+不要跨提交依赖随意只摘最后一条；先挑单个独立修改练习，再处理多提交。
+合并提交需要选择 mainline 父编号，本节普通单父提交练习不适用，先阅读帮助与父提交差异。
+
+** Revert：保留历史，追加反向修改
+
+1. 在包含待撤销提交的分支保持工作区干净，日志光标放在目标提交，RET 检查内容。
+2. =M-x magit-revert RET= 打开菜单，按 V（magit-revert-and-commit），核对对象。
+3. 出现说明编辑时检查反向提交说明，C-c C-c 完成。看日志：旧提交仍在，顶端新增反向提交。
+4. 冲突时解决并暂存，回 revert 菜单 V（magit-sequencer-continue）继续；
+   菜单 a（magit-sequencer-abort）中止。v（magit-revert-no-commit）只应用反向修改，
+   不立即创建提交，与大写 V 不同。
+
+多提交同样用同级 commit section 选区；复杂依赖先逐条检查。
+合并提交的 revert 需理解 mainline 及后续重新合并的影响，不对 merge commit 直接套普通例子。
+
+* 撤销与恢复：丢弃、Reset 和 Reflog
+
+** 先按要改变的对象选择命令
+
+| 需求 | 推荐操作 | 改变什么 |
+|------+----------+----------|
+| 文件继续保留，只不放入下次提交 | u（magit-unstage） | 暂存区 |
+| 不要某些尚未提交修改 | magit-discard，核对范围 | 工作区，某些上下文也涉及暂存区 |
+| 撤销已提交变更并保留历史 | magit-revert | 追加反向提交 |
+| 把自己的分支引用移回旧位置 | magit-reset 菜单 | HEAD、暂存区、工作区，取决于类型 |
+| 找到曾经指向的提交 | magit-reflog-head | 先查看引用移动记录，再创建恢复分支 |
+
+** 丢弃指定未提交修改
+
+在临时文件制造并保存一处修改，状态页展开 Unstaged changes，光标放在该 hunk，
+=M-x magit-discard RET=，读清提示确认丢弃。gr 后该差异应消失；文件对应内容被改回。
+不要在父组标题或多个选区上练习，否则范围可能扩大。
+本机 x 是 magit-delete-thing，按对象可能调用丢弃、删除文件、删除分支等不同功能，
+它不是统一的“撤销”键。未跟踪文件的删除不保证能从 Git 恢复。
+
+** Reset：Soft、Mixed、Hard
+
+前提：临时分支顶端有 A、B 两条提交，工作区干净；先记下 B 的完整哈希，必要时创建保留分支。
+这些例子各自从相同起点理解，不连续照做三次 HEAD~1，否则会依次后退多次。
+
+1. =M-x magit-reset RET= 打开菜单，选 s（magit-reset-soft），目标输入 HEAD~1，RET。
+   分支回到 A，B 的内容仍在工作区并保持已暂存。检查状态页与日志是否一致。
+2. 如果起点同样是 B，选择 m（magit-reset-mixed）回到 A，B 的内容仍在工作区，
+   但改为未暂存。mixed 不是丢弃文件内容。
+3. h（magit-reset-hard）把 HEAD、暂存区和受影响工作区都改成目标版本，
+   可能丢失未提交内容，也可能删除挡路的未跟踪文件；仅在已确认要丢弃的临时环境练习。
+4. 每次输入目标后按实际确认提示执行，C-g 只能取消尚未执行的输入；成功 reset 没有通用 abort。
+
+soft／mixed／hard 都可能让旧提交不再被当前分支引用。不要对共享分支按本例回退后直接强推。
+只取消全部暂存应使用 magit-reset-index 以 HEAD 为目标或在 staged 组 u，
+不必移动分支。magit-reset-worktree 又是只改工作区的不同命令。
+
+** 从 Reflog 找回旧提交，先建分支
+
+1. =M-x magit-reflog-head RET= 打开 HEAD 引用移动记录，查 reset／rebase／checkout 前的条目。
+2. 在候选条目 RET 查看提交说明与内容，确认是要恢复的那次。reflog 条目不是完整文件备份。
+3. 回列表，分支菜单 c 创建 rescue，起点明确选择该提交哈希；检查新分支内容。
+4. 确认恢复分支正确后再决定 cherry-pick 或怎样更新原分支，不先覆盖当前还有用的文件。
+
+reflog 有保留期限且可能被清理；它主要帮助找提交和引用移动，无法保证找回从未提交的文件编辑。
+未保存内容需查 Emacs 恢复副本，不能向 reflog 要求恢复。
+
+* 当前文件历史与 Blame
+
+** 追踪文件与历史版本
+
+1. 打开受 Git 跟踪的代码或文本文件，取消活动选区，按 , g v f（magit-log-buffer-file）。
+2. 列表只显示该文件相关提交，RET 查看某次修改，再从差异 RET 访问相应历史位置。
+3. 文件改过名时，回文件缓冲区用 C-u M-x magit-log-buffer-file RET，跟踪重命名。
+4. 想看某段行的演变，可在文件中选择连续行，再调用 magit-log-buffer-file；
+   这使用行范围跟踪，和普通整文件日志不同，复杂重命名／合并可能有追踪限制。
+
+只读历史文件可用 , b b 返回工作文件。想恢复旧内容时先复制需要的片段到当前文件，
+审阅并保存再暂存；不要把“查看历史版本”说成已经执行恢复。
+
+** 查某一行来自哪次提交
+
+1. 在已跟踪文件目标行，=M-x magit-blame RET= 打开菜单，按 b（magit-blame-addition）。
+2. 等标注出现，看目标行的作者、日期和提交标识；它指出该行在所选历史中的最近归属，
+   不代表作者对现有全部逻辑负责。未提交内容可能显示为未提交状态。
+3. 用 gj / gk（magit-blame-next-chunk / magit-blame-previous-chunk，本机 Evil 普通状态）
+   在标注块间移动；若当前状态不同，用 M-x 调用这两个命令。
+4. 在目标块 =M-x magit-show-commit RET= 查看对应提交，核对提示的哈希。
+   回文件继续看，=M-x magit-blame-quit RET= 移除标注。菜单 q 也提供退出标注操作。
+
+Blame 的原生 RET 可能用于访问历史文件，和日志 RET 查看提交不是同一语境。
+这里明确使用 magit-show-commit，避免按错后以为文件已被切换。
+没有另增 blame leader 键：它是按需追查功能，M-x 和当前文件菜单已提供入口。
+
+* 远端、标签与 Worktree
+
+** 新增、修改和删除远端
+
+1. =, g r r=（magit-remote），按 a（magit-remote-add），输入远端名，例如 backup，RET，
+   再输入实际 SSH 或 HTTPS URL，RET。不要把例子中的名字当成必须使用的固定远端。
+2. 本版 remote 菜单默认 -f 表示新增后抓取；只想登记地址先取消 -f。
+   若提示是否设为默认推送远端，按需求明确选择，不能把这个问题当成普通保存确认。
+3. 回菜单 C（magit-remote-configure）选择远端，找到 URL 选项修改地址；
+   先核对选择的是 fetch URL 还是 push URL，RET 确认输入。
+4. r（magit-remote-rename）改本地远端名；k（magit-remote-remove）移除本地远端配置。
+   它们不重命名或删除托管网站上的仓库。操作后用一次 fetch 核对访问结果。
+
+菜单 p（magit-remote-prune）清理已失效的远端跟踪引用，先检查所选远端；
+不等于在服务器上删除分支。凭据问题见后面的排查表。
+
+** 创建标签并单独推送
+
+前提：目标提交已核对，例如自己的练习 HEAD，标签 practice-v1 尚不存在。
+
+1. =, g b t=（magit-tag），需要说明时选择 -a（--annotate）；不选择时通常创建轻量标签。
+2. 按 t（magit-tag-create），输入 practice-v1，RET；目标选择 HEAD 或明确哈希，RET。
+3. 注释标签若打开说明编辑，填写后 C-c C-c；C-c C-k 取消编辑，并检查命令结果。
+   -s 在 tag 菜单表示签名，与 commit 菜单的 --signoff 含义不同，签名需要相应密钥。
+4. 用日志 a 查看所有引用并核对标签位置。创建本地标签不会自动推送。
+5. , g r p 打开 push 菜单，按 T（magit-push-tag）先选择单个标签，再选择远端，
+   各提示确认后看进程成功结果；小写 t 是推送全部标签，不要混用。
+
+删除本地标签在 tag 菜单 k（magit-tag-delete），核对名字再确认；不会自动删除远端标签。
+确需删除远端标签时，可用 magit-git-command 输入实际 =git push origin :refs/tags/标签名=，
+先替换并核对远端及标签全名。已发布版本标签的移动／删除应与使用者约定。
+
+** Worktree：同时保留两个分支的工作目录
+
+前提：主目录已有仓库，想在另一个目录同时编辑另一分支；不是把现有目录复制一份。
+
+1. =, g b w=（magit-worktree），按 c（magit-worktree-branch），
+   输入新分支 practice-wt，选择起点，最后选择新的空工作目录，例如仓库同级的 practice-wt。
+2. 创建后 Magit／Dired 会访问新目录，核对该目录状态页的当前分支。
+   已有分支创建目录用菜单 b（magit-worktree-checkout），Git 通常不允许同一分支同时检出到两处。
+3. 在新目录编辑、保存、提交；仓库对象共享，但两个工作区文件和各自暂存区独立。
+4. 菜单 g（magit-worktree-status）选择另一工作树，切到它的状态页。
+5. 不再需要额外目录时，先提交或妥善保存其修改，再从另一工作树菜单 k
+   （magit-worktree-delete）选中要移除的额外目录，确认。主工作树不能这样删除。
+
+删除额外工作树会移除该目录，通常保留分支引用；若需要再删除分支，用分支菜单处理。
+锁定、未清理或仍有修改时 Git 可能拒绝操作，先查原因，不把强制删除当成常规步骤。
+
+* 进程输出、认证与常见故障
+
+** 先看实际执行了什么
+
+1. Git 操作返回异常时，留在该仓库的 Magit 缓冲区，按反引号键或
+   =M-x magit-process-buffer RET= 打开进程缓冲区。
+2. 找本次命令，看它的参数、目标、退出状态和输出；在条目上 TAB 展开。
+   仍在运行时等它结束，不因状态页未变化就连续重发相同命令。
+3. q 返回，gr 刷新状态页。输出显示失败就按下面原因处理；输出成功则核对目标与内容。
+4. 若有密码／密钥口令提示，在实际提示处输入，不将凭据粘贴到 Org 或日志示例。
+
+| 输出或现象 | 先检查什么 | 下一步 |
+|------------+------------+--------|
+| 找不到 git | M-: (executable-find "git") RET | 修正 Emacs 启动环境 PATH，不修改仓库内容 |
+| Permission denied (publickey) | SSH 远端、密钥、SSH agent 和当前进程环境 | 修正认证后重试原操作，无须重新 commit |
+| HTTPS authentication failed | Git 凭据助手、账号及令牌权限 | 在现有凭据流程更新，勿把令牌写进配置 |
+| non-fast-forward | 目标分支新增提交或本地改写过历史 | fetch、比较，决定整合方式 |
+| Author identity unknown | Git user.name / user.email | 为适当 Git 配置范围设置身份后重试 |
+| 签名失败 | commit.gpgsign、签名程序和密钥 | 检查自己的 Git 设置，-s 不能代替 -S |
+| index.lock 已存在 | 是否还有 Git／Magit 操作运行 | 先确认进程；不能见锁就删除 |
+| 冲突或进行中提示 | 当前是 merge、rebase、cherry-pick、revert 还是 am | 用对应 continue / abort，不重开另一流程 |
+| 菜单项没显示 | 所在缓冲区、Git 状态、Transient 显示级别 | 查菜单帮助或 M-x 对应命令，别靠改绑定解决 |
+
+用 =M-x magit-version RET= 核对版本；用 =M-x magit-git-command RET= 执行
+=git remote -v= 或 =git status= 查看 Git 本身状态，保留输出便于排查。
+网络行为取决于 Git / SSH 环境，Emacs URL 代理不自动覆盖它们。
+若要中断卡住的网络命令，先用进程缓冲区帮助查终止命令并确认对象；终止后核对实际结果，
+不把“终止进程”视为已经回滚本地或远端改动。
+
+* 补丁、Clone、初始化与子模块
+
+** 导出未提交差异和已提交补丁
+
+普通 diff 补丁主要承载内容变化；format-patch 补丁还携带提交说明和作者，接收方式不同。
+
+1. 未提交差异先用 , g v d s 或 u 显示需要导出的差异，核对文件和范围。
+2. 在该差异缓冲区 =M-x magit-patch-save RET=，输入输出 .patch 文件路径并确认。
+   命令依赖当前差异缓冲区；不从普通文件里调用它猜测导出范围。
+3. 已提交补丁用 =M-x magit-patch-create RET= 打开参数菜单，
+   配置输出目录（--output-directory）后按 c，再输入单个提交或 =main..topic= 范围。
+4. 查看进程输出和生成的补丁文件，核对数量、作者、说明和内容；导出不等于发邮件或推送。
+   只要一条提交就选单个哈希，不误选从该哈希到 HEAD 的所有提交。
+
+** 应用普通补丁与邮件格式补丁
+
+在干净的练习分支先打开补丁查看内容：
+
+1. 普通 .diff / .patch：M-x magit-patch-apply RET 打开参数菜单，先检查参数，
+   按 a（magit-patch-apply）再选择补丁文件并 RET 执行。成功后状态页查看工作区／暂存区，
+   是否已暂存取决于所选参数，不假设自动产生提交。审阅后按普通暂存和提交流程完成。
+2. format-patch／mbox：M-x magit-am RET 打开菜单，w（magit-am-apply-patches）选择补丁文件。
+   路径提示 RET 确认；它可能直接创建提交或在需要时编辑说明，检查进程结果和日志。
+3. am 冲突时编辑、保存、s 暂存，再回 am 菜单 w（magit-am-continue）继续；
+   a（magit-am-abort）中止；s（magit-am-skip）丢弃当前补丁。
+4. 普通 git apply 失败没有 am 的 continue 状态，查看哪些文件已改变；
+   若选了 --reject，可能部分应用并留下 .rej，需手动审阅，不连续重复应用同一补丁。
+
+** Clone 与初始化新仓库
+
+Clone：M-x magit-clone RET，输入真实仓库 URL，确认目标新目录，等 Git 结束后打开状态页。
+本版默认直接进入普通 clone 提示；C-u M-x magit-clone RET 可打开参数菜单选择其他方式。
+目标目录、协议和认证先核对；取消输入用 C-g，已开始下载后取消不保证清理下载目录。
+
+Init：M-x magit-init RET 选择新目录，按提示创建 Git 仓库；
+保存文件后在 Untracked files 中 s 暂存，再 c c 做首次提交。
+初始化不自动创建 GitHub／GitLab 远端仓库，也不代你决定忽略规则或提交内容。
+
+** 子模块：初始化、更新与提交指针
+
+前提：父仓库已有 .gitmodules，子模块是独立仓库，父仓库记录其提交指针。
+
+1. 在父仓库 M-x magit-submodule RET，l（magit-list-submodules）查看列表。
+2. 新 clone 后子目录未填充，用子模块菜单 p（magit-submodule-populate），
+   选择模块并按提示确认；-r（--recursive）用于同时处理嵌套子模块。
+3. 更新到父仓库记录的提交，用菜单 u（magit-submodule-update）选择模块。
+   先不选 --remote，它表示按远端分支更新，和“检出父仓库记录的版本”不同。
+4. 要添加新模块，用菜单 a（magit-submodule-add），输入 URL、路径及其他实际提示。
+   检查父仓库新增的 .gitmodules 和模块指针，审阅后暂存并提交。
+5. 如果自己改了模块文件，先进入子模块仓库提交，必要时先推送子模块提交；
+   再回父仓库暂存指针变化并提交。否则其他人可能取得一个无法访问的子模块提交。
+
+不要将普通目录里的未提交修改当作父仓库已保存的模块内容；移除模块应使用专用操作，
+不是只删目录。子模块修改前先检查它是否 detached HEAD，需开发时建立自己的分支。
+
+** 运行其他 Git 命令
+
+=, g g=（magit-dispatch）有 Git 命令入口；本机 Magit 中竖线键调用 magit-git-command。
+也可 M-x magit-git-command RET，输入框预填 =git =，例如补成 =git status --short= 后 RET。
+这是按 Shell 解释的命令字符串，先核对空格、引号和目录；不是专门的多文件候选列表。
+强制从仓库根目录执行用 M-x magit-git-command-topdir RET。
+输出在进程缓冲区，确认结束状态后 q 返回；输入阶段 C-g 取消。
+未为这些低频命令新增 leader 绑定，现有总菜单和 M-x 都可以直接调用。
+
+* 为什么 Magit 的 s 没有被 Avy 占用
+
+Avy 可以在普通文本、Org、代码，也可以在 Magit 中定位当前窗口的可见文字；
+是否启用 s 入口由主模式和 Evil 状态共同决定。缓冲区并不专指磁盘文件。
+本配置的主模式判断是 =(derived-mode-p 'magit-mode)=，不是检查文件是否放在 Git 仓库里。
+所以 Git 项目中的 notes.txt 仍然是文本缓冲区，s 仍然可以是 Avy；
+Magit 状态页、日志页和差异页属于 magit-mode 家族，s 则留给原局部键位。
+
+只有普通状态新增了 s 的 Avy 绑定。插入状态的 s 是输入字符；
+motion 或 Emacs 状态中的 s 沿用该状态和模式的原绑定，不能一概称为 Avy。
+提交说明缓冲区的主要用途是编辑文本，git-commit-mode 是辅助模式，
+它不因为正在写 Git 提交说明就自动成为 magit-mode 的派生模式。
+
+退让通过 General 的条件键位过滤实现，不是关闭 Avy，也不是进入／退出 Magit 时反复改全局绑定。
+查键时命中 Magit 条件，这一层返回 nil，让 Emacs 继续查优先级较低的局部键位；
+在 Magit 状态页中通常就找到 s → magit-stage。其他普通状态缓冲区未命中条件，
+这一层返回 avy-goto-char-timer，执行标签跳转。
+源代码和逐项解释见 [[file:Windows_config.org::*普通模式 s：Avy 与 Magit 的条件分派][主配置的条件分派说明]]。
+
+在 Magit 中想用 Avy，按 =, j j=（=M-x avy-goto-char-timer RET=），
+输入可见目标字符，等待标签后选标签；C-g 取消。这个入口没有被上述规则移除。
+Avy 只负责移动光标，不会因为跳到了一个修改块就自动暂存它。
+
+* 常见疑问与练习顺序
+
+** 正在进行的操作，应该怎样继续或放弃
+
+先看状态页顶部进行中的操作名称，再选择这一行对应的菜单。
+不同操作恰好都显示 Continue，不代表按键也相同。
+
+| 当前状态 | 进入菜单 | 继续命令与菜单键 | 中止命令与菜单键 |
+|----------+----------+------------------+------------------|
+| Merge 冲突已解决并暂存 | , g b m（magit-merge） | m，magit-commit-create；完成合并说明 | a，magit-merge-abort |
+| Rebase 停在冲突或 edit | , g b r（magit-rebase） | r，magit-rebase-continue | a，magit-rebase-abort |
+| Cherry-pick 停下 | M-x magit-cherry-pick | A，magit-sequencer-continue | a，magit-sequencer-abort |
+| Revert 停下 | M-x magit-revert | V，magit-sequencer-continue | a，magit-sequencer-abort |
+| git am 停下 | M-x magit-am | w，magit-am-continue | a，magit-am-abort |
+| 普通提交说明尚在编辑 | 提交编辑缓冲区 | C-c C-c，with-editor-finish | C-c C-k，with-editor-cancel |
+
+完成操作后应不再显示进行中状态。若再次出现冲突，说明还有待重放的提交，不要反复点击普通提交。
+stash apply 和普通补丁 apply 没有通用 continue；reset 成功之后也没有 abort，需按恢复章节另行处理。
+
+** 常见疑问
+
+- 只打开推送菜单会推送吗？不会，仍需选择具体推送操作。已执行后再 C-g 也不能当作撤销推送。
+- 为什么按一次提交入口没有说明编辑框？第一次打开的是提交参数菜单，还需选择创建提交。
+- 菜单里有参数但默认没显示怎么办？先看当前 Transient 的帮助与菜单级别，不擅自改代码。
+  =M-x magit-info RET= 打开手册；=, h k=（helpful-key）查询实际按键，
+  =, h x=（helpful-command）查询命令用途。
+- 暂存后标记还在是否失败？diff-hl-show-staged-changes 当前为 t，暂存后仍显示是本配置选择。
+- 提交说明的保存键能否代替完成？不能，使用 C-c C-c；取消使用 C-c C-k。
+- 推送失败是否要重新提交？先查看 magit-process-buffer；通常先排查远端、分支、权限或认证。
+
+建议先完成“一个文件 → 暂存 → 本地提交”，再练习“取消暂存与取消提交”，
+之后练习部分行暂存、分支和 stash，最后在你指定的可用远端验证抓取、拉取和推送。
+先了解所选命令的对象、范围和结果，再使用 amend、rebase、reset 等历史操作。
+
+** 做完一轮以后检查自己是否理解
+
+1. 暂存文件后再改一行，普通 c c 提交会不会包含新的一行？先看 Staged changes 再回答。
+   答案：只有再次暂存才会包含，文件当前全文不等于暂存区版本。
+2. 在日志 RET 看了旧提交后，当前分支是否自动回退？查看 Head。
+   答案：没有，查看详情与 checkout／reset 是不同操作。
+3. fetch 成功是否表示已合并远端？查看当前分支日志。
+   答案：没有，普通 fetch 更新远端跟踪引用，merge／rebase／pull 才整合。
+4. 取消了提交说明后文件是否恢复原状？回状态页检查。
+   答案：暂存修改仍在，取消提交不是取消暂存或丢弃修改。
+5. rebase 冲突时按 C-g 是否已经放弃整次变基？读状态页顶部。
+   答案：没有，整次中止要用 magit-rebase-abort。
+
+这些检查用于理解操作范围，不在真实项目中自动制造修改或执行验证。

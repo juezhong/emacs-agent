@@ -332,6 +332,45 @@
 (setq auto-save-list-file-prefix
       (expand-file-name "auto-save-list/.saves-" my/state-directory))
 
+;;; Transient：Magit 等工具的参数菜单；本机 Emacs 已内置，Magit 的依赖检查仍照常进行。
+(use-package transient
+  :ensure nil
+  :defer t                           ; 只先设置状态位置；由 Magit 等调用者按需加载。
+  :init
+  ;; 插件默认写入 user-emacs-directory 下的 transient/；本配置统一放入 .cache/。
+  ;; 在本配置首次调用 Magit 前设置；不迁移、删除或覆盖原目录中的已有状态。
+  (setq transient-levels-file (expand-file-name "transient/levels.el" my/state-directory)
+        transient-values-file (expand-file-name "transient/values.el" my/state-directory)
+        transient-history-file (expand-file-name "transient/history.el" my/state-directory)))
+
+;;; Magit：commands 创建自动加载入口，使用 Git 操作时才加载完整界面。
+(use-package magit
+  :commands (magit-status magit-dispatch magit-file-dispatch
+             magit-diff magit-log magit-log-buffer-file
+             magit-stage-files magit-unstage-files magit-commit
+             magit-fetch magit-pull magit-push magit-remote
+             magit-branch magit-merge magit-rebase magit-stash magit-tag magit-worktree))
+;; 不改 Git 身份、认证、签名、提交模板或 Transient 的提交参数默认值。
+;; -s / --signoff 由用户在提交菜单选择；-S / --gpg-sign 是不同的签名选项。
+
+;;; diff-hl：启动时启用全局模式，仅在适用的受版本控制文件中显示修改标记。
+(use-package diff-hl
+  :demand t                           ; 文件打开后即可显示标记，不必先打开 Magit。
+  :custom
+  ;; 默认 left：标记放在窗口左侧；改为 right 可移到右侧。
+  (diff-hl-side 'left)
+  ;; 默认 t：Git 标记包含已暂存但尚未提交的修改；nil 改为以暂存区作为比较基准。
+  ;; 当前保留 t，暂存后仍可看见修改，提交后再随刷新消失。
+  (diff-hl-show-staged-changes t)
+  ;; 默认 t：终端没有 fringe 时自动使用 margin，并在需要时提供一列宽度。
+  ;; 保持默认的图形 fringe / 终端 margin 切换，不全局强制 margin 模式。
+  (diff-hl-fallback-to-margin t)
+  :config
+  (global-diff-hl-mode 1)
+  ;; 默认在保存后更新；本配置不启用 flydiff，不在每次输入时定时计算差异。
+  ;; Magit 修改暂存区或提交并刷新后同步标记；无需旧的 pre-refresh 钩子。
+  (add-hook 'magit-post-refresh-hook #'diff-hl-magit-post-refresh))
+
 ;;; 帮助增强：调用时加载 Helpful，安装由 use-package 处理。
 ;; 实际按键在末尾统一绑定，不在这里覆盖任何模式键位。
 (use-package helpful
@@ -397,6 +436,12 @@
   (defvar my/search-map (make-sparse-keymap))
   (defvar my/project-map (make-sparse-keymap))
   (defvar my/edit-map (make-sparse-keymap))
+  (defvar my/git-map (make-sparse-keymap))
+  (defvar my/git-view-map (make-sparse-keymap))
+  (defvar my/git-commit-map (make-sparse-keymap))
+  (defvar my/git-remote-map (make-sparse-keymap))
+  (defvar my/git-branch-map (make-sparse-keymap))
+  (defvar my/git-hunk-map (make-sparse-keymap))
 
   (general-def my/file-map
     "f" '("打开文件" . find-file)                  ; Find file，打开文件
@@ -427,6 +472,7 @@
     "v" '("变量帮助" . helpful-variable)                     ; Variable，变量帮助
     "." '("光标处 Lisp 符号" . helpful-at-point)             ; At point，光标处符号
     "m" '("当前模式说明" . describe-mode)                    ; Mode，当前模式
+    "l" '("当前模式按键" . which-key-show-major-mode)         ; Local，当前主模式按键
     "b" '("当前有效键位" . describe-bindings)                ; Bindings，有效键位
     "w" '("查找命令按键" . where-is)                         ; Where is，查找命令绑定
     "a" '("按名称找命令" . apropos-command)                  ; Apropos，按名称查找
@@ -513,6 +559,46 @@
   (general-def my/edit-map
     "y" '("选择剪贴历史" . consult-yank-pop))  ; Yank，选择 kill ring 内容
 
+  ;; Git，仓库操作：子菜单可从文件缓冲区直接调用，不必先进入状态页。
+  (general-def my/git-view-map
+    "d" '("查看差异" . magit-diff)                  ; Diff，差异菜单
+    "l" '("查看提交日志" . magit-log)               ; Log，日志菜单
+    "f" '("当前文件历史" . magit-log-buffer-file))  ; File log，文件提交记录
+
+  (general-def my/git-commit-map
+    "s" '("选择文件暂存" . magit-stage-files)        ; Stage，选择文件加入暂存区
+    "u" '("选择文件取消暂存" . magit-unstage-files)  ; Unstage，保留工作区修改
+    "c" '("提交菜单" . magit-commit))                ; Commit，选择参数与提交方式
+
+  (general-def my/git-remote-map
+    "f" '("抓取远端" . magit-fetch)    ; Fetch，更新远端跟踪引用
+    "l" '("拉取并整合" . magit-pull)   ; Pull，选择整合方式
+    "p" '("推送菜单" . magit-push)     ; Push，选择目标后执行
+    "r" '("管理远端" . magit-remote))  ; Remote，管理远端地址
+
+  (general-def my/git-branch-map
+    "b" '("分支管理" . magit-branch)       ; Branch，创建与切换分支
+    "m" '("合并菜单" . magit-merge)        ; Merge，合并分支
+    "r" '("变基菜单" . magit-rebase)       ; Rebase，变基与继续操作
+    "z" '("贮藏修改" . magit-stash)        ; Stash，贮藏与恢复修改
+    "t" '("标签管理" . magit-tag)          ; Tag，标签操作
+    "w" '("工作树管理" . magit-worktree))  ; Worktree，独立工作目录
+
+  (general-def my/git-hunk-map
+    "n" '("下一修改块" . diff-hl-next-hunk)      ; Next hunk，下一修改块
+    "p" '("上一修改块" . diff-hl-previous-hunk)  ; Previous hunk，上一修改块
+    "s" '("查看修改块" . diff-hl-show-hunk))     ; Show hunk，显示具体差异
+
+  (general-def my/git-map
+    "s" '("仓库状态" . magit-status)               ; Status，仓库状态页
+    "g" '("Git 总菜单" . magit-dispatch)           ; Git dispatch，完整操作入口
+    "f" '("当前文件操作" . magit-file-dispatch)    ; File dispatch，文件操作菜单
+    "v" (cons "查看差异与历史" my/git-view-map)    ; View，查看差异与历史
+    "c" (cons "暂存与提交" my/git-commit-map)      ; Commit，暂存与提交
+    "r" (cons "远端同步" my/git-remote-map)        ; Remote，远端同步
+    "b" (cons "分支与历史操作" my/git-branch-map)  ; Branch，分支与历史操作
+    "h" (cons "修改块" my/git-hunk-map))           ; Hunk，修改块导航与查看
+
   ;; 根前缀是逗号，再经过两次逗号，得到 ,,,；M-x 本身仍可使用。
   (general-def my/command-map
     "," '("执行命令" . execute-extended-command))  ; Command，执行命令
@@ -529,7 +615,8 @@
     "j" (cons "跳转" my/jump-map)        ; Jump，屏幕内定位
     "s" (cons "搜索" my/search-map)      ; Search，搜索与索引
     "p" (cons "项目" my/project-map)     ; Project，项目管理
-    "e" (cons "编辑" my/edit-map))       ; Edit，文本编辑
+    "e" (cons "编辑" my/edit-map)        ; Edit，文本编辑
+    "g" (cons "版本控制" my/git-map))    ; Git，版本控制
 
   ;; 普通／可视／motion 状态使用逗号；插入状态不占用逗号。
   ;; motion 覆盖一些只读工具界面；override 减少局部模式遮挡 leader。
@@ -539,10 +626,13 @@
    "," my/leader-map)
 
   ;; 仅普通模式的 s 改为 Avy；原替换字符操作可用 cl，其他状态不改。
+  ;; Magit 的 s 用于暂存：返回 nil 让高优先级绑定退让，保留局部 keymap 的原命令。
+  ;; 使用 General 已有的条件分派，不另写暂存包装函数；Avy 仍可通过 , j j 调用。
   (general-define-key
    :states 'normal
    :keymaps 'override
-   "s" #'avy-goto-char-timer)  ; Jump，字符标签跳转
+   "s" (general-predicate-dispatch #'avy-goto-char-timer
+         (derived-mode-p 'magit-mode) nil))  ; Jump，字符标签跳转；Magit 保留局部暂存键
 
   ;; 全局备用前缀访问同一份菜单，适用于插入状态及 Emacs 状态。
   ;; 原生 C-h 前缀保留，只增强其中几个具体帮助命令。

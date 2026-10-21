@@ -65,8 +65,10 @@
   - [[开发支持（占位）][开发支持（占位）]]
     - [[代码理解、补全与诊断][代码理解、补全与诊断]]
     - [[格式化（暂不启用）][格式化（暂不启用）]]
-  - [[版本控制（占位）][版本控制（占位）]]
-    - [[Git 操作与修改标记][Git 操作与修改标记]]
+  - [[版本控制][版本控制]]
+    - [[插件、依赖与加载方式][插件、依赖与加载方式]]
+    - [[Git 入口与入门流程][Git 入口与入门流程]]
+    - [[修改标记与运行条件][修改标记与运行条件]]
   - [[帮助与交互提示][帮助与交互提示]]
     - [[帮助查询][帮助查询]]
     - [[按键提示：which-key][按键提示：which-key]]
@@ -76,9 +78,11 @@
   - [[诊断与配置状态][诊断与配置状态]]
   - [[统一快捷键配置（最后配置）][统一快捷键配置（最后配置）]]
     - [[管理方式：General][管理方式：General]]
+      - [[普通模式 s：Avy 与 Magit 的条件分派][普通模式 s：Avy 与 Magit 的条件分派]]
       - [[General 怎么修改：对照示例][General 怎么修改：对照示例]]
     - [[Leader 与键位取舍][Leader 与键位取舍]]
     - [[快捷键速查表][快捷键速查表]]
+      - [[Git 新增入口][Git 新增入口]]
       - [[第三阶段新增入口][第三阶段新增入口]]
       - [[既有入口][既有入口]]
     - [[后续分组规划（未绑定）][后续分组规划（未绑定）]]
@@ -233,6 +237,9 @@ Helpful、General 和内置 which-key 的配置；toc-org 继续提供自动目�
 第二阶段已写入 Avy、Vertico、Orderless、Marginalia 和 Consult，提供跳转、候选选择与搜索。
 第三阶段已写入项目、状态记忆、保存恢复与外部刷新，并补齐中文功能菜单。
 候选操作层已写入 Embark / embark-consult，提供上下文动作、候选收集、导出和批量操作。
+用户已确认本机 Embark 使用正常、符合需求；此反馈不代表其他平台或全部动作均已验证。
+Git 工作流已写入 Magit / diff-hl，本机已安装；用户已确认状态页和日志入口可用，
+暂存、提交、推送、修改标记及其他流程待分别验证。
 尚未安装的包由你手动启动时交给 use-package 安装，已安装则复用。
 本轮只编写配置和生成 init.el，没有加载、安装、编译或交互验证这些插件。
 
@@ -252,9 +259,10 @@ Helpful、General 和内置 which-key 的配置；toc-org 继续提供自动目�
 | 界面、字体、主题与状态栏     | 待配置   | 字体及图形／终端行为后续分别验证                   |
 | Evil、evil-collection、surround | 已配置 | Vim 编辑；等待手动启动安装和验证                   |
 | Avy、搜索与候选界面         | 已配置   | 第二阶段；普通模式 s 跳转，等待手动安装和验证       |
-| Embark 候选与上下文操作     | 已配置   | C-. 英文动作菜单；中文教程见本文，等待手动安装验证 |
+| Embark 候选与上下文操作     | 已配置   | C-. 英文动作菜单；用户已确认本机使用正常、符合需求 |
 | 文件、项目、保存与刷新       | 已配置   | 本地文本延迟保存；保留冲突检查，等待手动验证        |
-| 开发支持、Git               | 待配置   | 按模式和项目启用，外部工具另行准备                 |
+| 开发支持                    | 待配置   | 按模式和项目启用，外部工具另行准备                 |
+| Git 操作与修改标记          | 已配置   | 本机已安装；状态页与日志入口可用，其他流程待验证   |
 | Helpful 与 which-key        | 已配置   | 帮助查询与按键提示；等待手动启动验证                |
 | General 与统一键位          | 已配置   | 逗号 leader，备用 C-c ,；集中在个人配置最后         |
 | 窗口、布局恢复与退出         | 已配置   | 内置 Winner 与基础操作；等待手动验证               |
@@ -573,7 +581,7 @@ which-key 使用内置版本。Consult 等后续插件仍未声明，不会因�
    ├─ 开发支持（占位）
    │  ├─ Eglot / clangd / Corfu / Flymake / Eldoc / Tree-sitter
    │  └─ 格式化（暂不启用）
-   ├─ 版本控制：Magit / diff-hl（占位）
+   ├─ 版本控制：Magit / diff-hl
    ├─ 帮助与交互提示：Helpful / 内置帮助 / which-key
    ├─ 窗口与缓冲区：内置窗口操作 / Winner；Ace Window 暂缓
    └─ 统一快捷键配置（最后配置）
@@ -1323,7 +1331,8 @@ Consult 还有寄存器、宏、编译错误等命令，可在 M-x 输入 =consu
 
 **** Embark 候选与上下文操作
 
-状态：已配置，等待手动启动安装和验证。Embark 属于“候选与上下文操作层”：
+状态：已配置，用户已确认本机使用正常、符合需求；其他平台和未反馈动作仍需分别验证。
+Embark 属于“候选与上下文操作层”：
 Vertico 显示候选，Orderless 筛选，Marginalia 提供注释，Consult 提供搜索与预览，
 Embark 针对当前候选或光标处对象选择动作；embark-consult 负责 Consult 结果导出等桥接。
 Marginalia 的注释不会自动提示 Embark 入口，which-key 也不负责这里的动作菜单。
@@ -1751,12 +1760,96 @@ Windows 图形和终端模式分别验证。跨平台配置 clangd 路径，
 
 仅占位，暂不配置格式化器或保存时格式化。
 
-** 版本控制（占位）
+** 版本控制
 
-*** Git 操作与修改标记
+状态：已配置，本机已安装；用户已确认状态页和日志入口可用，其他流程待分别验证。
+Magit 调用外部 Git，提供差异审阅、
+暂存、提交、分支与远端同步；diff-hl 使用内置 VC 在文件行旁显示修改标记。
+两者职责不同：Magit 管理仓库，diff-hl 帮助在编辑时定位修改；内置 VC 保持启用。
+现有 evil-collection 已包含 Magit 适配，无需再安装 evil-magit。
 
-Magit 与 diff-hl。
-Magit 用于查看差异、按块暂存和提交；diff-hl 显示行旁修改标记并导航修改块。
+*** 插件、依赖与加载方式
+
+本机已安装 Magit 4.7.1 / diff-hl 1.11.2。以下核对 NonGNU ELPA Magit 4.7.1
+及其 [[https://github.com/magit/magit/tree/v4.7.1/lisp][对应源码]]、GNU ELPA
+[[https://elpa.gnu.org/packages/diff-hl.html][diff-hl 1.11.2]] 源码，以及已安装 evil-collection 3.0.3 的 Magit 适配。
+Magit 4.7.1 要求 Emacs 28.1、Transient 0.13、with-editor 3.5 等依赖；
+本机 Emacs 31.1 自带 Transient 0.13.3。安装时以软件源实际版本和依赖检查为准，
+不手动复制依赖包或在配置中固定软件源版本。
+
+#+begin_src emacs-lisp
+  ;;; Transient：Magit 等工具的参数菜单；本机 Emacs 已内置，Magit 的依赖检查仍照常进行。
+  (use-package transient
+    :ensure nil
+    :defer t                           ; 只先设置状态位置；由 Magit 等调用者按需加载。
+    :init
+    ;; 插件默认写入 user-emacs-directory 下的 transient/；本配置统一放入 .cache/。
+    ;; 在本配置首次调用 Magit 前设置；不迁移、删除或覆盖原目录中的已有状态。
+    (setq transient-levels-file (expand-file-name "transient/levels.el" my/state-directory)
+          transient-values-file (expand-file-name "transient/values.el" my/state-directory)
+          transient-history-file (expand-file-name "transient/history.el" my/state-directory)))
+
+  ;;; Magit：commands 创建自动加载入口，使用 Git 操作时才加载完整界面。
+  (use-package magit
+    :commands (magit-status magit-dispatch magit-file-dispatch
+               magit-diff magit-log magit-log-buffer-file
+               magit-stage-files magit-unstage-files magit-commit
+               magit-fetch magit-pull magit-push magit-remote
+               magit-branch magit-merge magit-rebase magit-stash magit-tag magit-worktree))
+  ;; 不改 Git 身份、认证、签名、提交模板或 Transient 的提交参数默认值。
+  ;; -s / --signoff 由用户在提交菜单选择；-S / --gpg-sign 是不同的签名选项。
+
+  ;;; diff-hl：启动时启用全局模式，仅在适用的受版本控制文件中显示修改标记。
+  (use-package diff-hl
+    :demand t                           ; 文件打开后即可显示标记，不必先打开 Magit。
+    :custom
+    ;; 默认 left：标记放在窗口左侧；改为 right 可移到右侧。
+    (diff-hl-side 'left)
+    ;; 默认 t：Git 标记包含已暂存但尚未提交的修改；nil 改为以暂存区作为比较基准。
+    ;; 当前保留 t，暂存后仍可看见修改，提交后再随刷新消失。
+    (diff-hl-show-staged-changes t)
+    ;; 默认 t：终端没有 fringe 时自动使用 margin，并在需要时提供一列宽度。
+    ;; 保持默认的图形 fringe / 终端 margin 切换，不全局强制 margin 模式。
+    (diff-hl-fallback-to-margin t)
+    :config
+    (global-diff-hl-mode 1)
+    ;; 默认在保存后更新；本配置不启用 flydiff，不在每次输入时定时计算差异。
+    ;; Magit 修改暂存区或提交并刷新后同步标记；无需旧的 pre-refresh 钩子。
+    (add-hook 'magit-post-refresh-hook #'diff-hl-magit-post-refresh))
+#+end_src
+
+参数菜单由 Transient 显示，使用插件原有英文提示；leader 的用途分组使用中文。
+参数菜单中的按键以当次显示为准：选择参数可切换开关，选择操作才执行，C-g 退出菜单。
+Transient 的值、菜单级别与历史文件在需要保存时写入 .cache/transient/，目录由插件创建。
+这里不设置提交默认参数；若以前保存过菜单值，本次不会重置它们。
+
+*** Git 入口与入门流程
+
+详细使用说明已拆到 [[file:magit-guide.org][Magit 与 Git 操作手册]]：从缓冲区与 Git 基本概念开始，
+提供一次完整的暂存、提交与取消练习，并说明远端同步、分支、stash、冲突处理和常见疑问。
+完整三列入口表也在子文档及本文 [[*Git 新增入口][统一快捷键速查表]] 中保留。
+
+普通／可视／motion 状态用 =, g= 打开中文 Git 菜单，插入状态用 =C-c , g=。
+=, g s=（=M-x magit-status RET=）进入状态页；=, g g=（magit-dispatch）打开总菜单。
+不先进入状态页也能用 =, g c c=（magit-commit）或 =, g r p=（magit-push）打开相应菜单，
+然后选择具体操作；C-g 取消尚未执行的菜单。
+
+第一次使用可按“编辑保存 → , g s → 展开差异 → s 暂存 → c c 创建提交”的顺序练习。
+在提交说明中用 =C-c C-c=（with-editor-finish）完成，=C-c C-k=（with-editor-cancel）取消。
+请结合 [[file:magit-guide.org::*第一次练习：从一个文件到本地提交][子文档的完整步骤]] 理解各界面中的按键和确认方式。
+
+*** 修改标记与运行条件
+
+diff-hl 保存后更新，并随 Magit 刷新同步；当前保留已暂存修改的标记，提交后再随刷新消失。
+用 =, g h n / p / s=（diff-hl-next-hunk / diff-hl-previous-hunk / diff-hl-show-hunk）导航和查看。
+图形界面使用 fringe，终端回退到 margin。细节与恢复修改块说明见
+[[file:magit-guide.org::*修改标记与外部环境排查][子文档的标记与环境章节]]。
+
+Magit 依赖 Emacs 能找到外部 Git，以及 Git 已有的 SSH 或 HTTPS 认证环境。
+检查路径用 =M-: (executable-find "git") RET=；失败用 =M-x magit-process-buffer RET= 查看输出。
+URL 代理不自动影响 Git / SSH；本配置不存储凭据，不修改 Git 身份、签名或提交默认参数。
+Signed-off-by、菜单参数保存和本仓库提交说明示例见
+[[file:magit-guide.org::*提交说明、Signed-off-by 与取消提交][子文档的提交章节]]。
 
 ** 帮助与交互提示
 
@@ -1776,6 +1869,12 @@ Consult 主要负责搜索和选择，不是帮助文档增强包。
 #+end_src
 
 使用方法：=, h k= 后再按想查询的键，例如 =.=，即可查看它的命令与说明。
+=, h l=（=M-x which-key-show-major-mode RET=）显示当前缓冲区主模式的按键，
+适合进入陌生插件页面时先查看可用操作；先切到目标窗口，再调用，C-g 退出提示。
+它会识别该模式中的 Evil 适配；模式继承的按键也可能列出，不是全局有效键位总表。
+需要展开全部层级时用 =M-x which-key-show-full-major-mode RET=；辅助模式的独立键位
+可用 =M-x which-key-show-minor-mode-keymap RET= 选择查看，暂不另外绑定。
+窗口、缓冲区与帮助范围的区别见 [[file:faq.org][使用常见问题]]。
 =, h m= 查看当前模式怎么操作，=, h b= 列出当前有效按键，
 =, h w= 根据命令查找已有快捷键。忘记命令名时仍可用 =M-x= 搜索。
 Helpful 中的“光标处符号”主要指 Emacs Lisp 符号，不代替未来 clangd 的代码文档。
@@ -1911,6 +2010,12 @@ General 不会自动启用 which-key，也不代替插件本身。
   (defvar my/search-map (make-sparse-keymap))
   (defvar my/project-map (make-sparse-keymap))
   (defvar my/edit-map (make-sparse-keymap))
+  (defvar my/git-map (make-sparse-keymap))
+  (defvar my/git-view-map (make-sparse-keymap))
+  (defvar my/git-commit-map (make-sparse-keymap))
+  (defvar my/git-remote-map (make-sparse-keymap))
+  (defvar my/git-branch-map (make-sparse-keymap))
+  (defvar my/git-hunk-map (make-sparse-keymap))
 
   (general-def my/file-map
     "f" '("打开文件" . find-file)                  ; Find file，打开文件
@@ -1941,6 +2046,7 @@ General 不会自动启用 which-key，也不代替插件本身。
     "v" '("变量帮助" . helpful-variable)                     ; Variable，变量帮助
     "." '("光标处 Lisp 符号" . helpful-at-point)             ; At point，光标处符号
     "m" '("当前模式说明" . describe-mode)                    ; Mode，当前模式
+    "l" '("当前模式按键" . which-key-show-major-mode)         ; Local，当前主模式按键
     "b" '("当前有效键位" . describe-bindings)                ; Bindings，有效键位
     "w" '("查找命令按键" . where-is)                         ; Where is，查找命令绑定
     "a" '("按名称找命令" . apropos-command)                  ; Apropos，按名称查找
@@ -2027,6 +2133,46 @@ General 不会自动启用 which-key，也不代替插件本身。
   (general-def my/edit-map
     "y" '("选择剪贴历史" . consult-yank-pop))  ; Yank，选择 kill ring 内容
 
+  ;; Git，仓库操作：子菜单可从文件缓冲区直接调用，不必先进入状态页。
+  (general-def my/git-view-map
+    "d" '("查看差异" . magit-diff)                  ; Diff，差异菜单
+    "l" '("查看提交日志" . magit-log)               ; Log，日志菜单
+    "f" '("当前文件历史" . magit-log-buffer-file))  ; File log，文件提交记录
+
+  (general-def my/git-commit-map
+    "s" '("选择文件暂存" . magit-stage-files)        ; Stage，选择文件加入暂存区
+    "u" '("选择文件取消暂存" . magit-unstage-files)  ; Unstage，保留工作区修改
+    "c" '("提交菜单" . magit-commit))                ; Commit，选择参数与提交方式
+
+  (general-def my/git-remote-map
+    "f" '("抓取远端" . magit-fetch)    ; Fetch，更新远端跟踪引用
+    "l" '("拉取并整合" . magit-pull)   ; Pull，选择整合方式
+    "p" '("推送菜单" . magit-push)     ; Push，选择目标后执行
+    "r" '("管理远端" . magit-remote))  ; Remote，管理远端地址
+
+  (general-def my/git-branch-map
+    "b" '("分支管理" . magit-branch)       ; Branch，创建与切换分支
+    "m" '("合并菜单" . magit-merge)        ; Merge，合并分支
+    "r" '("变基菜单" . magit-rebase)       ; Rebase，变基与继续操作
+    "z" '("贮藏修改" . magit-stash)        ; Stash，贮藏与恢复修改
+    "t" '("标签管理" . magit-tag)          ; Tag，标签操作
+    "w" '("工作树管理" . magit-worktree))  ; Worktree，独立工作目录
+
+  (general-def my/git-hunk-map
+    "n" '("下一修改块" . diff-hl-next-hunk)      ; Next hunk，下一修改块
+    "p" '("上一修改块" . diff-hl-previous-hunk)  ; Previous hunk，上一修改块
+    "s" '("查看修改块" . diff-hl-show-hunk))     ; Show hunk，显示具体差异
+
+  (general-def my/git-map
+    "s" '("仓库状态" . magit-status)               ; Status，仓库状态页
+    "g" '("Git 总菜单" . magit-dispatch)           ; Git dispatch，完整操作入口
+    "f" '("当前文件操作" . magit-file-dispatch)    ; File dispatch，文件操作菜单
+    "v" (cons "查看差异与历史" my/git-view-map)    ; View，查看差异与历史
+    "c" (cons "暂存与提交" my/git-commit-map)      ; Commit，暂存与提交
+    "r" (cons "远端同步" my/git-remote-map)        ; Remote，远端同步
+    "b" (cons "分支与历史操作" my/git-branch-map)  ; Branch，分支与历史操作
+    "h" (cons "修改块" my/git-hunk-map))           ; Hunk，修改块导航与查看
+
   ;; 根前缀是逗号，再经过两次逗号，得到 ,,,；M-x 本身仍可使用。
   (general-def my/command-map
     "," '("执行命令" . execute-extended-command))  ; Command，执行命令
@@ -2043,7 +2189,8 @@ General 不会自动启用 which-key，也不代替插件本身。
     "j" (cons "跳转" my/jump-map)        ; Jump，屏幕内定位
     "s" (cons "搜索" my/search-map)      ; Search，搜索与索引
     "p" (cons "项目" my/project-map)     ; Project，项目管理
-    "e" (cons "编辑" my/edit-map))       ; Edit，文本编辑
+    "e" (cons "编辑" my/edit-map)        ; Edit，文本编辑
+    "g" (cons "版本控制" my/git-map))    ; Git，版本控制
 
   ;; 普通／可视／motion 状态使用逗号；插入状态不占用逗号。
   ;; motion 覆盖一些只读工具界面；override 减少局部模式遮挡 leader。
@@ -2053,10 +2200,13 @@ General 不会自动启用 which-key，也不代替插件本身。
    "," my/leader-map)
 
   ;; 仅普通模式的 s 改为 Avy；原替换字符操作可用 cl，其他状态不改。
+  ;; Magit 的 s 用于暂存：返回 nil 让高优先级绑定退让，保留局部 keymap 的原命令。
+  ;; 使用 General 已有的条件分派，不另写暂存包装函数；Avy 仍可通过 , j j 调用。
   (general-define-key
    :states 'normal
    :keymaps 'override
-   "s" #'avy-goto-char-timer)  ; Jump，字符标签跳转
+   "s" (general-predicate-dispatch #'avy-goto-char-timer
+         (derived-mode-p 'magit-mode) nil))  ; Jump，字符标签跳转；Magit 保留局部暂存键
 
   ;; 全局备用前缀访问同一份菜单，适用于插入状态及 Emacs 状态。
   ;; 原生 C-h 前缀保留，只增强其中几个具体帮助命令。
@@ -2078,6 +2228,38 @@ General 当前文档推荐这种 keymap 描述方式，而不是到处添加 =:w
 例如 =, f s= 保存，which-key 在 =,= 后显示“文件”等分组，
 在 =, f= 后显示“保存文件”等命令。插入状态下用 =C-c , f s= 调用同一操作。
 以后更换 leader，只需修改绑定根 keymap 的前缀；子菜单无需逐条修改。
+
+**** 普通模式 s：Avy 与 Magit 的条件分派
+
+这里同时判断两件事：Evil 是否处于 normal（普通）状态，以及当前缓冲区的主模式是什么。
+“缓冲区”包括普通文件、Org、代码、Magit 状态页和帮助页，不只是普通文本文件。
+“当前文件属于 Git 仓库”不等于“当前缓冲区是 Magit 模式”。
+
+| 场景 | s 的行为 | Avy 的其他入口 |
+|------+----------+----------------|
+| 文本、Org、代码等非 Magit 缓冲区，Evil 普通状态 | 执行 avy-goto-char-timer | , j j 或 M-x avy-goto-char-timer |
+| Magit 状态、日志、差异等缓冲区，Evil 普通状态 | 让位于局部键位；状态页中为 magit-stage 暂存 | , j j 或 M-x avy-goto-char-timer |
+| Evil 插入状态 | 不受该规则影响，普通文件中输入字符 s | C-c , j j 或 M-x avy-goto-char-timer |
+| Evil motion / Emacs 状态 | 不新增 s 的 Avy 绑定，沿用原状态和模式的绑定 | C-c , j j 或 M-x avy-goto-char-timer |
+
+=general-predicate-dispatch= 生成的是一个带过滤条件的键位，查找按键时选择本次实际定义：
+
+1. 外层 =:states 'normal= 表示规则只挂在 Evil 普通状态的 s 上；
+   =:keymaps 'override= 表示这一层优先级较高，所以需要显式处理 Magit 例外。
+2. =(derived-mode-p 'magit-mode)= 判断当前主模式是否为 magit-mode 或派生模式，
+   例如 magit-status-mode、magit-log-mode、magit-diff-mode；不看缓冲区名称或文件路径。
+3. 命中 Magit 条件时返回 nil，表示这一层不给出命令，Emacs 继续查找下面的有效 keymap。
+   因而保留 Magit / evil-collection 提供的局部 s，而不是在这里另写一个暂存命令。
+4. 没有命中条件时使用首个参数中的 avy-goto-char-timer，普通状态下 s 继续用于 Avy。
+
+这就是“退让”：一次按键查找中的优先级让位，不是关闭 Avy、卸载插件或删除所有 s 绑定。
+离开 Magit 回到文本缓冲区时，条件自然变为不匹配，无需另写恢复 hook。
+若其他工具模式以后出现同类冲突，需要按实际需求另行处理；当前只为 Magit 添加了例外。
+
+Avy 在这里用于当前窗口可见文字的定位，并不要求缓冲区一定是可编辑的普通文件。
+在 Magit 中也能用 =, j j=（=M-x avy-goto-char-timer RET=），输入目标字符并按标签跳转，
+C-g 取消；跳转只移动光标，不执行暂存。模式或 minibuffer 的临时键位可能另有优先级，
+以当前状态为准，不把所有界面里的单键 s 都描述为 Avy。
 
 **** General 怎么修改：对照示例
 
@@ -2111,7 +2293,7 @@ General 当前文档推荐这种 keymap 描述方式，而不是到处添加 =:w
 
 分组按英文记忆：f（File，文件）、b（Buffer，缓冲区）、h（Help，帮助）、
 o（Org，文档）、d（Diagnostics，诊断）、w（Window，窗口）、q（Quit，退出）、
-j（Jump，跳转）、s（Search，搜索）、p（Project，项目）、e（Edit，编辑）。
+j（Jump，跳转）、s（Search，搜索）、p（Project，项目）、e（Edit，编辑）、g（Git，版本控制）。
 常用子键含义：s（Save，保存）、p（Path，路径）、m（Messages，消息；
 窗口组中为 Maximize，最大化）、c（Close，关闭窗口）、a（All，全部）。
 英文全称只用于这里的说明和代码注释，which-key 菜单描述保持中文。
@@ -2125,10 +2307,40 @@ j（Jump，跳转）、s（Search，搜索）、p（Project，项目）、e（Ed
 原生 =C-h= 帮助入口保留；插入状态或 Emacs 状态使用 =C-c ,= 备用入口。
 Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前缀；手动启动后确认冲突。
 第二阶段将普通模式 =s= 用于 Avy，原来的替换字符操作可用 =cl=；
+Magit 缓冲区例外：s 保留原暂存操作，Avy 使用 =, j j=。
 可视与插入状态不新增 s 的 Avy 绑定。
 不采用参考文件把点号 =.= 改成跳转的绑定，以保留 Vim 重复编辑功能。
 
 *** 快捷键速查表
+
+**** Git 新增入口
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| , g s | magit-status | 仓库状态页 |
+| , g g | magit-dispatch | Git 总操作菜单 |
+| , g f | magit-file-dispatch | 当前文件操作菜单 |
+| , g v d | magit-diff | 差异菜单 |
+| , g v l | magit-log | 日志菜单 |
+| , g v f | magit-log-buffer-file | 当前文件历史 |
+| , g c s | magit-stage-files | 选择文件暂存 |
+| , g c u | magit-unstage-files | 选择文件取消暂存 |
+| , g c c | magit-commit | 提交菜单 |
+| , g r f | magit-fetch | 抓取菜单 |
+| , g r l | magit-pull | 拉取菜单 |
+| , g r p | magit-push | 推送菜单 |
+| , g r r | magit-remote | 远端管理 |
+| , g b b | magit-branch | 分支管理 |
+| , g b m | magit-merge | 合并菜单 |
+| , g b r | magit-rebase | 变基菜单 |
+| , g b z | magit-stash | 贮藏修改 |
+| , g b t | magit-tag | 标签管理 |
+| , g b w | magit-worktree | 工作树管理 |
+| , g h n | diff-hl-next-hunk | 下一修改块 |
+| , g h p | diff-hl-previous-hunk | 上一修改块 |
+| , g h s | diff-hl-show-hunk | 查看修改块 |
+
+完整流程与 Magit 内部按键见 [[*版本控制][版本控制]]。所有入口也可通过备用 leader =C-c ,= 调用。
 
 **** 第三阶段新增入口
 
@@ -2206,6 +2418,7 @@ Org 中把光标放到标题，用 , o TAB（M-x org-cycle RET）切换局部折
 | , b n | next-buffer | 下一个缓冲区 |
 | , b p | previous-buffer | 上一个缓冲区 |
 | , h k | helpful-key | 查询接下来按下的键 |
+| , h l | which-key-show-major-mode | 显示当前缓冲区主模式的按键，结合当前 Evil 状态 |
 | , h f | helpful-callable | 函数与宏帮助 |
 | , h x | helpful-command | 交互命令帮助 |
 | , h v | helpful-variable | 变量帮助 |
@@ -2270,17 +2483,27 @@ Org 中把光标放到标题，用 , o TAB（M-x org-cycle RET）切换局部折
 | 分组 | 覆盖功能                                                 |
 |------+----------------------------------------------------------|
 | c    | 定义、引用、重命名、代码动作、诊断和文档；格式化暂不绑定   |
-| g    | Magit、修改块导航                                        |
 
 项目文件与项目切换已在 , p 接入，文本搜索仍在 , s r；最近文件专用入口留待 dashboard 设计。
+Git 操作与修改块导航已在 , g 接入，不再列入未绑定规划。
 目前菜单中没有空分组。
 不为低频命令强行创建按键，插件默认操作仍通过模式帮助和 M-x 查询。
 
 *** 手动启动与体验清单
 
 本轮没有加载新 init.el，没有安装或编译插件，也没有进行交互验证。
+Embark 已由用户确认本机使用正常、符合需求；以下旧体验条目保留供日后回归参考。
 保持代理运行，从仓库根目录用前面的启动命令打开 Emacs，等待包安装结束。
 根据 *Messages* 判断安装情况；首次安装依赖可能需要一些时间。第三阶段主要使用内置功能。
+
+- 在临时 Git 仓库用 , g s 打开状态页，检查 , g 各用途子菜单和 C-c , g 备用入口。
+- 从文件缓冲区直接打开 , g c c 和 , g r f / l / p；先用 C-g 取消，确认不执行操作。
+- 修改并保存已跟踪文件，检查图形 fringe / 终端 margin 标记；用 , g h n / p / s 导航与查看。
+- 练习文件、修改块与选区暂存及取消暂存；检查暂存内容，再完成一次提交并另取消一次提交。
+- 检查提交身份；按需启用 --signoff，并区分临时菜单值和 C-x C-s 保存的跨仓库菜单状态。
+- Magit 暂存或提交并刷新后检查 diff-hl 标记；普通未受控文件不应显示修改标记。
+- 在用户指定的可用远端手动验证抓取、拉取和推送；目标分支及进程结果分别核对。
+- 非仓库目录调用 Git 入口时检查提示；失败用 M-x magit-process-buffer 查看实际 Git 输出。
 
 - 用 , p f / p / b / B / d / D 体验项目文件、切换、缓冲区和目录；切换后的提示应为中文。
 - 扫描临时项目父目录，移除记录后确认磁盘文件仍在；批量保存和关闭保留询问。
