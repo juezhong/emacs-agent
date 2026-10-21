@@ -243,7 +243,7 @@ Helpful、General 和内置 which-key 的配置；toc-org 继续提供自动目�
 | 功能                         | 状态     | 作用范围与约束                                    |
 |------------------------------+----------+---------------------------------------------------|
 | 代理、软件源、use-package     | 已配置   | 当前 Emacs 会话；代理须有对应本机服务               |
-| MSYS2 GPG 路径修复            | 已配置   | 仅匹配本机已知问题路径时启用                       |
+| MSYS2 GPG 路径修复            | 已配置   | Windows 未找到 GPG 或命中已知问题路径时，按条件回退 |
 | Org 标题导航                 | 说明示例 | 内置功能直接使用，声明块不参与生成                 |
 | Org 导航层级设置             | 说明示例 | :tangle no，仅供按文档局部设置                     |
 | toc-org 自动目录              | 已配置   | Org 缓冲区启用；仅带 TOC 标签的文档生成目录         |
@@ -415,26 +415,31 @@ Org 随 Emacs 提供，本阶段不额外配置旧的独立 Org 软件源。
 会将 =d:/...= 当作相对路径拼接，导致密钥环无法创建，继而报缺少公钥。
 Git 自带的 GPG 已实测可处理同一路径。
 
-下面只在默认发现的程序恰好是本机已知的问题路径，并且替代程序存在时启用修复。
-其他 Windows、Linux、macOS 保留默认 GPG 选择，不要求安装在 =D:/Software/Git/=。
+另外，从 Windows 资源管理器启动时，本机 Emacs 的 PATH 找不到 gpg / gpg2，
+但 Git 自带的 GPG 可执行文件存在；用户已通过 executable-find 与 file-executable-p 确认。
+这会在 GPG 初始化处中断加载，并非没有找到 init.el。
+
+下面只在 Windows 中找不到当前 GPG，或默认发现的程序恰好是本机已知的问题路径，
+且替代程序存在时启用修复。已找到其他 GPG 时保留原选择；Linux、macOS 不执行此回退。
+这不修改系统 PATH，也不要求其他机器安装在 =D:/Software/Git/=。
 迁移后若有不同的 GPG 问题，应重新诊断；不要直接照搬本机路径。
 
 使用 =customize-set-variable= 是因为 EasyPG 会检查该变量是否经过自定义；
 仅用 =setq= 可能仍然让它从 PATH 自动选择其他 GPG。
 
 #+begin_src emacs-lisp
-;;; 本机特例：MSYS2 GPG 路径兼容
-;; 仅修复当前已复现问题的可执行文件路径，不是所有 Windows 都需要此设置。
-;; 其他 Windows、Linux、macOS 保留默认 GPG 选择；不关闭签名校验。
+;;; 本机特例：MSYS2 GPG 路径兼容，以及资源管理器启动时缺少 GPG 的回退。
+;; 仅在找不到当前 GPG 或命中已知问题路径时，使用本机已存在的 Git GPG。
+;; 保留其他已发现的 GPG；Linux、macOS 不执行此回退，不关闭签名校验。
 (require 'epg-config)
 
 (when (eq system-type 'windows-nt)
   (let ((detected (executable-find epg-gpg-program))
         (affected "D:/Software/Msys2/usr/bin/gpg.exe")
         (replacement "D:/Software/Git/usr/bin/gpg.exe"))
-    (when (and detected
-               (string-equal (downcase detected) (downcase affected))
-               (file-executable-p replacement))
+    (when (and (file-executable-p replacement)
+               (or (null detected)
+                   (string-equal (downcase detected) (downcase affected))))
       ;; EasyPG 会检查自定义状态；仅 setq 可能仍让它重新从 PATH 选择程序。
       (customize-set-variable 'epg-gpg-program replacement)
       ;; 清除指向旧 GPG 的配置缓存，让后续校验使用替代程序。

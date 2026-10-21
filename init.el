@@ -46,18 +46,18 @@
       package-archive-priorities
       '(("gnu" . 30) ("nongnu" . 20) ("melpa" . 10)))
 
-;;; 本机特例：MSYS2 GPG 路径兼容
-;; 仅修复当前已复现问题的可执行文件路径，不是所有 Windows 都需要此设置。
-;; 其他 Windows、Linux、macOS 保留默认 GPG 选择；不关闭签名校验。
+;;; 本机特例：MSYS2 GPG 路径兼容，以及资源管理器启动时缺少 GPG 的回退。
+;; 仅在找不到当前 GPG 或命中已知问题路径时，使用本机已存在的 Git GPG。
+;; 保留其他已发现的 GPG；Linux、macOS 不执行此回退，不关闭签名校验。
 (require 'epg-config)
 
 (when (eq system-type 'windows-nt)
   (let ((detected (executable-find epg-gpg-program))
         (affected "D:/Software/Msys2/usr/bin/gpg.exe")
         (replacement "D:/Software/Git/usr/bin/gpg.exe"))
-    (when (and detected
-               (string-equal (downcase detected) (downcase affected))
-               (file-executable-p replacement))
+    (when (and (file-executable-p replacement)
+               (or (null detected)
+                   (string-equal (downcase detected) (downcase affected))))
       ;; EasyPG 会检查自定义状态；仅 setq 可能仍让它重新从 PATH 选择程序。
       (customize-set-variable 'epg-gpg-program replacement)
       ;; 清除指向旧 GPG 的配置缓存，让后续校验使用替代程序。
