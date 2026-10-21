@@ -1,5 +1,5 @@
-;;; init.el --- Generated Emacs configuration -*- lexical-binding: t; -*-
-;; Generated from org_configs/Windows_config.org. Edit the Org source instead.
+;;; init.el --- 由 Org 生成的 Emacs 配置 -*- lexical-binding: t; -*-
+;; 本文件由 org_configs/Windows_config.org 生成；请修改 Org 源文件，不要直接改本文件。
 ;; 本文件由 Org 生成；注释也维护在 Org 代码块中，避免下次生成时丢失。
 ;; 已配置基础环境、Org 目录、编辑搜索、文件项目、保存恢复和菜单；开发等仍占位。
 
@@ -8,11 +8,12 @@
 ;; 以 init.el 所在目录为配置根目录，避免依赖启动时的工作目录。
 (defconst my/config-directory
   (file-name-directory (or load-file-name user-init-file))
-  "Directory containing this configuration's generated init.el.")
+  "保存本配置生成的 init.el 的目录。")
 
 ;; 关闭欢迎页，在 scratch 中显示加载提示。
 (setq inhibit-startup-screen t
       initial-scratch-message ";; Org config loaded successfully.\n\n")
+;; t 表示跳过启动欢迎页；scratch 提示只用于确认配置已读取，可改为 nil 或空字符串。
 
 ;;; Custom 状态独立保存，避免污染由 Org 生成的 init.el。
 ;; 尽早设置：首次安装插件时，包选择记录也应写到 custom.el。
@@ -25,7 +26,7 @@
 
 ;; 不需要显式代理时改为 nil；已有的进程代理环境变量不受此设置清除。
 (defvar my/proxy-address "127.0.0.1:10808"
-  "Local HTTP proxy address, or nil to omit explicit URL proxies.")
+  "本地 HTTP 代理地址；设为 nil 表示不设置显式 URL 代理。")
 
 ;; HTTP/HTTPS 共用本地 HTTP 代理，本机地址绕过代理。
 (setq url-proxy-services
@@ -104,17 +105,181 @@
 ;; 后续第三方插件默认自动安装；内置功能应显式声明 :ensure nil。
 (setq use-package-always-ensure t)
 
+;;; 平台与显示环境：后续界面配置只引用这里的变量。
+(defconst my/platform
+  (cond
+   ((eq system-type 'windows-nt) 'windows)
+   ((eq system-type 'gnu/linux) 'linux)
+   ((eq system-type 'darwin) 'macos)
+   (t 'other))
+  "供界面配置使用的平台标识。")
+
+(defun my/graphic-frame-p (&optional frame)
+  "判断 FRAME 是否为图形 Emacs 帧。"
+  (display-graphic-p (or frame (selected-frame))))
+
+(defconst my/graphic-session-p (my/graphic-frame-p)
+  "记录初始 Emacs 会话是否有图形帧。")
+
+;;; 基础显示：使用 Emacs 内置功能，不引入外观插件。
+(when (display-graphic-p)
+  (tool-bar-mode -1)
+  (scroll-bar-mode -1))
+
+;; 行号和当前行提示使用内置功能；特殊工具界面不显示行号。
+;; display-line-numbers-type=t 选择绝对行号；改为 'relative 可使用相对行号，nil 可关闭默认行号类型。
+;; display-line-numbers-width=3 预留三列；数字较多时可改为 4 或 nil 让 Emacs 自动计算。
+(setq-default display-line-numbers-type t
+              display-line-numbers-width 3)
+(global-display-line-numbers-mode 1)
+(dolist (hook '(magit-mode-hook dired-mode-hook minibuffer-setup-hook
+                help-mode-hook helpful-mode-hook compilation-mode-hook
+                term-mode-hook eshell-mode-hook))
+  (add-hook hook (lambda ()
+                   (display-line-numbers-mode -1))))
+(global-hl-line-mode 1)
+(dolist (hook '(minibuffer-setup-hook magit-mode-hook dired-mode-hook
+                help-mode-hook helpful-mode-hook term-mode-hook
+                eshell-mode-hook))
+  (add-hook hook (lambda ()
+                   (setq-local hl-line-mode nil)
+                   (hl-line-mode -1))))
+
+;;; 字体管理：cnfonts 只在需要时安装和加载，profile 按平台隔离。
+(defconst my/cnfonts-profiles '("program" "org" "reading")
+  "按名称共用、按平台分别保存的字体 profile 列表。")
+
+(use-package cnfonts
+  :commands (cnfonts-mode cnfonts-edit-profile cnfonts-switch-profile
+             cnfonts-next-profile cnfonts-increase-fontsize
+             cnfonts-decrease-fontsize)
+  :custom
+  ;; 默认目录位于 user-emacs-directory；这里统一放入本配置根目录的 .cache/。
+  ;; 该章节位于状态目录声明之前，因此直接使用配置根目录构造路径。
+  (cnfonts-directory (expand-file-name ".cache/cnfonts/" my/config-directory))
+  ;; 三个 profile 名称可改为自己的名称；切换后 cnfonts 会在该目录保存对应文件。
+  (cnfonts-profiles my/cnfonts-profiles)
+  ;; t 按 system-type 隔离同名 profile；改为 nil 可让多个平台共用同一目录。
+  (cnfonts-use-system-type t)
+  ;; 保持 nil，避免 Windows 下通过 face-font-rescale 调整字号后破坏中英文对齐。
+  (cnfonts-use-face-font-rescale nil)
+  ;; t 调整字号时尽量保持当前图形 Frame 大小；改为 nil 可让窗口随字号重新计算。
+  (cnfonts-keep-frame-size t)
+  :config
+  (defun my/cnfonts-enable-on-frame (frame)
+    "只在图形 FRAME 中启用 cnfonts。"
+    (when (display-graphic-p frame)
+      (with-selected-frame frame
+        (cnfonts-mode 1))))
+  (when (display-graphic-p)
+    (cnfonts-mode 1))
+  (add-hook 'after-make-frame-functions #'my/cnfonts-enable-on-frame))
+
+;;; 主题：默认暗色，另提供浅色主题；名称可替换为已安装主题。
+(defcustom my/theme-dark 'doom-one
+  "暗色模式由 `my/load-display-theme' 加载的主题。"
+  :type 'symbol)
+;; 修改这里的符号即可替换暗色主题；主题必须已安装或由对应 use-package 提供。
+(defcustom my/theme-light 'doom-one-light
+  "浅色模式由 `my/load-display-theme' 加载的主题。"
+  :type 'symbol)
+;; 修改这里的符号即可替换浅色主题；它不会自动从暗色主题生成配色。
+(defvar my/current-theme-mode 'dark
+  "当前主题模式，只能是 `dark' 或 `light'。")
+
+(defun my/load-display-theme (mode)
+  "加载 MODE 指定的暗色或浅色主题。"
+  (interactive (list (intern (completing-read "Theme mode: " '("dark" "light")
+                                               nil t))))
+  (mapc #'disable-theme custom-enabled-themes)
+  (setq my/current-theme-mode mode)
+  (load-theme (if (eq mode 'light) my/theme-light my/theme-dark) t))
+
+(use-package doom-themes
+  :demand t
+  :config
+  (my/load-display-theme my/current-theme-mode))
+
+;;; 状态栏：成熟的 mode-line 布局；图标依赖单独受开关控制。
+(defcustom my/enable-nerd-icons nil
+  "是否安装并在 doom-modeline 中使用 Nerd Icons。"
+  :type 'boolean)
+
+(use-package doom-modeline
+  :demand t
+  :custom
+  ;; 高度选择 24 像素；只影响图形界面，终端由字符高度决定，可按显示器调整。
+  (doom-modeline-height 24)
+  ;; 跟随 my/enable-nerd-icons；nil 使用文字布局，t 需要 Nerd Icons 字体和包。
+  (doom-modeline-icon my/enable-nerd-icons)
+  ;; 跟随同一开关；关闭后不显示主模式图标，但不影响主模式名称。
+  (doom-modeline-major-mode-icon my/enable-nerd-icons)
+  ;; 文件名过长时使用省略号截断；改为 nil 可尝试显示完整路径，但会占用更多宽度。
+  (doom-modeline-buffer-file-name-style 'truncate-ellipsis)
+  :config
+  (when my/enable-nerd-icons
+    (use-package nerd-icons :demand t))
+  (doom-modeline-mode 1))
+
+;;; 可选 mode-line 装饰：默认只有彩虹小猫开启，其余包不会自动安装。
+(defcustom my/enable-nyan-mode t
+  "是否显示表示缓冲区位置的彩虹小猫。"
+  :type 'boolean)
+;; 默认 t；改为 nil 并重启可关闭彩虹小猫，避免与 poke-line 同时占用位置。
+(defcustom my/enable-poke-line nil
+  "是否显示宝可梦位置指示器；启用时应关闭彩虹小猫。"
+  :type 'boolean)
+;; 默认 nil；改为 t 前先把 my/enable-nyan-mode 改为 nil。
+(defcustom my/enable-parrot nil
+  "是否启用状态栏中的动画鹦鹉。"
+  :type 'boolean)
+;; 默认 nil；改为 t 后 parrot 会接管自己的动画触发逻辑。
+(defcustom my/enable-emacs-pets nil
+  "是否启用可选的 Emacs 宠物动画。"
+  :type 'boolean)
+;; 默认 nil；启用前先确认包和宠物资源可从软件源取得。
+(defcustom my/enable-flappy-fish nil
+  "是否启用可选的状态栏小鱼动画。"
+  :type 'boolean)
+;; 默认 nil；这是独立的状态栏动画，启用后需检查窄窗口中的布局。
+
+(when (and my/enable-nyan-mode my/enable-poke-line)
+  (error "Enable only one of my/enable-nyan-mode and my/enable-poke-line"))
+(when my/enable-nyan-mode
+  (use-package nyan-mode
+    :demand t
+    :custom (nyan-animate-nyancat nil)
+    :config (nyan-mode 1)))
+(when my/enable-poke-line
+  (use-package poke-line
+    :demand t
+    :config (poke-line-mode 1)))
+(when my/enable-parrot
+  (use-package parrot
+    :demand t
+    :config (parrot-mode 1)))
+(when my/enable-emacs-pets
+  (use-package emacs-pets
+    :demand t
+    :config (emacs-pets-mode 1)))
+(when my/enable-flappy-fish
+  (use-package flappy-fish
+    :demand t
+    :config (flappy-fish-mode 1)))
+
 ;;; Org 自动目录
 ;; Org 缓冲区启用 toc-org，但只为带 TOC 标签的文档在保存时更新目录。
 ;; 本配置文档使用 :TOC_4_org:；目前目录只有标题链接，不包含章节编号。
 ;; 不配置全局 org-num hook；正文编号由每份文件的 #+startup: num 决定。
 (use-package toc-org
+  ;; :hook 让每个 Org 缓冲区启用 toc-org；插件只在文档有 TOC 标签时更新目录。
   :hook (org-mode . toc-org-mode))
 
-;;; Vim 编辑：Evil
+;;; Vim 风格编辑：Evil。
 ;; 必须先关闭 Evil 自带的部分模式键位，交由 evil-collection 统一适配。
 ;; 这是加载前选项，必须放在 :init；自定义按键集中在文件末尾。
 (use-package evil
+  ;; :demand t 启动时立即启用 Evil；:init 中的变量必须在加载前设置。
   :demand t
   :init
   (setq evil-want-keybinding nil)
@@ -127,17 +292,19 @@
     (set-default 'evil-mode-buffers nil))
   (evil-mode 1))
 
-;;; 工具界面的 Vim 键位
+;;; 工具界面的 Vim 风格键位。
 ;; 为 Dired、帮助等受支持模式适配键位；模式打开时按需应用。
 (use-package evil-collection
+  ;; :after 等待 Evil 先加载；:demand t 让已支持的工具界面立即完成适配。
   :after evil
   :demand t
   :config
   (evil-collection-init))
 
-;;; Surround：ys + motion/text-object + 新包围符；ds + 旧包围符；cs + 旧 + 新。
+;;; 包围符操作：ys 加动作或文本对象再加新包围符；ds 删除旧包围符；cs 替换旧包围符。
 ;; iw/aw 是普通文本对象；ysiw" 包整个词，yse" 包到词尾。详见 Org 中的语法说明。
 (use-package evil-surround
+  ;; :after 等待 Evil 先加载；全局模式启用后，ys/ds/cs 适用于支持的缓冲区。
   :after evil
   :demand t
   :config
@@ -169,7 +336,7 @@
   :init
   (vertico-mode 1))    ; 启动时启用全局候选界面；1 是启用，不是候选数量。
 
-;;; 匹配规则：普通候选使用 Orderless，文件保留基础和部分路径补全。
+;;; 匹配规则：普通候选使用 Orderless，文件保留基础匹配和部分路径补全。
 (use-package orderless
   :demand t  ; 启动时加载匹配样式，确保第一次打开候选界面时已经可用。
   :custom
@@ -240,7 +407,7 @@
 
 ;;; 本机状态目录：供项目、历史、位置与恢复记录共同使用。
 (defconst my/state-directory (expand-file-name ".cache/" my/config-directory)
-  "Directory for local Emacs state.")
+  "保存本机 Emacs 状态文件的目录。")
 (dolist (directory '("" "auto-save/" "auto-save-list/"))
   (make-directory (expand-file-name directory my/state-directory) t))
 
@@ -259,6 +426,7 @@
 
 (use-package recentf
   :ensure nil
+  ;; 内置 recentf 不需要下载；:custom 只修改记录位置、数量和清理策略。
   :custom
   (recentf-save-file (expand-file-name "recentf.eld" my/state-directory))
   (recentf-max-saved-items 25)         ; 本机默认 25：退出后保留的最近文件上限，可增大。
@@ -268,6 +436,7 @@
 
 (use-package savehist
   :ensure nil
+  ;; 内置 savehist 不需要下载；这里只保存支持历史的 minibuffer 输入。
   :custom
   (savehist-file (expand-file-name "history" my/state-directory))
   (savehist-autosave-interval 300)     ; 默认 300 秒保存历史；nil 关闭定时保存。
@@ -277,6 +446,7 @@
 
 (use-package saveplace
   :ensure nil
+  ;; 内置 saveplace 不需要下载；只记录文件阅读位置，不记录完整窗口布局。
   :custom
   (save-place-file (expand-file-name "places.eld" my/state-directory))
   :config
@@ -284,7 +454,7 @@
 
 ;;; 自动写回范围：本地可写文本，排除外部修改和需要交互加密的文件。
 (defun my/auto-save-visited-p ()
-  "Return non-nil when this buffer may be saved automatically."
+  "判断当前缓冲区是否允许自动保存。"
   (and buffer-file-name
        (not (file-remote-p buffer-file-name))
        (not buffer-read-only)
@@ -304,6 +474,7 @@
 
 (use-package files
   :ensure nil
+  ;; 内置 files 提供自动保存变量；:custom 控制间隔、筛选函数和备份文件策略。
   :custom
   (auto-save-visited-interval 5)        ; 默认 5 秒，可改为 10；是 Emacs 空闲时间。
   (auto-save-visited-predicate #'my/auto-save-visited-p) ; 自定义范围，默认 nil 不额外筛选。
@@ -314,6 +485,7 @@
 
 (use-package autorevert
   :ensure nil
+  ;; 内置 autorevert 提供外部修改检测；:custom 控制轮询、文件通知和远程文件范围。
   :custom
   (auto-revert-interval 5)                    ; 默认 5 秒轮询；文件通知可能更早触发。
   (auto-revert-use-notify t)                  ; 默认 t：支持时使用文件通知，保留轮询兜底。
@@ -335,6 +507,7 @@
 ;;; Transient：Magit 等工具的参数菜单；本机 Emacs 已内置，Magit 的依赖检查仍照常进行。
 (use-package transient
   :ensure nil
+  ;; Transient 是 Emacs 内置的参数菜单；:defer t 不主动加载，Magit 调用时再加载。
   :defer t                           ; 只先设置状态位置；由 Magit 等调用者按需加载。
   :init
   ;; 插件默认写入 user-emacs-directory 下的 transient/；本配置统一放入 .cache/。
@@ -343,8 +516,9 @@
         transient-values-file (expand-file-name "transient/values.el" my/state-directory)
         transient-history-file (expand-file-name "transient/history.el" my/state-directory)))
 
-;;; Magit：commands 创建自动加载入口，使用 Git 操作时才加载完整界面。
+;;; Magit：用命令列表创建自动加载入口，使用 Git 操作时才加载完整界面。
 (use-package magit
+  ;; :commands 只建立 Git 交互命令的自动加载入口；调用命令时才加载 Magit。
   :commands (magit-status magit-dispatch magit-file-dispatch
              magit-diff magit-log magit-log-buffer-file
              magit-stage-files magit-unstage-files magit-commit
@@ -374,11 +548,13 @@
 ;;; 帮助增强：调用时加载 Helpful，安装由 use-package 处理。
 ;; 实际按键在末尾统一绑定，不在这里覆盖任何模式键位。
 (use-package helpful
+  ;; :commands 只建立 M-x 自动加载入口；不启动后台模式，也不覆盖原生帮助键。
   :commands (helpful-key helpful-callable helpful-command
              helpful-variable helpful-at-point))
 
 ;;; 前缀按键提示：输入 leader 后稍等，显示下一步可用命令。
 (use-package which-key
+  ;; :ensure nil 使用 Emacs 内置 which-key；:demand t 启动时立即显示前缀提示。
   :ensure nil
   :demand t
   :custom
@@ -386,17 +562,18 @@
   :config
   (which-key-mode 1))
 
-;;; Window configuration history：内置 Winner 记录布局历史；最大化切换另存 Frame 布局。
+;;; 窗口配置历史：内置 Winner 记录布局历史；最大化切换另存 Frame 布局。
 (use-package winner
+  ;; :ensure nil 使用内置 Winner；:demand t 立即记录窗口布局历史。
   :ensure nil
   :demand t
   :config
   (winner-mode 1))
 
 ;;; 窗口布局与文件辅助命令；Org 生成和目录更新直接使用原生命令。
-;; Window maximize：布局保存在当前 Frame 参数中，各 Frame 互不干扰。
+;; 窗口最大化：布局保存在当前 Frame 参数中，各 Frame 互不干扰。
 (defun my/toggle-window-maximize ()
-  "Toggle between the current window layout and a single window."
+  "在当前窗口布局和单窗口显示之间切换。"
   (interactive)
   (let ((saved (frame-parameter nil 'my/window-configuration)))
     (if (window-configuration-p saved)
@@ -410,7 +587,7 @@
 
 ;; 只复制当前文件的绝对路径，不修改文件；无文件的缓冲区会明确提示。
 (defun my/copy-file-path ()
-  "Copy the current file's absolute path to the kill ring."
+  "把当前文件的绝对路径复制到 kill ring。"
   (interactive)
   (unless buffer-file-name
     (user-error "Current buffer is not visiting a file"))
@@ -420,6 +597,7 @@
 
 ;;; 统一键位：General 管理绑定，which-key 显示随 keymap 保存的中文描述。
 (use-package general
+  ;; :after 等待 Evil；:demand t 立即创建统一 leader keymap，后面的绑定才会生效。
   :after evil
   :demand t
   :config
@@ -475,7 +653,7 @@
     "l" '("当前模式按键" . which-key-show-major-mode)         ; Local，当前主模式按键
     "b" '("当前有效键位" . describe-bindings)                ; Bindings，有效键位
     "w" '("查找命令按键" . where-is)                         ; Where is，查找命令绑定
-    "a" '("按名称找命令" . apropos-command)                  ; Apropos，按名称查找
+    "a" '("按名称找命令" . apropos-command)                  ; Apropos，按名称查找命令
     "i" '("Emacs 手册" . info-emacs-manual)                  ; Info，Emacs 手册
     "g" '("自定义键位清单" . general-describe-keybindings))  ; General，自定义键位
 
