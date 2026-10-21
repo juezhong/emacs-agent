@@ -47,7 +47,7 @@
       - [[evil-collection 的工具界面][evil-collection 的工具界面]]
       - [[Dired 手动体验与帮助][Dired 手动体验与帮助]]
       - [[evil-surround 的包围符操作][evil-surround 的包围符操作]]
-    - [[搜索、定位与候选界面（占位）][搜索、定位与候选界面（占位）]]
+    - [[搜索、定位与候选界面][搜索、定位与候选界面]]
       - [[屏幕内定位：Avy][屏幕内定位：Avy]]
       - [[搜索与选择：Vertico / Orderless / Marginalia / Consult][搜索与选择：Vertico / Orderless / Marginalia / Consult]]
       - [[文本替换][文本替换]]
@@ -66,11 +66,11 @@
     - [[Winner 布局历史与最大化恢复][Winner 布局历史与最大化恢复]]
     - [[退出行为][退出行为]]
   - [[诊断与配置状态][诊断与配置状态]]
-  - [[统一快捷键配置（第一阶段，最后配置）][统一快捷键配置（第一阶段，最后配置）]]
+  - [[统一快捷键配置（最后配置）][统一快捷键配置（最后配置）]]
     - [[管理方式：General][管理方式：General]]
       - [[General 怎么修改：对照示例][General 怎么修改：对照示例]]
     - [[Leader 与键位取舍][Leader 与键位取舍]]
-    - [[第一阶段速查表][第一阶段速查表]]
+    - [[快捷键速查表][快捷键速查表]]
     - [[后续分组规划（未绑定）][后续分组规划（未绑定）]]
     - [[手动启动与体验清单][手动启动与体验清单]]
 - [[配置结束][配置结束]]
@@ -220,6 +220,7 @@ emacs -nw --init-directory . --user ""
 基础环境包含代理、软件源和 =use-package=，参考仓库中的
 =example_Emacs_Windows.org=。第一阶段已写入 Evil、evil-collection、evil-surround、
 Helpful、General 和内置 which-key 的配置；toc-org 继续提供自动目录。
+第二阶段已写入 Avy、Vertico、Orderless、Marginalia 和 Consult，提供跳转、候选选择与搜索。
 尚未安装的包由你手动启动时交给 use-package 安装，已安装则复用。
 本轮只编写配置和生成 init.el，没有加载、安装、编译或交互验证这些插件。
 
@@ -238,11 +239,11 @@ Helpful、General 和内置 which-key 的配置；toc-org 继续提供自动目�
 | 与正文一致的目录编号         | 待配置   | 需要该功能的文档；当前 toc-org 不提供               |
 | 界面、字体、主题与状态栏     | 待配置   | 字体及图形／终端行为后续分别验证                   |
 | Evil、evil-collection、surround | 已配置 | Vim 编辑；等待手动启动安装和验证                   |
-| Avy、搜索与候选界面         | 待配置   | 第二阶段；暂不改变 s 的默认编辑操作                 |
+| Avy、搜索与候选界面         | 已配置   | 第二阶段；普通模式 s 跳转，等待手动安装和验证       |
 | 文件、项目、保存与刷新       | 待配置   | 当前 Emacs 会话；仍遵守缓冲区冲突保护              |
 | 开发支持、Git               | 待配置   | 按模式和项目启用，外部工具另行准备                 |
 | Helpful 与 which-key        | 已配置   | 帮助查询与按键提示；等待手动启动验证                |
-| General 与第一阶段键位      | 已配置   | 逗号 leader，备用 C-c ,；集中在个人配置最后         |
+| General 与统一键位          | 已配置   | 逗号 leader，备用 C-c ,；集中在个人配置最后         |
 | 窗口、布局恢复与退出         | 已配置   | 内置 Winner 与基础操作；等待手动验证               |
 | 格式化                       | 暂不启用 | 只记录需求                                        |
 | 带 :tangle no 的演示代码     | 说明示例 | 不写入 init.el；仍可能手动执行                     |
@@ -305,7 +306,7 @@ GPG 先查看实际可执行文件和错误路径；本机 MSYS2 路径问题的
 ;;; init.el --- Generated Emacs configuration -*- lexical-binding: t; -*-
 ;; Generated from org_configs/Windows_config.org. Edit the Org source instead.
 ;; 本文件由 Org 生成；注释也维护在 Org 代码块中，避免下次生成时丢失。
-;; 已配置基础环境、Org 目录、Vim 编辑、帮助和 leader；搜索与开发等仍占位。
+;; 已配置基础环境、Org 目录、Vim 编辑、跳转搜索、帮助和 leader；开发等仍占位。
 
 ;;; 基础入口
 
@@ -713,13 +714,13 @@ Org 没有用 =#+options: num:4= 设置编辑器编号深度的含义，
 Imenu 是 Emacs 内置的“当前缓冲区结构索引”，不是另一个目录插件。
 在 Org 中列标题，在编程模式中通常列函数、类型等符号，内容由当前模式提供。
 执行 =M-x imenu=，选择索引项并跳转，不会在文件中插入或更新文字。
-以后 Consult 安装完成后可以使用 =consult-imenu= 提供带预览的选择界面。
+第二阶段通过 =, o i= 或 =, s i=（=M-x consult-imenu RET=）提供带预览的选择界面。
 
 | 需要做的事                   | 使用功能                 |
 |------------------------------+--------------------------|
 | 文档里有一份自动更新的目录   | toc-org，保存时更新       |
 | 按标题路径定位 Org 章节      | org-goto，选择后跳转      |
-| 查找当前文件的标题／代码符号 | imenu，之后可用 Consult   |
+| 查找当前文件的标题／代码符号 | imenu 或 consult-imenu    |
 
 ** 编辑与文本导航
 
@@ -926,18 +927,362 @@ evil-surround 模仿 Vim 的 surround.vim，核心是“添加／删除／替换
 可用 =, h f= 查询 =evil-inner-word=、=evil-a-word= 等函数说明，
 或者 =, h k= 查询当前操作键。不要把 =ys=、=ds=、=cs= 和 leader 菜单混在一起记。
 
-*** 搜索、定位与候选界面（占位）
+*** 搜索、定位与候选界面
+
+状态：已配置，等待手动启动安装和验证。
+屏幕上已经看到目标时用 Avy；需要搜索整个缓冲区时用 Consult；
+需要在磁盘上的项目文件中找内容时用 Consult 调用 ripgrep。
+Vertico、Orderless、Marginalia 则改善这些操作背后的候选选择过程。
+
+下面的代码块也是可修改的参数入口，不只是安装清单。
+标为“默认”的值已对照本机安装版本；显式写出后会固定采用这个值，
+以后升级插件不会自动跟随上游修改该选项的默认值。
+标为“本配置选择”的值则是已决定的行为，不应误认为插件原始默认。
+
+| 代码写法 | 含义与修改方式 |
+|----------+----------------|
+| :commands (命令列表) | 为命令建立自动加载入口，调用时加载插件；不设置按键、不执行命令 |
+| :custom (变量 值) | 设置可自定义变量；修改数值、符号或列表即可调整行为 |
+| :init | 加载插件之前执行的初始化部分；这里主要调用全局模式的启用入口 |
+| :demand t | 要求启动时立即加载该插件，而不是等命令首次调用 |
+| t / nil | 对布尔选项通常是启用／关闭；范围和样式变量须看该变量自己的说明 |
+| 'any / 'left | 引号表示把符号本身作为值，不把它当作另一个变量求值 |
+| '(a b) | 引号列表，包含 a、b 两个元素；匹配样式和标签键等选项使用列表 |
+| (某模式 1) | 显式启用模式；-1 通常为关闭，与 :custom 的变量设置不同 |
+
+修改流程仍是“修改 Org → 保存 → tangle → 重启确认”，不要直接改 init.el。
+查看某个变量在当前会话的实际值及完整选项，用 =C-h v 变量名 RET=，
+或 =M-x describe-variable RET=；配置源中的值可能尚未在旧会话生效。
 
 **** 屏幕内定位：Avy
 
-Avy 使用 =avy-goto-char-timer= 输入字符、选择标签跳转，另提供按行跳转。
+[[https://github.com/abo-abo/avy][Avy]] 提供类似 Flash.nvim 的“输入字符 → 显示标签 → 按标签跳转”操作。
+它们的功能并非逐项对应。本配置的默认范围是当前窗口中可见的文字，
+不是整个缓冲区：缓冲区包括滚动后才看得见的内容，同一缓冲区也可以显示在多个窗口中。
+折叠或尚未显示的内容不要依赖 Avy 查找，改用 =, s s=（=M-x consult-line RET=）。
+
+#+begin_src emacs-lisp
+;;; 屏幕内定位：按命令加载，不在启动时扫描缓冲区。
+(use-package avy
+  ;; 为这两个命令建立自动加载入口；首次调用才加载 Avy，不是在这里设置快捷键。
+  :commands (avy-goto-char-timer avy-goto-line)
+  :custom
+  ;; 本配置选择 nil：当前窗口；插件默认 t：当前 Frame 全部窗口；all-frames：全部 Frame。
+  (avy-all-windows nil)
+  ;; 默认 0.5 秒：连续字符输入停顿多久后显示标签；可改为 0.8 或 1.0，给输入更多时间。
+  (avy-timeout-seconds 1.0)
+  ;; 默认 t：RET 提前结束文字输入并显示标签；nil 则把 RET 当作换行字符匹配。
+  (avy-enter-times-out t)
+  ;; 默认 t：匹配文字忽略大小写；改为 nil 后区分大小写。
+  (avy-case-fold-search t)
+  ;; 默认标签键：?a 表示字符 a；可调整字符及顺序，不是要查找的目标文字。
+  (avy-keys '(?a ?o ?e ?u ?i ?d ?h ?t ?n)))
+#+end_src
+
+这里修改跳转范围，并把常用参数按本机 Avy 0.5.0 默认值显式写出，便于后续修改。
+=avy-timeout-seconds= 当前为 0.5 秒，可在上面的 :custom 中改为 0.8 或 1.0。
+该时间是连续输入字符的等待时间，不是看到标签后必须立即完成选择的时间限制。
+其他交互命令由包的自动加载定义提供，使用 M-x 即可；无需为每个命令增加按键。
+
+***** 字符跳转：先输入文字，再选择标签
+
+1. 在普通模式按 =s=，或 =, j j=；也可执行 =M-x avy-goto-char-timer RET=。
+2. 输入屏幕上目标文字中的一个或连续多个字符，例如 =config=。
+   相邻输入间隔超过默认 0.5 秒后，Avy 开始选择；默认也可用 RET 提前结束文字输入。
+3. 多个目标出现标签后，输入目标旁的标签字符。标签可能不止一个字符，按显示的顺序输入。
+   标签是临时选择键，与刚才输入的目标文字是两个步骤。
+4. 唯一候选通常直接跳转；没有候选时不会跳到任意位置。
+   需要放弃时按 =C-g=，重新调用后可换用更短的文字或先滚动到目标附近。
+
+例如当前窗口有多个 =use-package=，输入 =use= 后按其中一个位置的标签；
+如果想精确定位 =use-package avy=，可以输入更有区分度的连续片段。
+不要把 Orderless 的空格分词套到这里：Avy 的计时字符跳转查找连续文字。
+普通模式原来的 =s= 替换字符操作改用 =cl=；插入模式的 s 仍输入普通字母。
+Avy 跳转后可用 =M-x avy-pop-mark RET= 返回它记录的前一位置。
+
+***** 行跳转、单词跳转与范围选择
+
+=, j l= 或 =M-x avy-goto-line RET= 为可见行显示标签，不需要先输入行内文字。
+例如目标是一整行注释，直接选择该行的标签比输入共同出现的注释前缀更方便。
+
+下表命令均可通过 =M-x 命令名 RET= 调用；没有列出快捷键的命令本轮不额外绑定。
+
+| 命令 | 输入与用途 |
+|------+------------|
+| avy-goto-char | 读取一个字符，在可见的该字符位置选择 |
+| avy-goto-char-2 | 依次读取两个字符，适合固定两字符定位，不等待计时结束 |
+| avy-goto-char-in-line | 在当前行的可见部分选择一个字符 |
+| avy-goto-char-2-above / avy-goto-char-2-below | 限定光标上方／下方的可见范围，使用两字符定位 |
+| avy-goto-word-0 | 直接为可见单词起始位置提供选择，不先输入字符 |
+| avy-goto-word-1 | 输入一个字符，只选择以该字符开头的单词 |
+| avy-goto-word-0-above / avy-goto-word-0-below | 限定上方／下方的单词起始位置 |
+| avy-goto-word-1-above / avy-goto-word-1-below | 限定上方／下方，输入单词首字符后选择 |
+| avy-goto-line | 选择可见行 |
+| avy-pop-mark | 返回 Avy 保存的跳转位置 |
+
+单词边界受当前模式的语法规则影响，不等于按中文语义分词。
+支持前缀参数的字符／单词命令可临时反转窗口范围，例如
+=C-u M-x avy-goto-char-timer RET= 本次允许选择当前 Frame 的其他窗口；
+不修改 =avy-all-windows= 的持久设置。各命令的前缀参数含义并不完全相同，
+特别是行编辑命令可能把数值参数当作行数，先用 =C-h f= 查询对应说明。
+
+***** 复制、移动与删除：按标签选择操作对象
+
+Avy 还可以选择远处的行或范围后编辑。以下命令会涉及文字变更，
+应先在临时文件中试用；它们不是单纯的光标跳转，也不自动保存文件。
+
+| M-x 命令 | 效果 |
+|----------+------|
+| avy-copy-line | 选择一行，复制到当前行上方；数值前缀可指定行数 |
+| avy-move-line | 选择一行，移动到当前行上方；原位置文字随之移除 |
+| avy-copy-region | 选择两行，将其间的文本复制到当前行附近，默认插在当前行上方 |
+| avy-move-region | 选择两行，将其间文本移动到当前行上方 |
+| avy-kill-whole-line | 选择并剪切整行，保存到 kill ring |
+| avy-kill-ring-save-whole-line | 选择整行复制到 kill ring，不删除 |
+| avy-kill-region | 选择两行并剪切其间范围 |
+| avy-kill-ring-save-region | 选择两行并将其间范围复制到 kill ring |
+
+例如先把光标放在需要插入内容的行，执行 =M-x avy-copy-line RET=，
+再按源行标签，源行副本会出现在当前行上方。范围命令按两次选择确定范围，
+执行前先查看 =C-h f= 的边界说明，避免把行范围误认为任意字符范围。
+Avy 也支持标签阶段的 action dispatch，具体键和动作由 =avy-dispatch-alist= 决定。
+本配置不修改该表；查阅 =C-h v avy-dispatch-alist= 后再使用，
+不要把 action 函数名当作独立的 M-x 命令。更完整的可用命令可在 M-x 输入 =avy-= 查询。
 
 **** 搜索与选择：Vertico / Orderless / Marginalia / Consult
 
-Vertico、Orderless、Marginalia、Consult 作为一组配置。
-覆盖文件／命令候选、多关键词匹配、候选说明、缓冲区切换、当前文件搜索、
-最近文件、符号列表和基于 ripgrep 的项目文本搜索。
-屏幕内定位用 Avy，文件内搜索用 =consult-line=，项目搜索用 =consult-ripgrep=。
+这四个插件各自负责一层功能：
+
+| 插件 | 职责 | 在哪里能看到效果 |
+|------+------+------------------|
+| Vertico | 显示纵向候选列表 | M-x、find-file 和采用标准补全接口的命令 |
+| Orderless | 决定输入如何匹配候选 | 多个空格分隔关键词逐步缩小列表 |
+| Marginalia | 为支持的候选类别附加说明 | 命令说明、文件属性等注释 |
+| Consult | 提供搜索、切换与导航命令 | consult-line、consult-buffer 等带预览的选择 |
+
+它们不提供代码缓冲区内的弹出补全；后续 Corfu 负责那个界面。
+本阶段不改 =completion-in-region-function=，也不引入 Embark 等额外插件。
+
+***** Vertico：候选列表与确认方式
+
+[[https://github.com/minad/vertico][Vertico]] 接管标准 minibuffer 补全的候选显示。
+minibuffer 是 Emacs 底部读取命令和参数的输入区域，不是新的文件缓冲区。
+开启后，原来的 =M-x=、=,,,=、=, f f=（=M-x find-file RET=）仍是相同命令入口。
+
+#+begin_src emacs-lisp
+;;; 候选界面：默认候选数量，按内容动态增减高度，不首尾循环。
+(use-package vertico
+  :custom
+  (vertico-count 10)   ; 默认 10：最多显示的候选数；可改为 15 或 20，受窗口高度限制。
+  (vertico-resize t)   ; 按已选行为动态增减高度；nil 固定高度，grow-only 只增高不缩小。
+  (vertico-cycle nil)  ; 默认 nil：首尾不循环；改为 t 后从末尾继续向下会回到开头。
+  :init
+  (vertico-mode 1))    ; 启动时启用全局候选界面；1 是启用，不是候选数量。
+#+end_src
+
+将本机 Vertico 2.15 的默认 =vertico-count=（10）显式写出，方便以后调整数量上限。
+=vertico-resize=t= 允许高度随候选增减；实际可见高度仍受 minibuffer 窗口限制。
+=vertico-cycle=nil= 表示到达首尾时不绕回另一端，避免连续移动时突然选到相反位置。
+这些是显示行为，不决定搜索整个文件还是当前窗口。
+
+| 默认按键 | 作用 |
+|----------+------|
+| C-n / C-p、下／上方向键 | 选择下一个／上一个候选 |
+| RET | 确认当前候选 |
+| TAB | 将选中候选填入输入区，便于继续修改，不等于最终确认 |
+| M-RET | 提交输入区原始文字，不强制采用高亮候选 |
+| C-g | 取消当前输入 |
+
+例如用 =, f f= 输入目录和文件名，选中已有文件后 RET 打开。
+若输入一个尚不存在的新文件名，而列表仍高亮已有文件，使用 =M-RET= 提交自己的名字；
+也可上移到输入提示行后 RET。创建文件缓冲区后仍需显式保存才会写入磁盘。
+M-RET 不是绕过命令自身的校验：必须从候选选择的命令仍可能拒绝不存在的对象。
+minibuffer 中沿用 Emacs 输入键；不要把普通模式 hjkl 当作候选移动键。
+
+***** Orderless：多关键词如何匹配
+
+[[https://github.com/oantolin/orderless][Orderless]] 改善候选筛选。Vertico 展示结果，Orderless 决定哪些候选留下。
+
+#+begin_src emacs-lisp
+;;; 匹配规则：普通候选使用 Orderless，文件保留基础和部分路径补全。
+(use-package orderless
+  :demand t  ; 启动时加载匹配样式，确保第一次打开候选界面时已经可用。
+  :custom
+  ;; 本配置的普通补全顺序：先多关键词匹配，再尝试 basic；不是 Emacs 原始默认值。
+  (completion-styles '(orderless basic))
+  ;; 清除类别自带的默认样式，避免覆盖上面的统一规则；nil 不是关闭补全。
+  (completion-category-defaults nil)
+  ;; 文件类别单独处理：basic 优先兼容路径／TRAMP，partial-completion 支持部分路径。
+  (completion-category-overrides '((file (styles basic partial-completion))))
+  ;; Orderless 1.8 默认：每个关键词可按字面或正则匹配；只保留 orderless-literal 可禁用正则。
+  (orderless-matching-styles '(orderless-literal orderless-regexp)))
+#+end_src
+
+默认用空格分隔多个匹配部分，各部分都要命中，但出现顺序不限。
+例如在 =M-x= 输入 =buffer switch=，再改为 =switch buffer=，都可筛选名称含这两部分的命令。
+可以先输入较宽泛的 =buffer=，再加 =switch= 缩小范围，而不必记住完整命令名。
+这不是自动纠正拼写，也不是默认任意字符模糊匹配：默认匹配方式包含字面与正则匹配，
+例如 =^consult-= 可匹配以 consult- 开头的候选，点号等字符也可能有正则含义。
+不需要正则时先用普通文字；不匹配时删掉复杂表达式，再逐步增加关键词。
+
+=basic= 作为普通候选的后备样式，兼容依赖动态补全表的命令。
+=completion-category-defaults=nil= 去掉类别默认样式，由这里的规则明确选择匹配方式；
+=completion-category-overrides= 为文件类别单独选择 basic 和 partial-completion，
+basic 优先也有助于 TRAMP 主机名补全。文件输入因此不承诺与命令候选相同的空格分词行为。
+partial-completion 提供部分路径和通配符补全；路径效果还取决于系统和 Emacs 版本。
+Windows 可以使用 =D:/目录/文件= 这样的路径，空格也可能是实际文件名的一部分。
+本阶段不添加自定义匹配分派器、额外前缀语法或 Emacs 31 专属匹配设置。
+
+***** Marginalia：候选旁边的信息
+
+[[https://github.com/minad/marginalia][Marginalia]] 为支持的补全类别添加注释；注释不是候选名称的一部分。
+
+#+begin_src emacs-lisp
+;;; 候选注释：使用内置注释器，不增加自定义类别或切换键。
+(use-package marginalia
+  :custom
+  (marginalia-align 'left)   ; 默认 left：注释左对齐；也可选 center 或 right。
+  (marginalia-align-offset 0) ; 默认 0：注释对齐的额外偏移列数；增大可增加间距。
+  :init
+  (marginalia-mode 1))      ; 启动时启用候选注释；不需要每个缓冲区分别开启。
+#+end_src
+
+例如 M-x 中可看到命令的说明或按键，文件选择中可看到文件属性，
+变量和函数候选也可能显示类型或文档摘要。实际字段取决于类别和安装版本。
+普通命令已有自己的注释时，显示结果也受原有补全元数据影响；并非每个候选都有附加信息。
+这些注释用于辅助选择，不代替 =C-h f=、=C-h v= 等完整帮助。
+
+执行 =M-x marginalia-cycle RET= 可以切换注释器，再打开原来的候选界面观察区别。
+本轮保留默认注释器，不给切换操作单独绑定按键；多数时候无需反复调整。
+插件会用于后续候选界面，不需要在每个文件中手动启动。
+
+***** Consult：已绑定的搜索与导航
+
+[[https://github.com/minad/consult][Consult]] 提供实际命令，通过标准候选界面展示结果，并支持预览。
+
+#+begin_src emacs-lisp
+;;; 搜索与选择命令：首次调用时加载，保留插件默认预览策略。
+(use-package consult
+  ;; :commands 声明自动加载入口，不执行这些命令，也不定义快捷键。
+  ;; 四个命令分别负责缓冲区选择、当前缓冲区搜索、外部 rg 搜索、结构索引。
+  ;; 首次调用其中任意一个才加载插件；启动时不必加载整套搜索实现。
+  :commands (consult-buffer consult-line consult-ripgrep consult-imenu)
+  :custom
+  ;; 默认 any：选中候选变化时自动预览；nil 关闭预览，"M-." 改为按该键手动预览。
+  (consult-preview-key 'any)
+  ;; 默认 3 个字符才启动异步外部搜索；可改为 2，小值更早搜索但更容易产生大量结果。
+  ;; 仅影响 consult-ripgrep 等异步命令，不限制 consult-line 的本地筛选。
+  (consult-async-min-input 3))
+#+end_src
+
+上述声明为本配置绑定的命令建立加载入口；其他官方交互命令使用包提供的自动加载。
+这里的 :commands 是 use-package 的加载声明，不是“只允许使用这四个命令”的白名单。
+列出它们是为了确保统一键位引用的主要命令可以按需加载；其他交互命令仍可通过 M-x 使用。
+修改按键应去最后的统一快捷键章节，修改预览或搜索阈值则改这里的 :custom。
+不把 Consult 的内部函数作为配置接口；预览和搜索阈值显式保留本机 Consult 3.10 默认值。
+通常移动候选即可看到预览，RET 确认，C-g 取消并返回调用前的位置或显示。
+预览不等于保存文件；不同命令的预览内容可能是缓冲区、位置或插入文字。
+预览文件也可能触发访问文件的正常行为；远程文件等来源可能限制预览。
+
+| 快捷键 | M-x 命令 | 选择对象 |
+|--------+----------+----------|
+| , b b | consult-buffer | 缓冲区及当前启用的其他来源 |
+| , s s | consult-line | 当前缓冲区的匹配行 |
+| , s r | consult-ripgrep | 项目或目录中的磁盘文件匹配 |
+| , s i / , o i | consult-imenu | 当前缓冲区的结构索引 |
+
+=, b b=：输入缓冲区名称片段，C-n / C-p 移动时预览，RET 切换，C-g 取消。
+它替换原键位的 switch-to-buffer，但 =M-x switch-to-buffer RET= 仍可直接使用。
+Consult 的默认来源还可以包含书签、最近文件等；本阶段没有启用 recentf，
+因此不保证出现最近文件候选，不把安装 Consult 等同于建立最近文件记录。
+默认可用 =b SPC= 缩小到缓冲区来源，退格删除筛选输入后恢复选择；
+其他来源是否出现取决于实际启用的功能。
+
+=, s s=：在当前缓冲区输入文字，例如 =use-package=，选择匹配行跳转。
+它能搜索屏幕外的内容；若缓冲区被 narrow，则只搜索当前可访问范围。
+可输入多个 Orderless 关键词筛选行。按 =M-n= 可访问命令提供的未来历史，
+例如光标处符号；没有合适内容时直接自行输入。预览后 C-g 可放弃跳转。
+
+=, s i= 或 =, o i=：选择 Imenu 结构项，例如 Lisp 函数、Org 标题。
+项目由当前主模式的 Imenu 支持决定，不是语言服务器的跨文件符号搜索；
+空列表可能表示模式没有提供索引，不能据此认为文件没有任何结构。
+原生 =M-x imenu RET= 仍可使用，不全局设置索引层级。
+
+***** ripgrep：项目搜索与外部程序
+
+=, s r= 或 =M-x consult-ripgrep RET= 启动异步文本搜索。
+默认使用 Emacs 识别到的项目根目录；无项目时使用当前 default-directory，
+提示区会显示搜索目录。=C-u M-x consult-ripgrep RET= 可先选择目录。
+项目识别采用现有内置机制，本阶段不增加 project.el 管理配置。
+
+1. 先在 Emacs 执行 =M-: (executable-find "rg") RET=。结果为 nil 表示 Emacs 找不到 rg。
+   shell 中能够运行 rg 不代表图形 Emacs 一定继承相同 PATH。
+2. 打开本仓库的文件，按 =, s r=，检查目录，再输入 =use-package= 等搜索词。
+3. 输入达到 Consult 的异步搜索最小长度后才开始执行外部搜索；结果到达可能有短暂延迟。
+4. 移动候选预览位置，RET 打开目标；C-g 取消。
+
+Consult 的外部搜索支持 =#搜索表达式#候选过滤= 形式，例如
+=#use-package#evil=：前半部分交给外部搜索，后半部分继续筛选返回的候选。
+不要把输入区所有空格都当作普通文件名搜索；具体正则转换和选项见官方说明。
+默认 rg 规则通常遵守忽略文件，不默认搜索所有隐藏或被忽略文件。
+搜索磁盘文件不会包含尚未保存的缓冲区修改；查找这类内容用 consult-line。
+没有结果时先检查目录、搜索长度、忽略规则和磁盘保存状态，再判断是否插件故障。
+本配置不安装 rg、不修改系统 PATH，也不硬编码 Codex 内部工具路径。
+
+***** 其他 Consult 命令：通过 M-x 使用
+
+以下功能本轮不增加快捷键。已绑定入口覆盖日常搜索和切换，
+这些功能先按场景通过 M-x 使用，避免一次增加大量难以记忆的键位；
+后续根据实际频率再安排按键。未绑定不等于禁用，也不需要为每次调用重新配置。
+
+| M-x 命令 | 前提与使用过程 |
+|----------+----------------|
+| consult-yank-pop | kill ring 中已有复制／剪切内容；选择并预览文字后 RET 插入，紧接 yank 后可能替换上一次粘贴 |
+| consult-mark | 当前缓冲区 mark-ring 已有记录；选择位置预览，RET 跳转 |
+| consult-global-mark | global-mark-ring 已有跨缓冲区记录；选择记录后跳转到对应缓冲区与位置 |
+| consult-outline | 当前模式提供 outline 标题规则；选择标题，预览后 RET 跳转 |
+| consult-history | 在支持的输入上下文中选择历史，例如 shell 的命令历史或 minibuffer 输入历史 |
+| consult-bookmark | 已有书签时选择书签并跳转；可用内置 bookmark-set 先建立书签 |
+| consult-goto-line | 输入行号，或 line:column，预览后 RET 确认 |
+| consult-line-multi | 搜索多个缓冲区；默认项目缓冲区，前缀参数可扩大到全部缓冲区 |
+| consult-imenu-multi | 选择项目中相同主模式的缓冲区索引项，需要相应缓冲区已打开并提供 Imenu |
+
+例如先在临时文件复制两段文字，再执行 =M-x consult-yank-pop RET=，
+选择旧的一段，观察预览后 RET 插入；C-g 取消。Evil 的寄存器语义与 Emacs kill ring
+并非完全相同，候选以实际 kill ring 内容为准。该命令会修改文本，不自动保存。
+
+标记历史也不是所有光标移动的完整录像。可先用 =C-SPC C-SPC= 在当前位置设置并取消激活标记，
+移动到另一个位置再次设置标记，然后执行 =M-x consult-mark RET= 查看已有记录。
+跨文件历史用 consult-global-mark，但只会出现 Emacs 实际记入全局标记环的位置。
+没有记录时应先建立记录，不需要重装插件。
+
+在 Org 中可执行 =M-x consult-outline RET= 选择标题，与 consult-imenu 对比；
+两者分别依赖 outline 与 Imenu 规则，不保证每个主模式给出相同候选。
+书签可在文件位置用 =M-x bookmark-set RET= 命名建立，再通过
+=M-x consult-bookmark RET= 选择；书签持久化沿用 Emacs 自身机制，本轮不改保存策略。
+
+consult-history 读取调用上下文的历史。在已经使用的 =M-x shell RET= 缓冲区中，
+有命令历史后执行 =M-x consult-history RET=，选择记录并 RET 填回输入行，
+再决定是否执行；普通文本缓冲区不一定提供可用历史，不能当作全局历史浏览器。
+在 minibuffer 中直接调用该命令可读取当前输入历史，但本配置没有为它设置局部键位，
+也不全局开启递归 minibuffer；不要在 find-file 输入区再次按 M-x 来试图嵌套调用。
+该场景本阶段用原生 =M-p / M-n= 浏览历史；consult-history 的 minibuffer 专用入口留待需要时配置。
+savehist 尚未启用，不能保证重启后仍保留本次输入历史。
+
+***** 功能边界与后续接入
+
+| 状态 | 能力 |
+|------+------|
+| 已配置并绑定 | 缓冲区切换、当前缓冲区搜索、结构索引、ripgrep 搜索入口 |
+| 可通过 M-x 使用 | 上表主要附加命令，依赖已有内容、标记、书签或模式支持 |
+| 需要后续接入 | recentf 最近文件记录、savehist 跨会话输入历史、项目管理与开发工作流 |
+| 依赖外部程序 | consult-ripgrep 需要 rg；其他 grep/find 类命令也各有外部依赖 |
+
+Consult 还有寄存器、宏、编译错误等命令，可在 M-x 输入 =consult-= 查看，
+再用 =C-h f= 阅读当前安装版本的完整说明。编译错误等功能需要先有相应数据，
+本轮不覆盖用户尚未建立的编译或诊断工作流，也不把所有命令一律绑定。
+候选默认操作、外部搜索语法及版本差异以链接的官方文档和本机帮助为准。
+
 **** 文本替换
 
 替换保留 Evil 的 =:s= / =:%s= 和内置 =query-replace=、
@@ -1071,7 +1416,7 @@ d 表示 Diagnostics（诊断），范围比 Debug（调试）更广。
 不增加行号、变量、函数、按键查询的额外诊断入口，后续按实际工具需要再安排。
 可用的帮助查询仍保留在 h（Help）分组。候选讨论与审核放在对话里，不写入配置文档。
 
-** 统一快捷键配置（第一阶段，最后配置）
+** 统一快捷键配置（最后配置）
 
 这里集中定义前面所有功能的自定义快捷键，包括 leader、Avy 直达键、
 帮助入口和模式专用绑定。功能章节负责“做什么、如何启用”，本节负责“按什么键”。
@@ -1129,6 +1474,8 @@ General 不会自动启用 which-key，也不代替插件本身。
   (defvar my/window-map (make-sparse-keymap))
   (defvar my/quit-map (make-sparse-keymap))
   (defvar my/org-map (make-sparse-keymap))
+  (defvar my/jump-map (make-sparse-keymap))
+  (defvar my/search-map (make-sparse-keymap))
 
   (general-def my/file-map
     "f" '("打开文件" . find-file)                   ; Find file，打开文件
@@ -1140,7 +1487,7 @@ General 不会自动启用 which-key，也不代替插件本身。
     "p" '("复制文件完整路径" . my/copy-file-path))  ; Path，文件完整路径
 
   (general-def my/buffer-map
-    "b" '("切换缓冲区" . switch-to-buffer)         ; Buffer，选择缓冲区
+    "b" '("切换与预览缓冲区" . consult-buffer)     ; Buffer，选择与预览缓冲区
     "i" '("缓冲区列表" . ibuffer)                  ; Ibuffer，缓冲区管理列表
     "k" '("关闭当前缓冲区" . kill-current-buffer)  ; Kill，关闭缓冲区
     "n" '("下一个缓冲区" . next-buffer)            ; Next，下一个
@@ -1188,9 +1535,20 @@ General 不会自动启用 which-key，也不代替插件本身。
   (general-def my/org-map
     "b" '("生成当前文档代码" . org-babel-tangle)    ; Babel，提取当前 Org 代码，不执行或加载
     "g" '("Org 标题跳转" . org-goto)                ; Go to，跳转标题
-    "i" '("当前文件结构索引" . imenu)               ; Index，结构索引
+    "i" '("当前文件结构索引" . consult-imenu)       ; Index，预览结构索引
     "t" '("更新当前文档目录" . toc-org-insert-toc)  ; Table of contents，当前文档目录
     "s" '("编辑 Org 代码块" . org-edit-special))  ; Special，专用编辑界面
+
+  ;; Jump，当前窗口可见文字定位；字符输入后按标签选择。
+  (general-def my/jump-map
+    "j" '("字符标签跳转" . avy-goto-char-timer)  ; Jump，字符跳转
+    "l" '("可见行跳转" . avy-goto-line))        ; Line，行跳转
+
+  ;; Search，全文搜索与结构选择；项目搜索依赖 Emacs 能找到 rg。
+  (general-def my/search-map
+    "s" '("搜索当前缓冲区" . consult-line)       ; Search，搜索匹配行
+    "r" '("项目或目录搜索" . consult-ripgrep)   ; Ripgrep，外部文本搜索
+    "i" '("当前文件结构索引" . consult-imenu))  ; Index，预览结构索引
 
   ;; 根前缀是逗号，再经过两次逗号，得到 ,,,；M-x 本身仍可使用。
   (general-def my/command-map
@@ -1204,7 +1562,9 @@ General 不会自动启用 which-key，也不代替插件本身。
     "d" (cons "诊断" my/diagnostic-map)  ; Diagnostics，诊断
     "w" (cons "窗口" my/window-map)      ; Window，窗口
     "q" (cons "退出" my/quit-map)        ; Quit，退出
-    "o" (cons "文档与配置" my/org-map))  ; Org，文档与配置
+    "o" (cons "文档与配置" my/org-map)   ; Org，文档与配置
+    "j" (cons "跳转" my/jump-map)        ; Jump，屏幕内定位
+    "s" (cons "搜索" my/search-map))     ; Search，搜索与索引
 
   ;; 普通／可视／motion 状态使用逗号；插入状态不占用逗号。
   ;; motion 覆盖一些只读工具界面；override 减少局部模式遮挡 leader。
@@ -1212,6 +1572,12 @@ General 不会自动启用 which-key，也不代替插件本身。
    :states '(normal visual motion)
    :keymaps 'override
    "," my/leader-map)
+
+  ;; 仅普通模式的 s 改为 Avy；原替换字符操作可用 cl，其他状态不改。
+  (general-define-key
+   :states 'normal
+   :keymaps 'override
+   "s" #'avy-goto-char-timer)  ; Jump，字符标签跳转
 
   ;; 全局备用前缀访问同一份菜单，适用于插入状态及 Emacs 状态。
   ;; 原生 C-h 前缀保留，只增强其中几个具体帮助命令。
@@ -1277,11 +1643,11 @@ o（Org，文档）、d（Diagnostics，诊断）、w（Window，窗口）、q�
 逗号原有的反向重复字符查找被 leader 覆盖，本阶段不提供替代键；正向重复仍是 =;=。
 原生 =C-h= 帮助入口保留；插入状态或 Emacs 状态使用 =C-c ,= 备用入口。
 Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前缀；手动启动后确认冲突。
-下一阶段计划将普通模式 =s= 用于 Avy，原来的替换字符操作可用 =cl=；
-当前尚未安装 Avy，所以 =s= 暂时保留 Evil 默认行为。
+第二阶段将普通模式 =s= 用于 Avy，原来的替换字符操作可用 =cl=；
+可视与插入状态不新增 s 的 Avy 绑定。
 不采用参考文件把点号 =.= 改成跳转的绑定，以保留 Vim 重复编辑功能。
 
-*** 第一阶段速查表
+*** 快捷键速查表
 
 以下是配置写入后的预期操作，需要你启动安装完成后手动确认。
 “交互命令”列就是 M-x 使用的名称：输入 =M-x 命令名 RET= 即可调用，
@@ -1297,7 +1663,12 @@ Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前�
 | , f d | dired | 打开目录管理 |
 | , f u | revert-buffer | 从磁盘重新读取当前缓冲区，保留确认提示 |
 | , f p | my/copy-file-path | 复制当前文件完整路径 |
-| , b b | switch-to-buffer | 切换缓冲区 |
+| , b b | consult-buffer | 切换并预览缓冲区 |
+| s（仅普通模式） / , j j | avy-goto-char-timer | 当前窗口输入字符后按标签跳转 |
+| , j l | avy-goto-line | 当前窗口可见行跳转 |
+| , s s | consult-line | 当前缓冲区全文行搜索与预览 |
+| , s r | consult-ripgrep | 项目或目录文本搜索，需要 rg |
+| , s i | consult-imenu | 当前缓冲区结构索引与预览 |
 | , b i | ibuffer | 显示缓冲区管理列表 |
 | , b k | kill-current-buffer | 关闭当前缓冲区 |
 | , b n | next-buffer | 下一个缓冲区 |
@@ -1315,7 +1686,7 @@ Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前�
 | , h g | general-describe-keybindings | General 定义的键位清单 |
 | , o b | org-babel-tangle | 按当前 Org 文档属性生成代码文件，不加载 |
 | , o g | org-goto | 当前 Org 文档标题跳转 |
-| , o i | imenu | 当前缓冲区的结构索引 |
+| , o i | consult-imenu | 当前缓冲区的结构索引与预览 |
 | , o t | toc-org-insert-toc | 更新当前 Org 文档的目录 |
 | , o s | org-edit-special | 进入 Org 代码块专用编辑缓冲区 |
 | C-c '（代码块编辑缓冲区） | org-edit-src-exit | 将编辑结果写回 Org 并返回，不执行代码 |
@@ -1366,13 +1737,12 @@ Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前�
 
 | 分组 | 覆盖功能                                                 |
 |------+----------------------------------------------------------|
-| s    | 当前文件搜索、项目搜索、交互替换                          |
-| j    | Avy 字符和行定位                                         |
 | p    | 项目文件与项目切换                                       |
 | c    | 定义、引用、重命名、代码动作、诊断和文档；格式化暂不绑定   |
 | g    | Magit、修改块导航                                        |
 
-最近文件、项目搜索等命令等对应功能实现后再加入；目前菜单中没有空分组。
+项目文本搜索已在 , s r 接入；最近文件、项目文件选择等入口待对应功能实现后加入。
+目前菜单中没有空分组。
 不为低频命令强行创建按键，插件默认操作仍通过模式帮助和 M-x 查询。
 
 *** 手动启动与体验清单
@@ -1381,6 +1751,17 @@ Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前�
 保持代理运行，从仓库根目录用前面的启动命令打开 Emacs，等待包安装结束。
 根据 *Messages* 判断安装情况；首次安装依赖可能需要一些时间。
 
+- 用 M-x 和 , f f 观察纵向候选及注释；增加／删除输入，确认候选列表高度动态变化。
+- 连续 C-n / C-p 到候选首尾，确认不循环；候选数量上限保持安装版本默认值。
+- 在 M-x 输入 buffer switch，再交换关键词顺序，确认 Orderless 筛选；文件路径单独验证。
+- 用 , f f 打开已有文件；输入新文件名时用 M-RET 提交，确认不会误选已有候选。
+- 普通模式用 s / , j j 输入可见文字并选标签；用 , j l 选择行，C-g 取消一次。
+- 拆分窗口，在另一个窗口显示目标，确认默认标签只出现在当前窗口；cl 仍可替换字符。
+- 用 , b b 预览并切换缓冲区；用 , o i / , s i 预览 Org 标题或代码结构。
+- 用 , s s 搜索屏幕外的文字，分别确认跳转和 C-g 取消后的位置。
+- 用 M-: (executable-find "rg") RET 检查依赖，再用 , s r 搜索当前仓库并打开结果。
+- 按上文教程使用 M-x consult-yank-pop、consult-mark、consult-outline 和 consult-bookmark。
+- 最近文件与跨会话输入历史尚未接入，不以对应候选是否出现判断本阶段成功与否。
 - 在临时文件体验 i、Esc、hjkl、文本对象、撤销和句点重复。
 - 试用 ysiw"、ds"、cs"'，确认 surround 行为。
 - 普通状态按逗号，确认半秒后出现菜单；插入状态输入逗号仍应是普通文字。

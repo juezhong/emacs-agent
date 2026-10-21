@@ -9,7 +9,9 @@
 \#*\#
 .\#*
 
-commit-message/
-
 # Machine-local state written by Emacs Customize and package operations.
 /custom.el
+
+commit-message/
+/.claude/
+/logs

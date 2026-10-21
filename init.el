@@ -1,7 +1,7 @@
 ;;; init.el --- Generated Emacs configuration -*- lexical-binding: t; -*-
 ;; Generated from org_configs/Windows_config.org. Edit the Org source instead.
 ;; 本文件由 Org 生成；注释也维护在 Org 代码块中，避免下次生成时丢失。
-;; 已配置基础环境、Org 目录、Vim 编辑、帮助和 leader；搜索与开发等仍占位。
+;; 已配置基础环境、Org 目录、Vim 编辑、跳转搜索、帮助和 leader；开发等仍占位。
 
 ;;; 基础入口
 
@@ -143,6 +143,65 @@
   :config
   (global-evil-surround-mode 1))
 
+;;; 屏幕内定位：按命令加载，不在启动时扫描缓冲区。
+(use-package avy
+  ;; 为这两个命令建立自动加载入口；首次调用才加载 Avy，不是在这里设置快捷键。
+  :commands (avy-goto-char-timer avy-goto-line)
+  :custom
+  ;; 本配置选择 nil：当前窗口；插件默认 t：当前 Frame 全部窗口；all-frames：全部 Frame。
+  (avy-all-windows nil)
+  ;; 默认 0.5 秒：连续字符输入停顿多久后显示标签；可改为 0.8 或 1.0，给输入更多时间。
+  (avy-timeout-seconds 1.0)
+  ;; 默认 t：RET 提前结束文字输入并显示标签；nil 则把 RET 当作换行字符匹配。
+  (avy-enter-times-out t)
+  ;; 默认 t：匹配文字忽略大小写；改为 nil 后区分大小写。
+  (avy-case-fold-search t)
+  ;; 默认标签键：?a 表示字符 a；可调整字符及顺序，不是要查找的目标文字。
+  (avy-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
+
+;;; 候选界面：默认候选数量，按内容动态增减高度，不首尾循环。
+(use-package vertico
+  :custom
+  (vertico-count 10)   ; 默认 10：最多显示的候选数；可改为 15 或 20，受窗口高度限制。
+  (vertico-resize t)   ; 按已选行为动态增减高度；nil 固定高度，grow-only 只增高不缩小。
+  (vertico-cycle nil)  ; 默认 nil：首尾不循环；改为 t 后从末尾继续向下会回到开头。
+  :init
+  (vertico-mode 1))    ; 启动时启用全局候选界面；1 是启用，不是候选数量。
+
+;;; 匹配规则：普通候选使用 Orderless，文件保留基础和部分路径补全。
+(use-package orderless
+  :demand t  ; 启动时加载匹配样式，确保第一次打开候选界面时已经可用。
+  :custom
+  ;; 本配置的普通补全顺序：先多关键词匹配，再尝试 basic；不是 Emacs 原始默认值。
+  (completion-styles '(orderless basic))
+  ;; 清除类别自带的默认样式，避免覆盖上面的统一规则；nil 不是关闭补全。
+  (completion-category-defaults nil)
+  ;; 文件类别单独处理：basic 优先兼容路径／TRAMP，partial-completion 支持部分路径。
+  (completion-category-overrides '((file (styles basic partial-completion))))
+  ;; Orderless 1.8 默认：每个关键词可按字面或正则匹配；只保留 orderless-literal 可禁用正则。
+  (orderless-matching-styles '(orderless-literal orderless-regexp)))
+
+;;; 候选注释：使用内置注释器，不增加自定义类别或切换键。
+(use-package marginalia
+  :custom
+  (marginalia-align 'left)   ; 默认 left：注释左对齐；也可选 center 或 right。
+  (marginalia-align-offset 0) ; 默认 0：注释对齐的额外偏移列数；增大可增加间距。
+  :init
+  (marginalia-mode 1))      ; 启动时启用候选注释；不需要每个缓冲区分别开启。
+
+;;; 搜索与选择命令：首次调用时加载，保留插件默认预览策略。
+(use-package consult
+  ;; :commands 声明自动加载入口，不执行这些命令，也不定义快捷键。
+  ;; 四个命令分别负责缓冲区选择、当前缓冲区搜索、外部 rg 搜索、结构索引。
+  ;; 首次调用其中任意一个才加载插件；启动时不必加载整套搜索实现。
+  :commands (consult-buffer consult-line consult-ripgrep consult-imenu)
+  :custom
+  ;; 默认 any：选中候选变化时自动预览；nil 关闭预览，"M-." 改为按该键手动预览。
+  (consult-preview-key 'any)
+  ;; 默认 3 个字符才启动异步外部搜索；可改为 2，小值更早搜索但更容易产生大量结果。
+  ;; 仅影响 consult-ripgrep 等异步命令，不限制 consult-line 的本地筛选。
+  (consult-async-min-input 3))
+
 ;;; 帮助增强：调用时加载 Helpful，安装由 use-package 处理。
 ;; 实际按键在末尾统一绑定，不在这里覆盖任何模式键位。
 (use-package helpful
@@ -204,6 +263,8 @@
   (defvar my/window-map (make-sparse-keymap))
   (defvar my/quit-map (make-sparse-keymap))
   (defvar my/org-map (make-sparse-keymap))
+  (defvar my/jump-map (make-sparse-keymap))
+  (defvar my/search-map (make-sparse-keymap))
 
   (general-def my/file-map
     "f" '("打开文件" . find-file)                   ; Find file，打开文件
@@ -215,7 +276,7 @@
     "p" '("复制文件完整路径" . my/copy-file-path))  ; Path，文件完整路径
 
   (general-def my/buffer-map
-    "b" '("切换缓冲区" . switch-to-buffer)         ; Buffer，选择缓冲区
+    "b" '("切换与预览缓冲区" . consult-buffer)     ; Buffer，选择与预览缓冲区
     "i" '("缓冲区列表" . ibuffer)                  ; Ibuffer，缓冲区管理列表
     "k" '("关闭当前缓冲区" . kill-current-buffer)  ; Kill，关闭缓冲区
     "n" '("下一个缓冲区" . next-buffer)            ; Next，下一个
@@ -263,9 +324,20 @@
   (general-def my/org-map
     "b" '("生成当前文档代码" . org-babel-tangle)    ; Babel，提取当前 Org 代码，不执行或加载
     "g" '("Org 标题跳转" . org-goto)                ; Go to，跳转标题
-    "i" '("当前文件结构索引" . imenu)               ; Index，结构索引
+    "i" '("当前文件结构索引" . consult-imenu)       ; Index，预览结构索引
     "t" '("更新当前文档目录" . toc-org-insert-toc)  ; Table of contents，当前文档目录
     "s" '("编辑 Org 代码块" . org-edit-special))  ; Special，专用编辑界面
+
+  ;; Jump，当前窗口可见文字定位；字符输入后按标签选择。
+  (general-def my/jump-map
+    "j" '("字符标签跳转" . avy-goto-char-timer)  ; Jump，字符跳转
+    "l" '("可见行跳转" . avy-goto-line))        ; Line，行跳转
+
+  ;; Search，全文搜索与结构选择；项目搜索依赖 Emacs 能找到 rg。
+  (general-def my/search-map
+    "s" '("搜索当前缓冲区" . consult-line)       ; Search，搜索匹配行
+    "r" '("项目或目录搜索" . consult-ripgrep)   ; Ripgrep，外部文本搜索
+    "i" '("当前文件结构索引" . consult-imenu))  ; Index，预览结构索引
 
   ;; 根前缀是逗号，再经过两次逗号，得到 ,,,；M-x 本身仍可使用。
   (general-def my/command-map
@@ -279,7 +351,9 @@
     "d" (cons "诊断" my/diagnostic-map)  ; Diagnostics，诊断
     "w" (cons "窗口" my/window-map)      ; Window，窗口
     "q" (cons "退出" my/quit-map)        ; Quit，退出
-    "o" (cons "文档与配置" my/org-map))  ; Org，文档与配置
+    "o" (cons "文档与配置" my/org-map)   ; Org，文档与配置
+    "j" (cons "跳转" my/jump-map)        ; Jump，屏幕内定位
+    "s" (cons "搜索" my/search-map))     ; Search，搜索与索引
 
   ;; 普通／可视／motion 状态使用逗号；插入状态不占用逗号。
   ;; motion 覆盖一些只读工具界面；override 减少局部模式遮挡 leader。
@@ -287,6 +361,12 @@
    :states '(normal visual motion)
    :keymaps 'override
    "," my/leader-map)
+
+  ;; 仅普通模式的 s 改为 Avy；原替换字符操作可用 cl，其他状态不改。
+  (general-define-key
+   :states 'normal
+   :keymaps 'override
+   "s" #'avy-goto-char-timer)  ; Jump，字符标签跳转
 
   ;; 全局备用前缀访问同一份菜单，适用于插入状态及 Emacs 状态。
   ;; 原生 C-h 前缀保留，只增强其中几个具体帮助命令。
