@@ -1,0 +1,889 @@
+#+title: Embark 默认动作参考
+#+property: header-args :tangle no
+#+startup: overview num
+#+options: toc:2 num:2
+
+本文是 [[file:Windows_config.org::*Embark 候选与上下文操作][主配置 Embark 章节]] 的子文档，仅维护完整动作参考，不生成配置代码。
+配置参数、入门操作、菜单翻页和依赖条件仍在主配置中维护。
+
+动作表核对 Embark 1.2、embark-consult 1.2；Smerge 部分核对本机 Emacs 31.1。
+来源：[[https://github.com/oantolin/embark/blob/27de48004242e98586b9c9661fdb6912f26fe70f/embark.el][Embark 主源码]]、
+[[https://github.com/oantolin/embark/blob/27de48004242e98586b9c9661fdb6912f26fe70f/embark-org.el][Org 集成源码]]、
+[[https://github.com/oantolin/embark/blob/80254c91da90635978fb12db8b9ab9bf54f3bfb0/embark-consult.el][Consult 集成源码]]。升级后以本机菜单与对应版本源码为准。
+
+* 目录 :TOC_2_org:
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+
+- [[完整默认动作参考][完整默认动作参考]]
+  - [[Collect 列表的原生按键（直接在列表内按，不先按 C-.）][Collect 列表的原生按键（直接在列表内按，不先按 C-.）]]
+  - [[数字与前缀参数][数字与前缀参数]]
+  - [[通用动作，未知类型也使用此表][通用动作，未知类型也使用此表]]
+  - [[选区 > 编码子菜单][选区 > 编码子菜单]]
+  - [[选区 s 排序子菜单][选区 s 排序子菜单]]
+  - [[活动选区][活动选区]]
+  - [[文件 v 版本控制子菜单][文件 v 版本控制子菜单]]
+  - [[文件 / 环境变量路径候选][文件 / 环境变量路径候选]]
+  - [[kill ring 候选][kill ring 候选]]
+  - [[URL][URL]]
+  - [[邮件地址][邮件地址]]
+  - [[Lisp 库][Lisp 库]]
+  - [[缓冲区][缓冲区]]
+  - [[Tab Bar 标签页][Tab Bar 标签页]]
+  - [[通用代码标识符][通用代码标识符]]
+  - [[Lisp 表达式][Lisp 表达式]]
+  - [[Lisp 定义][Lisp 定义]]
+  - [[通用大纲标题][通用大纲标题]]
+  - [[Emacs Lisp 符号][Emacs Lisp 符号]]
+  - [[Face 外观][Face 外观]]
+  - [[变量][变量]]
+  - [[函数][函数]]
+  - [[交互命令 / minor-mode 候选][交互命令 / minor-mode 候选]]
+  - [[软件包][软件包]]
+  - [[书签][书签]]
+  - [[Unicode 字符名][Unicode 字符名]]
+  - [[句子与段落共用的文字动作][句子与段落共用的文字动作]]
+  - [[句子][句子]]
+  - [[段落][段落]]
+  - [[Flymake 诊断][Flymake 诊断]]
+  - [[B 之后的帮助命令切换][B 之后的帮助命令切换]]
+  - [[B 之后的文件与缓冲区命令切换][B 之后的文件与缓冲区命令切换]]
+  - [[B 之后的 shell 命令切换][B 之后的 shell 命令切换]]
+  - [[B 之后的匹配命令切换][B 之后的匹配命令切换]]
+  - [[Org 表格单元格][Org 表格单元格]]
+  - [[Org 整张表格][Org 整张表格]]
+  - [[Org 链接 w 复制子菜单][Org 链接 w 复制子菜单]]
+  - [[Org 链接][Org 链接]]
+  - [[Org 标题 / 议程标题引用][Org 标题 / 议程标题引用]]
+  - [[Org 代码块][Org 代码块]]
+  - [[Org 行内代码块][Org 行内代码块]]
+  - [[Org Babel 调用][Org Babel 调用]]
+  - [[Org 列表项][Org 列表项]]
+  - [[Org 整个普通列表][Org 整个普通列表]]
+  - [[选区 > o 原地导出子菜单][选区 > o 原地导出子菜单]]
+  - [[Grep 导出列表中的原生重新搜索按键（不先按 C-.）][Grep 导出列表中的原生重新搜索按键（不先按 C-.）]]
+  - [[Consult 同步搜索子菜单][Consult 同步搜索子菜单]]
+  - [[Consult 异步搜索子菜单][Consult 异步搜索子菜单]]
+  - [[动态分派、Consult 搜索与继承补充][动态分派、Consult 搜索与继承补充]]
+  - [[Smerge 冲突目标及比较子菜单][Smerge 冲突目标及比较子菜单]]
+
+* 完整默认动作参考
+
+以下表覆盖核对版本主包、Org 集成和 Consult 集成中定义的所有动作 keymap 及补充绑定。
+只记录默认键位，不复制或改写它们。表中的动作键都在 C-. 之后输入；
+子菜单继续输入后续键，例如文件 v r 是 VC 重命名，选区 > b 是 Base64 编码。
+相同按键在不同目标可含义不同；先看当前目标。局部表覆盖父表同名按键，未覆盖项沿父表继承，
+因此没有在每一张表重复写通用动作。数字和负号用于给动作提供前缀参数。
+RET 是动态默认动作，minibuffer 中通常使用原候选命令的确认动作，可能覆盖表内静态 RET；
+Org 标题引用默认跳到标题，标题正文默认切换 TODO，不可把所有 RET 解释为同一种操作。
+C-h 动作帮助和用于目标循环的 C-. 由运行时加入；C-g 取消，不是待执行的目标动作。
+“交互命令”列用于查帮助；子菜单 keymap 及仅在菜单内部有效的控制动作，不适合单独 M-x 调用。
+
+** Collect 列表的原生按键（直接在列表内按，不先按 C-.）
+
+映射：=embark-collect-mode-map=。继承 =tabulated-list-mode-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| a | embark-act | 打开当前候选的动作菜单 |
+| A | embark-act-all | 对选中子集或当前集合执行同一动作 |
+| M-a | embark-collect-direct-action-minor-mode | 切换 Collect 直接动作模式 |
+| E | embark-export | 按目标类型导出当前候选集合 |
+| s | isearch-forward | 向前增量搜索列表 |
+| n | forward-button | 下一候选按钮 |
+| p | backward-button | 上一候选按钮 |
+| } | outline-next-heading | 下一分组标题 |
+| { | outline-previous-heading | 上一分组标题 |
+| <remap> <forward-paragraph> | outline-next-heading | 下一分组标题 |
+| <remap> <backward-paragraph> | outline-previous-heading | 上一分组标题 |
+| <remap> <revert-buffer> | embark-rerun-collect-or-export | 重新启动产生列表的命令 |
+
+** 数字与前缀参数
+
+映射：=embark-meta-map=。此表无父动作表。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| - | negative-argument | 给动作提供负前缀参数 |
+| 0 | digit-argument | 给动作输入数字前缀参数 |
+| 1 | digit-argument | 给动作输入数字前缀参数 |
+| 2 | digit-argument | 给动作输入数字前缀参数 |
+| 3 | digit-argument | 给动作输入数字前缀参数 |
+| 4 | digit-argument | 给动作输入数字前缀参数 |
+| 5 | digit-argument | 给动作输入数字前缀参数 |
+| 6 | digit-argument | 给动作输入数字前缀参数 |
+| 7 | digit-argument | 给动作输入数字前缀参数 |
+| 8 | digit-argument | 给动作输入数字前缀参数 |
+| 9 | digit-argument | 给动作输入数字前缀参数 |
+
+** 通用动作，未知类型也使用此表
+
+映射：=embark-general-map=。继承 =embark-meta-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| i | embark-insert | 把目标文字插入原缓冲区 |
+| w | embark-copy-as-kill | 复制目标文字到 kill ring |
+| q | embark-toggle-quit | 切换本次动作后是否退出 minibuffer |
+| E | embark-export | 按目标类型导出当前候选集合 |
+| S | embark-collect | 收集候选快照到通用列表 |
+| L | embark-live | 建立随输入更新的实时候选列表 |
+| B | embark-become | 保留输入并切换当前命令 |
+| A | embark-act-all | 对选中子集或当前集合执行同一动作 |
+| C-s | embark-isearch-forward | 向前增量搜索目标 |
+| C-r | embark-isearch-backward | 向后增量搜索目标 |
+| C-SPC | mark | 围绕目标设置选区 |
+| DEL | delete-region | 删除目标区域 |
+| SPC | embark-select | 切换候选的多项选择状态 |
+
+** 选区 > 编码子菜单
+
+映射：=embark-encode-map=。此表无父动作表。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| r | rot13-region | 对选区做 ROT13 变换 |
+| . | morse-region | 把选区编码为摩尔斯电码 |
+| - | unmorse-region | 从摩尔斯电码解码 |
+| s | studlify-region | 随机改变文字大小写 |
+| m | embark-hash-md5 | 计算 MD5 摘要 |
+| 1 | embark-hash-sha1 | 计算 SHA-1 摘要 |
+| 2 | embark-hash-sha256 | 计算 SHA-256 摘要 |
+| 3 | embark-hash-sha384 | 计算 SHA-384 摘要 |
+| 4 | embark-hash-sha224 | 计算 SHA-224 摘要 |
+| 5 | embark-hash-sha512 | 计算 SHA-512 摘要 |
+| f | format-encode-region | 按指定格式编码选区 |
+| F | format-decode-region | 按指定格式解码选区 |
+| b | base64-encode-region | Base64 编码 |
+| B | base64-decode-region | Base64 解码 |
+| n | nato-region | 转为 NATO 拼读字母 |
+| N | denato-region | 从 NATO 拼读字母还原 |
+| u | embark-encode-url | 对文字做 URL 编码 |
+| U | embark-decode-url | 解码 URL 转义 |
+| c | epa-encrypt-region | 用 EasyPG 加密选区 |
+| C | embark-epa-decrypt-region | 用 EasyPG 解密选区 |
+| o | embark-org-export-in-place-map | 进入 Org 原地导出子菜单 |
+
+** 选区 s 排序子菜单
+
+映射：=embark-sort-map=。此表无父动作表。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| l | sort-lines | 按行排序 |
+| P | sort-pages | 按页排序 |
+| f | sort-fields | 按字段排序 |
+| c | sort-columns | 按列排序 |
+| p | sort-paragraphs | 按段落排序 |
+| r | sort-regexp-fields | 按正则提取的字段排序 |
+| n | sort-numeric-fields | 按数字字段排序 |
+
+** 活动选区
+
+映射：=embark-region-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| u | upcase-region | 选区转大写 |
+| l | downcase-region | 选区转小写 |
+| c | capitalize-region | 选区单词首字母大写 |
+| 竖线键（U+007C） | shell-command-on-region | 把选区交给 shell 命令处理 |
+| e | eval-region | 执行选区中的 Lisp 代码 |
+| < | embark-eval-replace | 求值后用结果替换表达式 |
+| a | align | 自动对齐选区 |
+| A | align-regexp | 按正则表达式对齐选区 |
+| <left> | indent-rigidly | 整体平移缩进，方向和幅度由命令与前缀决定 |
+| <right> | indent-rigidly | 整体平移缩进，方向和幅度由命令与前缀决定 |
+| TAB | indent-region | 按主模式规则缩进选区 |
+| f | fill-region | 重新断行整理选区 |
+| p | fill-region-as-paragraph | 把选区作为一个段落重新断行 |
+| $ | ispell-region | 检查选区拼写 |
+| = | count-words-region | 统计选区字词数 |
+| F | whitespace-cleanup-region | 清理选区多余空白 |
+| t | transpose-regions | 交换两个区域 |
+| o | org-table-convert-region | 把选区转换为 Org 表格 |
+| ; | comment-or-uncomment-region | 注释或取消注释选区 |
+| W | write-region | 把选区写入文件 |
+| + | append-to-file | 把选区追加到文件 |
+| m | apply-macro-to-region-lines | 对选区各行应用键盘宏 |
+| n | narrow-to-region | 把可见编辑范围缩窄到选区 |
+| * | calc-grab-region | 把选区数据送入 Calc |
+| : | calc-grab-sum-down | 把各列求和送入 Calc |
+| _ | calc-grab-sum-across | 把各行求和送入 Calc |
+| r | reverse-region | 反转选区各行顺序 |
+| d | delete-duplicate-lines | 删除重复行 |
+| b | browse-url-of-region | 把选区作为 URL 打开 |
+| h | shr-render-region | 把选区 HTML 渲染成可读文字 |
+| ' | expand-region-abbrevs | 展开选区中的缩写 |
+| v | vc-region-history | 查看选区的版本历史 |
+| R | repunctuate-sentences | 整理句子间的标点间距 |
+| s | embark-sort-map | 进入选区排序子菜单 |
+| > | embark-encode-map | 进入编码、摘要和加解密子菜单 |
+| M | embark-org-copy-as-markdown | 把目标 Org 内容导出为 Markdown 并复制 |
+
+** 文件 v 版本控制子菜单
+
+映射：=embark-vc-file-map=。此表无父动作表。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| d | vc-delete-file | 通过版本控制后端删除文件 |
+| r | vc-rename-file | 通过版本控制后端重命名文件 |
+| i | vc-ignore | 把文件加入版本控制忽略规则 |
+
+** 文件 / 环境变量路径候选
+
+映射：=embark-file-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | find-file | 打开文件 |
+| f | find-file | 打开文件 |
+| F | find-file-literally | 以字面方式打开，不做通常的内容转换 |
+| o | find-file-other-window | 在另一窗口打开文件 |
+| d | delete-file | 删除文件 |
+| D | delete-directory | 删除目录 |
+| r | rename-file | 重命名或移动文件 |
+| c | copy-file | 复制文件 |
+| s | make-symbolic-link | 创建符号链接 |
+| ! | shell-command | 以目标为输入上下文执行 shell 命令 |
+| & | async-shell-command | 异步执行 shell 命令 |
+| x | embark-open-externally | 用系统关联的外部程序打开目标 |
+| j | embark-dired-jump | 在 Dired 定位目标对应文件 |
+| $ | eshell | 在目标对应目录打开 Eshell |
+| < | insert-file | 把文件内容插入原缓冲区 |
+| m | chmod | 修改文件权限 |
+| = | ediff-files | 比较两个文件 |
+| + | make-directory | 创建目录 |
+| \ | embark-recentf-remove | 从最近文件记录移除目标，不删除文件 |
+| I | embark-insert-relative-path | 插入相对原缓冲区目录的路径 |
+| W | embark-save-relative-path | 复制相对路径到 kill ring |
+| e | eww-open-file | 在 EWW 中打开本地文件 |
+| l | load-file | 加载目标 Lisp 文件 |
+| b | byte-compile-file | 对目标 Lisp 文件进行字节编译 |
+| R | byte-recompile-directory | 重新编译目录中的 Lisp 文件 |
+| v | embark-vc-file-map | 进入版本控制文件动作子菜单 |
+
+** kill ring 候选
+
+映射：=embark-kill-ring-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| \ | embark-kill-ring-remove | 从 kill ring 删除这条记录 |
+
+** URL
+
+映射：=embark-url-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | browse-url | 用配置的浏览器打开 URL |
+| b | browse-url | 用配置的浏览器打开 URL |
+| d | embark-download-url | 下载 URL 内容到文件 |
+| x | embark-open-externally | 用系统关联的外部程序打开目标 |
+| e | eww | 用 Emacs EWW 浏览网页 |
+
+** 邮件地址
+
+映射：=embark-email-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | embark-compose-mail | 给该地址撰写邮件 |
+| c | embark-compose-mail | 给该地址撰写邮件 |
+
+** Lisp 库
+
+映射：=embark-library-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | find-library | 打开 Lisp 库源码 |
+| l | load-library | 加载 Lisp 库 |
+| f | find-library | 打开 Lisp 库源码 |
+| h | finder-commentary | 查看库的说明注释 |
+| a | apropos-library | 列出该库定义的符号 |
+| L | locate-library | 查找库文件所在路径 |
+| m | info-display-manual | 打开对应 Info 手册 |
+| x | embark-open-externally | 用系统关联的外部程序打开目标 |
+| j | embark-dired-jump | 在 Dired 定位目标对应文件 |
+| $ | eshell | 在目标对应目录打开 Eshell |
+
+** 缓冲区
+
+映射：=embark-buffer-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | switch-to-buffer | 切换到目标缓冲区 |
+| k | kill-buffer | 关闭目标缓冲区 |
+| b | switch-to-buffer | 切换到目标缓冲区 |
+| o | switch-to-buffer-other-window | 在另一窗口显示目标缓冲区 |
+| z | embark-bury-buffer | 把缓冲区移到列表后面 |
+| K | embark-kill-buffer-and-window | 关闭缓冲区及其窗口 |
+| r | embark-rename-buffer | 重命名缓冲区 |
+| = | ediff-buffers | 比较两个缓冲区 |
+| 竖线键（U+007C） | embark-shell-command-on-buffer | 把整个缓冲区交给 shell 命令处理 |
+| < | insert-buffer | 把目标缓冲区内容插入原位置 |
+| x | embark-open-externally | 用系统关联的外部程序打开目标 |
+| j | embark-dired-jump | 在 Dired 定位目标对应文件 |
+| $ | eshell | 在目标对应目录打开 Eshell |
+
+** Tab Bar 标签页
+
+映射：=embark-tab-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | tab-bar-select-tab-by-name | 切换到目标标签页 |
+| s | tab-bar-select-tab-by-name | 切换到目标标签页 |
+| r | tab-bar-rename-tab-by-name | 重命名标签页 |
+| k | tab-bar-close-tab-by-name | 关闭标签页 |
+
+** 通用代码标识符
+
+映射：=embark-identifier-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | xref-find-definitions | 查找标识符定义 |
+| h | display-local-help | 显示光标对象的局部帮助 |
+| H | embark-toggle-highlight | 切换目标出现位置的高亮 |
+| d | xref-find-definitions | 查找标识符定义 |
+| r | xref-find-references | 查找引用 |
+| a | xref-find-apropos | 按模式搜索符号 |
+| s | info-lookup-symbol | 在语言手册查符号 |
+| n | embark-next-symbol | 跳到下一处相同符号 |
+| p | embark-previous-symbol | 跳到上一处相同符号 |
+| ' | expand-abbrev | 展开当前缩写 |
+| $ | ispell-word | 检查单词拼写 |
+| o | occur | 列出匹配目标的行 |
+
+** Lisp 表达式
+
+映射：=embark-expression-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | pp-eval-expression | 求值并格式化显示表达式 |
+| e | pp-eval-expression | 求值并格式化显示表达式 |
+| < | embark-eval-replace | 求值后用结果替换表达式 |
+| m | pp-macroexpand-expression | 展开宏并格式化显示 |
+| TAB | indent-region | 按主模式规则缩进选区 |
+| r | raise-sexp | 用内部表达式替换外层表达式 |
+| ; | comment-dwim | 按上下文处理注释 |
+| t | transpose-sexps | 交换相邻表达式 |
+| k | kill-region | 剪切目标区域 |
+| u | backward-up-list | 移到外层列表开头 |
+| n | forward-list | 前进一个列表 |
+| p | backward-list | 后退一个列表 |
+
+** Lisp 定义
+
+映射：=embark-defun-map=。继承 =embark-expression-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | embark-pp-eval-defun | 求值当前定义并格式化结果 |
+| e | embark-pp-eval-defun | 求值当前定义并格式化结果 |
+| c | compile-defun | 编译当前 Lisp 定义 |
+| D | edebug-defun | 给当前定义加入 Edebug 调试 |
+| o | checkdoc-defun | 检查当前定义的文档规范 |
+| N | narrow-to-defun | 缩窄到当前定义 |
+
+** 通用大纲标题
+
+映射：=embark-heading-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | outline-show-subtree | 展开子树 |
+| TAB | outline-cycle | 循环折叠当前大纲节点 |
+| C-SPC | outline-mark-subtree | 选中大纲子树 |
+| n | outline-next-visible-heading | 下一可见标题 |
+| p | outline-previous-visible-heading | 上一可见标题 |
+| f | outline-forward-same-level | 下一同级标题 |
+| b | outline-backward-same-level | 上一同级标题 |
+| ^ | outline-move-subtree-up | 向上移动子树 |
+| v | outline-move-subtree-down | 向下移动子树 |
+| u | outline-up-heading | 上一级标题 |
+| + | outline-show-subtree | 展开子树 |
+| - | outline-hide-subtree | 折叠子树 |
+| > | outline-demote | 降低标题层级 |
+| < | outline-promote | 提升标题层级 |
+
+** Emacs Lisp 符号
+
+映射：=embark-symbol-map=。继承 =embark-identifier-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | embark-find-definition | 查找 Emacs Lisp 符号定义 |
+| h | describe-symbol | 查看符号说明 |
+| s | embark-info-lookup-symbol | 查找符号的 Info 文档 |
+| d | embark-find-definition | 查找 Emacs Lisp 符号定义 |
+| e | pp-eval-expression | 求值并格式化显示表达式 |
+| a | apropos | 搜索相关符号 |
+| \ | embark-history-remove | 从当前输入历史删除目标 |
+
+** Face 外观
+
+映射：=embark-face-map=。继承 =embark-symbol-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| h | describe-face | 查看外观 face 说明 |
+| c | customize-face | 定制 face |
+| + | make-face-bold | 使 face 加粗 |
+| - | make-face-unbold | 取消 face 加粗 |
+| / | make-face-italic | 使 face 使用斜体 |
+| 竖线键（U+007C） | make-face-unitalic | 取消 face 斜体 |
+| ! | invert-face | 反转 face 前景与背景 |
+| f | set-face-foreground | 设置 face 前景色 |
+| b | set-face-background | 设置 face 背景色 |
+
+** 变量
+
+映射：=embark-variable-map=。继承 =embark-symbol-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| = | set-variable | 设置变量值 |
+| c | customize-set-variable | 通过 Custom 设置变量值 |
+| u | customize-variable | 打开变量的 Custom 页面 |
+| v | embark-save-variable-value | 复制变量当前值 |
+| < | embark-insert-variable-value | 插入变量当前值 |
+| t | embark-toggle-variable | 切换布尔变量 |
+
+** 函数
+
+映射：=embark-function-map=。继承 =embark-symbol-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| m | elp-instrument-function | 对函数启用 ELP 性能统计 |
+| M | elp-restore-function | 取消函数的 ELP 统计 |
+| k | debug-on-entry | 进入函数时启动调试器 |
+| K | cancel-debug-on-entry | 取消进入函数时调试 |
+| t | trace-function | 跟踪函数调用 |
+| T | untrace-function | 取消函数跟踪 |
+
+** 交互命令 / minor-mode 候选
+
+映射：=embark-command-map=。继承 =embark-function-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| x | execute-extended-command | 执行目标交互命令 |
+| I | Info-goto-emacs-command-node | 查找命令的 Emacs 手册节点 |
+| b | where-is | 查询目标命令的快捷键 |
+| g | global-set-key | 给命令设置全局快捷键 |
+| l | local-set-key | 给命令设置当前缓冲区快捷键 |
+
+** 软件包
+
+映射：=embark-package-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | describe-package | 查看软件包说明 |
+| h | describe-package | 查看软件包说明 |
+| i | package-install | 安装软件包 |
+| I | embark-insert | 把目标文字插入原缓冲区 |
+| d | package-delete | 删除软件包 |
+| r | package-reinstall | 重新安装软件包 |
+| u | embark-browse-package-url | 打开软件包主页 |
+| W | embark-save-package-url | 复制软件包主页地址 |
+| a | package-autoremove | 清理不再需要的依赖包 |
+| g | package-refresh-contents | 刷新软件源包索引 |
+| m | elp-instrument-package | 对包内函数启用 ELP 性能统计 |
+| M | elp-restore-package | 取消包内函数的 ELP 统计 |
+
+** 书签
+
+映射：=embark-bookmark-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | bookmark-jump | 跳到书签 |
+| b | bookmark-jump | 跳到书签 |
+| s | bookmark-set | 创建或设置书签 |
+| d | bookmark-delete | 删除书签 |
+| r | bookmark-rename | 重命名书签 |
+| R | bookmark-relocate | 修改书签对应的文件位置 |
+| l | bookmark-locate | 显示书签所在文件 |
+| < | bookmark-insert | 插入书签指向文件的内容 |
+| o | bookmark-jump-other-window | 在另一窗口跳到书签 |
+| f | bookmark-jump-other-frame | 在另一帧跳到书签 |
+| a | bookmark-show-annotation | 显示书签备注 |
+| e | bookmark-edit-annotation | 编辑书签备注 |
+| x | embark-open-externally | 用系统关联的外部程序打开目标 |
+| j | embark-dired-jump | 在 Dired 定位目标对应文件 |
+| $ | eshell | 在目标对应目录打开 Eshell |
+
+** Unicode 字符名
+
+映射：=embark-unicode-name-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | insert-char | 插入对应 Unicode 字符 |
+| I | insert-char | 插入对应 Unicode 字符 |
+| W | embark-save-unicode-character | 复制对应 Unicode 字符 |
+
+** 句子与段落共用的文字动作
+
+映射：=embark-prose-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| $ | ispell-region | 检查选区拼写 |
+| f | fill-region | 重新断行整理选区 |
+| u | upcase-region | 选区转大写 |
+| l | downcase-region | 选区转小写 |
+| c | capitalize-region | 选区单词首字母大写 |
+| F | whitespace-cleanup-region | 清理选区多余空白 |
+| = | count-words-region | 统计选区字词数 |
+
+** 句子
+
+映射：=embark-sentence-map=。继承 =embark-prose-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| t | transpose-sentences | 交换相邻句子 |
+| n | forward-sentence | 前进一句 |
+| p | backward-sentence | 后退一句 |
+
+** 段落
+
+映射：=embark-paragraph-map=。继承 =embark-prose-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| t | transpose-paragraphs | 交换相邻段落 |
+| n | forward-paragraph | 前进一段 |
+| p | backward-paragraph | 后退一段 |
+| R | repunctuate-sentences | 整理句子间的标点间距 |
+
+** Flymake 诊断
+
+映射：=embark-flymake-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | flymake-show-buffer-diagnostics | 显示当前缓冲区诊断列表 |
+| n | flymake-goto-next-error | 下一条 Flymake 诊断 |
+| p | flymake-goto-prev-error | 上一条 Flymake 诊断 |
+
+** B 之后的帮助命令切换
+
+映射：=embark-become-help-map=。继承 =embark-meta-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| V | apropos-variable | 按名称搜索变量 |
+| U | apropos-user-option | 按名称搜索可自定义选项 |
+| C | apropos-command | 按名称搜索交互命令 |
+| v | describe-variable | 查看变量说明 |
+| f | describe-function | 查看函数说明 |
+| s | describe-symbol | 查看符号说明 |
+| F | describe-face | 查看外观 face 说明 |
+| p | describe-package | 查看软件包说明 |
+| i | describe-input-method | 查看输入法说明 |
+
+** B 之后的文件与缓冲区命令切换
+
+映射：=embark-become-file+buffer-map=。继承 =embark-meta-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| f | find-file | 打开文件 |
+| 4 f | find-file-other-window | 在另一窗口打开文件 |
+| . | find-file-at-point | 打开光标处指向的文件 |
+| p | project-find-file | 查找项目文件 |
+| r | recentf-open-files | 选择最近访问文件 |
+| b | switch-to-buffer | 切换到目标缓冲区 |
+| 4 b | switch-to-buffer-other-window | 在另一窗口显示目标缓冲区 |
+| l | locate | 通过 locate 数据库查找文件 |
+| L | find-library | 打开 Lisp 库源码 |
+| v | vc-dir | 查看目录版本控制状态 |
+| C b | consult-buffer | 选择缓冲区、最近文件或书签 |
+| C 4 b | consult-buffer-other-window | 在另一窗口选择缓冲区等目标 |
+
+** B 之后的 shell 命令切换
+
+映射：=embark-become-shell-command-map=。继承 =embark-meta-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| ! | shell-command | 以目标为输入上下文执行 shell 命令 |
+| & | async-shell-command | 异步执行 shell 命令 |
+| c | comint-run | 在 Comint 交互缓冲区运行程序 |
+| t | term | 打开终端模拟器 |
+
+** B 之后的匹配命令切换
+
+映射：=embark-become-match-map=。继承 =embark-meta-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| o | occur | 列出匹配目标的行 |
+| k | keep-lines | 保留匹配的行 |
+| f | flush-lines | 删除匹配的行 |
+| c | count-matches | 统计匹配次数 |
+
+** Org 表格单元格
+
+映射：=embark-org-table-cell-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | org-table-align | 对齐表格 |
+| <up> | org-table-move-cell-up | 把单元格上移 |
+| <down> | org-table-move-cell-down | 把单元格下移 |
+| <left> | org-table-move-cell-left | 把单元格左移 |
+| <right> | org-table-move-cell-right | 把单元格右移 |
+| d | org-table-kill-row | 删除当前行 |
+| c | org-table-copy-down | 把上方单元格复制到下方 |
+| D | org-table-delete-column | 删除当前列 |
+| ^ | org-table-move-row-up | 上移整行 |
+| v | org-table-move-row-down | 下移整行 |
+| < | org-table-move-column-left | 左移整列 |
+| > | org-table-move-column-right | 右移整列 |
+| o | org-table-insert-row | 插入表格行 |
+| O | org-table-insert-column | 插入表格列 |
+| h | org-table-insert-hline | 插入水平分隔线 |
+| = | org-table-eval-formula | 设置或计算单元格公式 |
+| e | org-table-edit-field | 在专用缓冲区编辑单元格 |
+| g | org-table-recalculate | 重新计算表格 |
+
+** Org 整张表格
+
+映射：=embark-org-table-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | org-table-align | 对齐表格 |
+| = | org-table-edit-formulas | 编辑表格公式 |
+| s | org-table-sort-lines | 排序表格行 |
+| t | org-table-transpose-table-at-point | 转置表格 |
+| c | org-table-convert | 转换表格表示形式 |
+| f | org-table-follow-field-mode | 切换字段内容跟随显示 |
+| y | org-table-paste-rectangle | 粘贴矩形区域到表格 |
+| d | org-table-toggle-formula-debugger | 切换公式调试器 |
+| o | org-table-toggle-coordinate-overlays | 切换行列坐标显示 |
+| g | org-table-iterate | 反复计算表格直至稳定或达到上限 |
+| e | org-table-export | 把表格导出到文件 |
+
+** Org 链接 w 复制子菜单
+
+映射：=embark-org-link-copy-map=。此表无父动作表。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| w | embark-org-copy-link-inner-target | 复制链接的内部目标，不含 file 等包装前缀 |
+| f | embark-org-copy-link-in-full | 复制完整 Org 链接及描述 |
+| d | embark-org-copy-link-description | 只复制链接描述 |
+| t | embark-org-copy-link-target | 复制链接目标，保留协议等前缀 |
+| i | embark-org-copy-link-inner-target | 复制链接的内部目标，不含 file 等包装前缀 |
+| m | embark-org-copy-as-markdown | 把目标 Org 内容导出为 Markdown 并复制 |
+
+** Org 链接
+
+映射：=embark-org-link-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | org-open-at-point-global | 打开光标处 Org 链接 |
+| ' | org-insert-link | 插入或编辑链接 |
+| n | org-next-link | 下一链接 |
+| p | org-previous-link | 上一链接 |
+| w | embark-org-link-copy-map | 进入链接复制格式子菜单 |
+
+** Org 标题 / 议程标题引用
+
+映射：=embark-org-heading-map=。继承 =embark-heading-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | org-todo | 切换 TODO 状态 |
+| TAB | org-cycle | 循环折叠标题 |
+| t | org-todo | 切换 TODO 状态 |
+| s | org-schedule | 设置计划时间 |
+| d | org-deadline | 设置截止日期 |
+| , | org-priority | 设置优先级 |
+| : | org-set-tags-command | 设置标签 |
+| P | org-set-property | 设置属性 |
+| D | org-delete-property | 删除属性 |
+| k | org-cut-subtree | 剪切子树 |
+| N | org-narrow-to-subtree | 缩窄到子树 |
+| T | org-tree-to-indirect-buffer | 在间接缓冲区编辑子树 |
+| <left> | org-do-promote | 提升标题层级 |
+| <right> | org-do-demote | 降低标题层级 |
+| o | org-sort | 按当前上下文排序 |
+| r | org-refile | 把子树移动到其他标题下 |
+| R | embark-org-refile-here | 把源窗口的子树移动到目标标题下 |
+| I | org-clock-in | 开始计时 |
+| O | org-clock-out | 结束计时 |
+| a | org-archive-subtree-default-with-confirmation | 确认后按默认规则归档子树 |
+| h | org-insert-heading-respect-content | 在合适位置插入标题 |
+| H | org-insert-todo-heading-respect-content | 在合适位置插入 TODO 标题 |
+| l | org-store-link | 保存指向当前标题的链接 |
+| j | embark-org-insert-link-to | 向源窗口插入指向目标标题的链接 |
+
+** Org 代码块
+
+映射：=embark-org-src-block-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | org-babel-execute-src-block | 执行代码块 |
+| C-SPC | org-babel-mark-block | 选中代码块 |
+| TAB | org-indent-block | 缩进代码块 |
+| c | embark-org-copy-block-contents | 复制代码块正文 |
+| h | org-babel-check-src-block | 检查代码块执行所需信息 |
+| k | org-babel-remove-result-one-or-many | 移除代码块结果 |
+| p | org-babel-previous-src-block | 上一代码块 |
+| n | org-babel-next-src-block | 下一代码块 |
+| t | org-babel-tangle | 按文档 tangle 属性生成代码文件 |
+| s | org-babel-switch-to-session | 切到代码块关联会话 |
+| l | org-babel-load-in-session | 把代码块加载到关联会话 |
+| ' | org-edit-special | 进入专用编辑缓冲区 |
+| / | org-babel-demarcate-block | 划分或包围代码块 |
+| N | org-narrow-to-block | 缩窄到当前块 |
+
+** Org 行内代码块
+
+映射：=embark-org-inline-src-block-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | org-babel-execute-src-block | 执行代码块 |
+| ' | org-edit-inline-src-code | 编辑行内代码 |
+| k | org-babel-remove-inline-result | 移除行内代码的结果 |
+
+** Org Babel 调用
+
+映射：=embark-org-babel-call-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | org-babel-lob-execute-maybe | 执行 Babel 调用 |
+| k | org-babel-remove-result | 移除 Babel 结果 |
+
+** Org 列表项
+
+映射：=embark-org-item-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | org-toggle-checkbox | 切换复选框 |
+| c | org-toggle-checkbox | 切换复选框 |
+| t | org-toggle-item | 切换列表项形式 |
+| n | org-next-item | 下一列表项 |
+| p | org-previous-item | 上一列表项 |
+| <left> | org-outdent-item | 减少列表项缩进 |
+| <right> | org-indent-item | 增加列表项缩进 |
+| <up> | org-move-item-up | 上移列表项 |
+| <down> | org-move-item-down | 下移列表项 |
+| > | org-indent-item-tree | 增加整棵列表项子树缩进 |
+| < | org-outdent-item-tree | 减少整棵列表项子树缩进 |
+
+** Org 整个普通列表
+
+映射：=embark-org-plain-list-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| RET | org-list-repair | 修复列表结构 |
+| r | org-list-repair | 修复列表结构 |
+| s | org-sort-list | 排序列表 |
+| b | org-cycle-list-bullet | 切换列表项目符号 |
+| t | org-list-make-subtree | 把列表转换为标题子树 |
+| c | org-toggle-checkbox | 切换复选框 |
+| h | org-toggle-heading | 在普通文字和标题之间转换 |
+
+** 选区 > o 原地导出子菜单
+
+映射：=embark-org-export-in-place-map=。继承 =embark-general-map=，同键以本表优先。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| m | org-md-convert-region-to-md | 用 Markdown 替换 Org 选区 |
+| h | org-html-convert-region-to-html | 用 HTML 替换 Org 选区 |
+| a | org-ascii-convert-region-to-ascii | 用 ASCII 导出文字替换 Org 选区 |
+| l | org-latex-convert-region-to-latex | 用 LaTeX 替换 Org 选区 |
+
+** Grep 导出列表中的原生重新搜索按键（不先按 C-.）
+
+映射：=embark-consult-rerun-map=。此表无父动作表。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| g | embark-rerun-collect-or-export | 重新启动产生列表的命令 |
+
+** Consult 同步搜索子菜单
+
+映射：=embark-consult-sync-search-map=。此表无父动作表。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| o | consult-outline | 在大纲标题中搜索 |
+| i | consult-imenu | 在当前缓冲区结构中搜索 |
+| I | consult-imenu-multi | 跨缓冲区结构搜索 |
+| l | consult-line | 搜索当前缓冲区全文行 |
+| L | consult-line-multi | 跨缓冲区全文行搜索 |
+
+** Consult 异步搜索子菜单
+
+映射：=embark-consult-async-search-map=。此表无父动作表。
+
+| 快捷键 | 交互命令（M-x 名称或子菜单） | 作用 |
+|--------+-------------------------------+------|
+| g | consult-grep | 使用 grep 搜索文件内容 |
+| r | consult-ripgrep | 使用 rg 搜索文件内容 |
+| G | consult-git-grep | 使用 git grep 搜索仓库内容 |
+| f | consult-find | 使用 find 搜索文件路径 |
+| d | consult-fd | 使用 fd 搜索文件路径 |
+| F | consult-locate | 使用 locate 索引搜索文件路径 |
+
+** 动态分派、Consult 搜索与继承补充
+
+上表共 48 张默认表、434 条直接绑定（含 Org / Consult 后加到原表的 4 条绑定），
+继承项按父表补齐；以下补充运行时组合与非 defvar-keymap 形式的子菜单。
+
+- 通用表 C：embark-consult-search-map，组合上面的 Consult 同步和异步搜索表；例如 C-. C r 启动 consult-ripgrep。
+- B 是命令切换而非目标类型切换；只在 minibuffer 中工作。当前命令所属的 become 表才会出现，
+  可在该状态用 M-x 选择新命令；C-h 帮助按当前可用表补全。
+- B 的匹配切换表中 C 进入 Consult 同步搜索表；异步搜索表也加入 become 家族。
+  同一搜索家族可保留输入切换，例如 consult-ripgrep 中 C-. B g 转 consult-grep。
+- Org URL / 邮件 / 文件 / 表达式链接先使用 embark-org-link-map，再组合相应 url / email / file / expression 表，
+  仍可操作底层目标；链接 w 进入复制子菜单，w w 复制内部目标，w f 复制完整 Org 链接。
+- org-timestamp、org-footnote-definition、org-footnote-reference 等没有专门动作表的已识别对象，
+  回退到通用表；没有为它们禁用通用复制、插入、选择等动作。
+- consult-location、consult-grep、consult-xref、consult-isearch-history、consult-man、consult-info
+  由桥接处理转换、默认跳转或打开，以及适用的专用导出；没有另造一张只有少数动作的替代表。
+
+** Smerge 冲突目标及比较子菜单
+
+Embark 对 smerge 目标组合内置 smerge-basic-map 与通用表，以 Smerge 同键优先。
+以下核对本机 Emacs 31.1 的 smerge-mode.el；其他 Emacs 版本以安装版本为准。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| n / p | smerge-next / smerge-prev | 下一 / 上一处冲突 |
+| r | smerge-resolve | 根据冲突当前内容自动解决 |
+| a | smerge-keep-all | 保留所有版本 |
+| b | smerge-keep-base | 保留共同祖先版本 |
+| o / l | smerge-keep-lower | 保留下方版本 |
+| m / u | smerge-keep-upper | 保留上方版本 |
+| E | smerge-ediff | 用 Ediff 解决冲突，覆盖通用 E 导出 |
+| C | smerge-combine-with-next | 合并相邻冲突，覆盖通用 C 搜索子菜单 |
+| R | smerge-refine | 细化冲突差异显示 |
+| C-m（RET） | smerge-keep-current | 保留光标所在版本；运行时 RET 还可能被默认动作覆盖 |
+| = < | smerge-diff-base-upper | 比较祖先与上方版本 |
+| = > | smerge-diff-base-lower | 比较祖先与下方版本 |
+| = = | smerge-diff-upper-lower | 比较上下版本 |

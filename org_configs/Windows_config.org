@@ -50,10 +50,18 @@
     - [[搜索、定位与候选界面][搜索、定位与候选界面]]
       - [[屏幕内定位：Avy][屏幕内定位：Avy]]
       - [[搜索与选择：Vertico / Orderless / Marginalia / Consult][搜索与选择：Vertico / Orderless / Marginalia / Consult]]
+      - [[Embark 候选与上下文操作][Embark 候选与上下文操作]]
       - [[文本替换][文本替换]]
-  - [[文件与项目管理（占位）][文件与项目管理（占位）]]
+  - [[文件与项目管理][文件与项目管理]]
     - [[文件与项目操作][文件与项目操作]]
+      - [[状态文件与项目识别][状态文件与项目识别]]
+      - [[项目菜单：打开、切换与管理][项目菜单：打开、切换与管理]]
+      - [[Dired：目录与批量文件操作][Dired：目录与批量文件操作]]
+      - [[最近文件、输入历史与阅读位置][最近文件、输入历史与阅读位置]]
     - [[保存、恢复与外部修改刷新][保存、恢复与外部修改刷新]]
+      - [[延迟写回原文件：空闲 5 秒][延迟写回原文件：空闲 5 秒]]
+      - [[外部修改与冲突处理][外部修改与冲突处理]]
+      - [[崩溃恢复副本、会话记录与备份][崩溃恢复副本、会话记录与备份]]
   - [[开发支持（占位）][开发支持（占位）]]
     - [[代码理解、补全与诊断][代码理解、补全与诊断]]
     - [[格式化（暂不启用）][格式化（暂不启用）]]
@@ -71,6 +79,8 @@
       - [[General 怎么修改：对照示例][General 怎么修改：对照示例]]
     - [[Leader 与键位取舍][Leader 与键位取舍]]
     - [[快捷键速查表][快捷键速查表]]
+      - [[第三阶段新增入口][第三阶段新增入口]]
+      - [[既有入口][既有入口]]
     - [[后续分组规划（未绑定）][后续分组规划（未绑定）]]
     - [[手动启动与体验清单][手动启动与体验清单]]
 - [[配置结束][配置结束]]
@@ -221,6 +231,8 @@ emacs -nw --init-directory . --user ""
 =example_Emacs_Windows.org=。第一阶段已写入 Evil、evil-collection、evil-surround、
 Helpful、General 和内置 which-key 的配置；toc-org 继续提供自动目录。
 第二阶段已写入 Avy、Vertico、Orderless、Marginalia 和 Consult，提供跳转、候选选择与搜索。
+第三阶段已写入项目、状态记忆、保存恢复与外部刷新，并补齐中文功能菜单。
+候选操作层已写入 Embark / embark-consult，提供上下文动作、候选收集、导出和批量操作。
 尚未安装的包由你手动启动时交给 use-package 安装，已安装则复用。
 本轮只编写配置和生成 init.el，没有加载、安装、编译或交互验证这些插件。
 
@@ -240,7 +252,8 @@ Helpful、General 和内置 which-key 的配置；toc-org 继续提供自动目�
 | 界面、字体、主题与状态栏     | 待配置   | 字体及图形／终端行为后续分别验证                   |
 | Evil、evil-collection、surround | 已配置 | Vim 编辑；等待手动启动安装和验证                   |
 | Avy、搜索与候选界面         | 已配置   | 第二阶段；普通模式 s 跳转，等待手动安装和验证       |
-| 文件、项目、保存与刷新       | 待配置   | 当前 Emacs 会话；仍遵守缓冲区冲突保护              |
+| Embark 候选与上下文操作     | 已配置   | C-. 英文动作菜单；中文教程见本文，等待手动安装验证 |
+| 文件、项目、保存与刷新       | 已配置   | 本地文本延迟保存；保留冲突检查，等待手动验证        |
 | 开发支持、Git               | 待配置   | 按模式和项目启用，外部工具另行准备                 |
 | Helpful 与 which-key        | 已配置   | 帮助查询与按键提示；等待手动启动验证                |
 | General 与统一键位          | 已配置   | 逗号 leader，备用 C-c ,；集中在个人配置最后         |
@@ -306,7 +319,7 @@ GPG 先查看实际可执行文件和错误路径；本机 MSYS2 路径问题的
 ;;; init.el --- Generated Emacs configuration -*- lexical-binding: t; -*-
 ;; Generated from org_configs/Windows_config.org. Edit the Org source instead.
 ;; 本文件由 Org 生成；注释也维护在 Org 代码块中，避免下次生成时丢失。
-;; 已配置基础环境、Org 目录、Vim 编辑、跳转搜索、帮助和 leader；开发等仍占位。
+;; 已配置基础环境、Org 目录、编辑搜索、文件项目、保存恢复和菜单；开发等仍占位。
 
 ;;; 基础入口
 
@@ -547,8 +560,9 @@ which-key 使用内置版本。Consult 等后续插件仍未声明，不会因�
    │  ├─ Vim 编辑：Evil / evil-collection / evil-surround
    │  ├─ 屏幕定位：Avy
    │  ├─ 搜索选择：Vertico / Orderless / Marginalia / Consult
+   │  ├─ 候选与上下文操作：Embark / embark-consult
    │  └─ 文本替换：Evil 与内置命令
-   ├─ 文件与项目管理（占位）
+   ├─ 文件与项目管理
    │  ├─ project.el / Dired / recentf / savehist / saveplace
    │  └─ 自动保存、恢复与外部修改刷新
    ├─ 开发支持（占位）
@@ -964,8 +978,9 @@ Vertico、Orderless、Marginalia 则改善这些操作背后的候选选择过�
 #+begin_src emacs-lisp
 ;;; 屏幕内定位：按命令加载，不在启动时扫描缓冲区。
 (use-package avy
-  ;; 为这两个命令建立自动加载入口；首次调用才加载 Avy，不是在这里设置快捷键。
-  :commands (avy-goto-char-timer avy-goto-line)
+  ;; 为菜单使用的命令建立自动加载入口；首次调用才加载 Avy，不是在这里设置快捷键。
+  :commands (avy-goto-char-timer avy-goto-line avy-goto-char avy-goto-word-0
+             avy-goto-word-1 avy-pop-mark)
   :custom
   ;; 本配置选择 nil：当前窗口；插件默认 t：当前 Frame 全部窗口；all-frames：全部 Frame。
   (avy-all-windows nil)
@@ -975,12 +990,12 @@ Vertico、Orderless、Marginalia 则改善这些操作背后的候选选择过�
   (avy-enter-times-out t)
   ;; 默认 t：匹配文字忽略大小写；改为 nil 后区分大小写。
   (avy-case-fold-search t)
-  ;; 默认标签键：?a 表示字符 a；可调整字符及顺序，不是要查找的目标文字。
+  ;; 插件默认标签为 a s d f g h j k l；下面保留个人选择。?a 表示字符 a，可调整顺序。
   (avy-keys '(?a ?o ?e ?u ?i ?d ?h ?t ?n)))
 #+end_src
 
-这里修改跳转范围，并把常用参数按本机 Avy 0.5.0 默认值显式写出，便于后续修改。
-=avy-timeout-seconds= 当前为 0.5 秒，可在上面的 :custom 中改为 0.8 或 1.0。
+这里显式写出常用参数，并保留你后续选择的 1.0 秒间隔与个人标签字符。
+=avy-timeout-seconds= 插件默认为 0.5 秒，当前配置为 1.0 秒，可在上面的 :custom 修改。
 该时间是连续输入字符的等待时间，不是看到标签后必须立即完成选择的时间限制。
 其他交互命令由包的自动加载定义提供，使用 M-x 即可；无需为每个命令增加按键。
 
@@ -988,7 +1003,7 @@ Vertico、Orderless、Marginalia 则改善这些操作背后的候选选择过�
 
 1. 在普通模式按 =s=，或 =, j j=；也可执行 =M-x avy-goto-char-timer RET=。
 2. 输入屏幕上目标文字中的一个或连续多个字符，例如 =config=。
-   相邻输入间隔超过默认 0.5 秒后，Avy 开始选择；默认也可用 RET 提前结束文字输入。
+   相邻输入间隔超过当前配置的 1.0 秒后，Avy 开始选择；也可用 RET 提前结束文字输入。
 3. 多个目标出现标签后，输入目标旁的标签字符。标签可能不止一个字符，按显示的顺序输入。
    标签是临时选择键，与刚才输入的目标文字是两个步骤。
 4. 唯一候选通常直接跳转；没有候选时不会跳到任意位置。
@@ -1061,7 +1076,7 @@ Avy 也支持标签阶段的 action dispatch，具体键和动作由 =avy-dispat
 | Consult | 提供搜索、切换与导航命令 | consult-line、consult-buffer 等带预览的选择 |
 
 它们不提供代码缓冲区内的弹出补全；后续 Corfu 负责那个界面。
-本阶段不改 =completion-in-region-function=，也不引入 Embark 等额外插件。
+本配置不改 =completion-in-region-function=；候选动作由后文 Embark 独立提供。
 
 ***** Vertico：候选列表与确认方式
 
@@ -1164,9 +1179,12 @@ Windows 可以使用 =D:/目录/文件= 这样的路径，空格也可能是实�
 ;;; 搜索与选择命令：首次调用时加载，保留插件默认预览策略。
 (use-package consult
   ;; :commands 声明自动加载入口，不执行这些命令，也不定义快捷键。
-  ;; 四个命令分别负责缓冲区选择、当前缓冲区搜索、外部 rg 搜索、结构索引。
+  ;; 声明缓冲区选择、搜索、结构索引及附加导航菜单使用的命令。
   ;; 首次调用其中任意一个才加载插件；启动时不必加载整套搜索实现。
-  :commands (consult-buffer consult-line consult-ripgrep consult-imenu)
+  :commands (consult-buffer consult-line consult-ripgrep consult-imenu
+             consult-line-multi consult-imenu-multi consult-outline
+             consult-goto-line consult-mark consult-global-mark
+             consult-bookmark consult-yank-pop)
   :custom
   ;; 默认 any：选中候选变化时自动预览；nil 关闭预览，"M-." 改为按该键手动预览。
   (consult-preview-key 'any)
@@ -1176,7 +1194,7 @@ Windows 可以使用 =D:/目录/文件= 这样的路径，空格也可能是实�
 #+end_src
 
 上述声明为本配置绑定的命令建立加载入口；其他官方交互命令使用包提供的自动加载。
-这里的 :commands 是 use-package 的加载声明，不是“只允许使用这四个命令”的白名单。
+这里的 :commands 是 use-package 的加载声明，不是“只允许使用所列命令”的白名单。
 列出它们是为了确保统一键位引用的主要命令可以按需加载；其他交互命令仍可通过 M-x 使用。
 修改按键应去最后的统一快捷键章节，修改预览或搜索阈值则改这里的 :custom。
 不把 Consult 的内部函数作为配置接口；预览和搜索阈值显式保留本机 Consult 3.10 默认值。
@@ -1193,8 +1211,8 @@ Windows 可以使用 =D:/目录/文件= 这样的路径，空格也可能是实�
 
 =, b b=：输入缓冲区名称片段，C-n / C-p 移动时预览，RET 切换，C-g 取消。
 它替换原键位的 switch-to-buffer，但 =M-x switch-to-buffer RET= 仍可直接使用。
-Consult 的默认来源还可以包含书签、最近文件等；本阶段没有启用 recentf，
-因此不保证出现最近文件候选，不把安装 Consult 等同于建立最近文件记录。
+Consult 的默认来源还可以包含书签、最近文件等；第三阶段启用 recentf 后，
+访问过的文件可以进入最近文件来源，不把安装 Consult 本身等同于建立最近文件记录。
 默认可用 =b SPC= 缩小到缓冲区来源，退格删除筛选输入后恢复选择；
 其他来源是否出现取决于实际启用的功能。
 
@@ -1213,7 +1231,7 @@ Consult 的默认来源还可以包含书签、最近文件等；本阶段没有
 =, s r= 或 =M-x consult-ripgrep RET= 启动异步文本搜索。
 默认使用 Emacs 识别到的项目根目录；无项目时使用当前 default-directory，
 提示区会显示搜索目录。=C-u M-x consult-ripgrep RET= 可先选择目录。
-项目识别采用现有内置机制，本阶段不增加 project.el 管理配置。
+项目识别采用内置机制；第三阶段的项目菜单负责文件选择、切换和记录管理。
 
 1. 先在 Emacs 执行 =M-: (executable-find "rg") RET=。结果为 nil 表示 Emacs 找不到 rg。
    shell 中能够运行 rg 不代表图形 Emacs 一定继承相同 PATH。
@@ -1229,11 +1247,11 @@ Consult 的外部搜索支持 =#搜索表达式#候选过滤= 形式，例如
 没有结果时先检查目录、搜索长度、忽略规则和磁盘保存状态，再判断是否插件故障。
 本配置不安装 rg、不修改系统 PATH，也不硬编码 Codex 内部工具路径。
 
-***** 其他 Consult 命令：通过 M-x 使用
+***** 其他 Consult 命令：菜单与 M-x
 
-以下功能本轮不增加快捷键。已绑定入口覆盖日常搜索和切换，
-这些功能先按场景通过 M-x 使用，避免一次增加大量难以记忆的键位；
-后续根据实际频率再安排按键。未绑定不等于禁用，也不需要为每次调用重新配置。
+第三阶段借助 which-key 将常用附加功能接入中文菜单，键位见下方补充表与统一快捷键章节。
+以下命令仍可通过 M-x 使用；consult-history 保留上下文限制，不单独增加局部键位。
+未绑定的附加命令也不等于禁用，不需要为每次调用重新配置。
 
 | M-x 命令 | 前提与使用过程 |
 |----------+----------------|
@@ -1267,7 +1285,22 @@ consult-history 读取调用上下文的历史。在已经使用的 =M-x shell R
 在 minibuffer 中直接调用该命令可读取当前输入历史，但本配置没有为它设置局部键位，
 也不全局开启递归 minibuffer；不要在 find-file 输入区再次按 M-x 来试图嵌套调用。
 该场景本阶段用原生 =M-p / M-n= 浏览历史；consult-history 的 minibuffer 专用入口留待需要时配置。
-savehist 尚未启用，不能保证重启后仍保留本次输入历史。
+第三阶段启用 savehist 后，支持的 minibuffer 历史可跨会话保存；shell 历史不因此自动持久化。
+
+***** 新增菜单的操作示例
+
+, e y（M-x consult-yank-pop RET）选择 kill ring 内容，预览后 RET 插入，C-g 取消；
+紧接 yank 使用时可能替换前一次粘贴，先在临时文本中体验。Evil 寄存器与 kill ring 不完全相同。
+, j m / , j M 分别调用 consult-mark / consult-global-mark，选择已记录的位置跳转；
+标记不是所有光标移动的录像，没有候选时先按前文建立标记。
+, j n（M-x consult-goto-line RET）输入 20 或 20:5，预览后 RET 确认。
+, j b（M-x avy-pop-mark RET）返回 Avy 记录的位置，不代表撤销文字编辑。
+
+, s S（M-x consult-line-multi RET）默认搜索项目缓冲区，前缀参数扩大到全部缓冲区；
+它搜索内存内容，不等同于 , s r 的磁盘搜索。
+, s I（M-x consult-imenu-multi RET）选择相同主模式的项目缓冲区结构项，未打开文件不保证包含。
+, s o（M-x consult-outline RET）选择大纲标题，依赖当前主模式的大纲规则。
+, j c 输入单字符；, j w 直接选择单词起点；, j W 先输入首字符再选择，命令见统一速查表。
 
 ***** 功能边界与后续接入
 
@@ -1275,7 +1308,7 @@ savehist 尚未启用，不能保证重启后仍保留本次输入历史。
 |------+------|
 | 已配置并绑定 | 缓冲区切换、当前缓冲区搜索、结构索引、ripgrep 搜索入口 |
 | 可通过 M-x 使用 | 上表主要附加命令，依赖已有内容、标记、书签或模式支持 |
-| 需要后续接入 | recentf 最近文件记录、savehist 跨会话输入历史、项目管理与开发工作流 |
+| 第三阶段接入 | recentf 最近文件、savehist 输入历史、项目管理；开发工作流仍待配置 |
 | 依赖外部程序 | consult-ripgrep 需要 rg；其他 grep/find 类命令也各有外部依赖 |
 
 Consult 还有寄存器、宏、编译错误等命令，可在 M-x 输入 =consult-= 查看，
@@ -1283,24 +1316,419 @@ Consult 还有寄存器、宏、编译错误等命令，可在 M-x 输入 =consu
 本轮不覆盖用户尚未建立的编译或诊断工作流，也不把所有命令一律绑定。
 候选默认操作、外部搜索语法及版本差异以链接的官方文档和本机帮助为准。
 
+**** Embark 候选与上下文操作
+
+状态：已配置，等待手动启动安装和验证。Embark 属于“候选与上下文操作层”：
+Vertico 显示候选，Orderless 筛选，Marginalia 提供注释，Consult 提供搜索与预览，
+Embark 针对当前候选或光标处对象选择动作；embark-consult 负责 Consult 结果导出等桥接。
+Marginalia 的注释不会自动提示 Embark 入口，which-key 也不负责这里的动作菜单。
+本配置使用 Embark 自带的英文菜单；配置与使用教程维护在本文，完整中文动作表见子文档
+[[file:embark-actions.org][Embark 默认动作参考]]。
+
+***** 加载与默认参数
+
+以下默认值和动作表核对 GNU ELPA Embark / embark-consult 1.2 源码；
+本机 Consult 3.10、Vertico 2.15 已有对应基础配置。Embark 1.2 要求 Emacs 29.1 与 compat 30，
+由既有 use-package / package.el 处理包依赖；这里没有锁定包版本。
+今后软件源更新后，以本机 C-h v 查看变量、C-h f 查看命令及实际动作菜单为准。
+核对来源为 [[https://github.com/oantolin/embark/blob/27de48004242e98586b9c9661fdb6912f26fe70f/embark.el][Embark 1.2 主源码]]、
+[[https://github.com/oantolin/embark/blob/27de48004242e98586b9c9661fdb6912f26fe70f/embark-org.el][同版 Org 集成]]、
+[[https://github.com/oantolin/embark/blob/80254c91da90635978fb12db8b9ab9bf54f3bfb0/embark-consult.el][embark-consult 1.2 源码]] 和 [[https://github.com/oantolin/embark#readme][官方使用说明]]。
+
+#+begin_src emacs-lisp
+(use-package embark
+  ;; :commands 建立交互命令的自动加载入口，第一次使用时再加载主包。
+  ;; 自定义按键只在文末 General 章节绑定；不改默认动作表和目标识别器。
+  :commands (embark-act embark-dwim embark-act-all embark-become
+             embark-collect embark-live embark-export embark-bindings)
+  :custom
+  ;; 默认用动作键位菜单；改为 embark-completing-read-prompter 可按命令名补全动作。
+  (embark-prompter 'embark-keymap-prompter)
+  ;; 默认 t：在 minibuffer 执行动作后退出候选会话；nil 则保留会话。
+  ;; C-u C-. 可临时反转；动作菜单 q 也可切换，本轮保持默认。
+  (embark-quit-after-action t)
+  ;; 默认 t：对一组候选执行动作前询问确认；不关闭动作自身的确认机制。
+  (embark-confirm-act-all t)
+  ;; 默认 0.5 秒：进入动作菜单后，先显示简短目标提示，再弹出详细英文菜单。
+  ;; 可改为 0 立即显示，或改为 1.0 延后；这不是进入菜单前的入口提醒。
+  (embark-mixed-indicator-delay 0.5)
+  ;; 默认 C-h：动作菜单内立即用补全选择动作；nil 关闭此帮助入口。
+  (embark-help-key "C-h")
+  ;; 默认 nil：用 embark-act 的全局按键循环切换目标；当前即再次按 C-.。
+  ;; 可改成独立按键字符串；保持 nil 可随全局入口自动变化。
+  (embark-cycle-key nil)
+  ;; 默认 nil：不隐藏详细菜单里的任何动作；保留完整默认动作清单。
+  (embark-verbose-indicator-excluded-actions nil)
+  ;; 默认 t：分层显示子菜单，按前缀后显示该层动作；nil 将完整按键序列平铺显示。
+  (embark-verbose-indicator-nested t))
+
+(use-package embark-consult
+  ;; :after 等待两个主包都加载；:demand t 随后立即加载桥接代码，
+  ;; 避免已有 Consult 结果进入 Embark 时缺少导出器和目标转换。
+  :after (embark consult)
+  :demand t)
+#+end_src
+
+保留默认 embark-indicators：mixed 显示目标和菜单，highlight 高亮目标，
+isearch-highlight 配合增量搜索；不重设这个列表，让 Embark 自动添加 Vertico 集成。
+也保留默认 embark-target-finders、embark-keymap-alist、默认动作、导出器、确认与重复动作钩子。
+Org 加载后，Embark 自带的 embark-org 自动接入，不需要再安装一个 Org 插件。
+这里没有自定义中文菜单，没有提前显示入口提醒，也不安装 wgrep。
+
+***** 从缓冲区候选开始操作
+
+1. 普通模式按 , b b（M-x consult-buffer RET），输入缓冲区名，用 C-n / C-p 选择候选。
+2. 按 C-.（embark-act），先看目标类型和名称；停留 0.5 秒出现英文动作菜单。
+3. 对 buffer 目标按 k（kill-buffer）关闭，按 o（switch-to-buffer-other-window）在另一窗口打开，
+   按 w（embark-copy-as-kill）复制名称。关闭有未保存修改的缓冲区仍遵循确认流程。
+4. 不记得动作键时，在动作菜单里按 C-h（embark-keymap-help），用文字筛选动作并 RET 执行。
+   C-g 取消当前动作选择；若已经进入新的补全或确认提示，可能需要逐层 C-g 返回。
+
+动作菜单太长时，不需要切换窗口。保持动作选择状态，用下面的原生滚动键查看：
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| M-<next>（Alt + PageDown） / C-M-v | scroll-other-window | 向后翻一屏，查看菜单下方内容 |
+| M-<prior>（Alt + PageUp） / C-M-S-v | scroll-other-window-down | 向前翻一屏，查看菜单上方内容 |
+| C-h（动作菜单内） | embark-keymap-help | 改为补全选择动作，输入名称筛选后 RET 执行 |
+
+这里 M 表示 Alt / Meta，C 表示 Ctrl，S 表示 Shift；C-M-v 即 Ctrl + Alt + v。
+Embark 会把上述“滚动另一窗口”命令定向到动作菜单，滚动后继续等待你选择动作，
+不需要先把光标切进菜单。鼠标移到菜单窗口上滚轮也可滚动，取决于图形／终端鼠标支持。
+直接按 PageDown、C-v、j 或 k 不能一概当成翻页：它们可能被当作目标动作或其他命令。
+如果终端截获 Alt + PageUp / PageDown，优先试 C-M-v / C-M-S-v；
+也可直接 C-h 筛选动作，避免逐页寻找。这里没有新增自定义翻页键，也不使用 which-key 的分页命令。
+菜单中显示子菜单入口时，按对应前缀即可进入该层；这属于分层导航，与上下滚动不同。
+
+C-. 是社区常见的示例入口，也是本配置选择的按键；Embark 包本身不强制全局绑定它。
+之前考虑的 C-m 在 Emacs 中通常与 RET 是同一事件，因而没有用作入口。
+菜单中的英文取自命令帮助，不额外维护翻译层；子文档的动作表提供对应中文含义。
+默认完成动作后离开原候选会话；想保留它可先用 C-u C-.，或在菜单里按 q 再选动作。
+普通缓冲区外的前缀参数有不同含义：C-u C-. 跳过最前面的若干目标，不是切换退出策略。
+
+Consult-buffer 有多种来源：buffer 候选使用缓冲区动作，最近文件使用文件动作，
+书签使用书签动作。动作由目标类型决定，不能把每一行都当成 buffer。
+M-x、find-file、Consult 等许多 minibuffer 候选都可使用，但需要提供可识别的类型和候选集合；
+自定义补全或混合类型来源不保证提供同一套动作，也不保证能一次性按同一种类型导出。
+对普通文本、URL、路径、标识符或选区也可在光标处按 C-.；没有目标时会提示。
+同一位置有多个目标时，在动作菜单再次按 C-. 循环，确认目标类型后再选择动作。
+M-x embark-dwim RET 直接执行默认动作，省略菜单，不单独绑定以避免误触。
+
+***** 收集、实时列表、导出和批量操作
+
+以下大写字母均在 C-. 动作菜单之后输入，保留插件默认值。
+S / L / E / A 通常能作用于当前筛选集合；使用 embark-select 选择了子集时优先使用子集。
+集合指全部匹配候选，不限于 Vertico 屏幕上显示的几行；异步搜索只包含当前已获得的结果。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| C-. S | embark-collect | 把候选快照留在 Embark Collect 缓冲区 |
+| C-. L | embark-live | 旁边显示随当前 minibuffer 输入变化的实时候选列表 |
+| C-. E | embark-export | 依目标类型生成适合管理结果的专用缓冲区 |
+| C-. A | embark-act-all | 选择一个动作，对选中子集或当前集合批量执行，默认确认 |
+| C-. SPC | embark-select | 切换当前候选的选择状态，用于后续批量操作 |
+| C-. B | embark-become | 保留输入，换成另一个交互命令 |
+
+要选择多项，可重复“移动候选 → C-. SPC”，再 C-. A 选择动作。
+SPC 是选择控制动作，不是打开当前候选；不要把菜单外的空格输入误认为选择。
+collect 的快照可在原 minibuffer 退出后继续保留；live 跟随原会话，结束后不再继续更新。
+Collect 的刷新会重新运行产生列表的命令并恢复输入，不等于静默从磁盘刷新。
+collect 是通用列表，export 优先转换为专门的模式；没有专用导出器时 E 回退到 collect。
+
+| 目标类型 / 来源 | E 导出的缓冲区 | 后续用途与条件 |
+|-----------------+----------------+----------------|
+| buffer | Ibuffer | 按缓冲区管理模式筛选、标记和批量关闭 |
+| file | Dired | 管理这批文件；不是复制文件到新目录 |
+| package / bookmark | 包菜单 / 书签列表 | 使用对应模式管理候选 |
+| variable / face | Customize | 批量查看与定制变量或外观 |
+| symbol / function / command / minor-mode | Apropos | 查询符号说明 |
+| consult-location（如 consult-line） | Occur | 保留可跳转的位置列表 |
+| consult-grep（如 consult-ripgrep） | Grep | 保留匹配结果并跳转文件；搜索本身仍需 rg 等程序 |
+| consult-xref | Xref | 保留定义或引用结果 |
+| 其他类型 | Embark Collect | 继续用 C-. 操作具体候选 |
+
+例：, s s（consult-line）输入关键词后 C-. E，进入 Occur 并 RET 跳转；
+, s r（consult-ripgrep）等待结果出现后 C-. E，进入 Grep 并 RET 跳转。
+embark-consult 自动给 live 列表接入 Consult 预览；普通 collect 列表并不默认开启自动预览。
+Grep 导出和跳转不需要 wgrep。本机 Emacs 31 已提供内置 grep-edit-mode，
+可用 M-x grep-edit-mode RET 进入结果编辑，完成流程查看该模式帮助；本文不新增编辑键位。
+较旧 Emacs 要编辑 Grep 结果并写回多文件可另行配置 wgrep，本轮不安装。
+批量动作对整个集合生效，确认前查看目标范围；删除、重命名、执行 shell 或包管理动作保留默认能力，
+它们的原有确认与依赖仍然有效，本文的编写和 tangle 不会执行这些动作。
+
+Collect 模式的原生键位见 [[file:embark-actions.org::*Collect 列表的原生按键（直接在列表内按，不先按 C-.）][子文档的 Collect 按键表]]，继承 tabulated-list-mode；RET 可打开光标所在候选。
+默认不启用 Collect 的直接动作模式；M-a（embark-collect-direct-action-minor-mode）切换后，
+光标处候选的动作键可直接输入，不需要先 C-.，并可能覆盖原来的列表键；再调用一次关闭。
+动作帮助的补全选择器内，默认 @ 可返回按键动作选择器；通常直接用 C-h 查找动作即可。
+Evil 状态可能覆盖单字母键，统一入口 C-. 和备用 leader 下的 M-x 仍可用。
+遇到不一致，用 C-c , h k（helpful-key）查询实际按键，按表中 M-x 名称调用命令；
+不要把 describe-mode 列出的原生键都当成 Evil 普通模式的最终绑定。
+Dired 中 C-. 操作光标处文件；返回上级目录用 -（dired-up-directory），
+原生 u 是 dired-unmark，不是 up。刷新常用 gr（revert-buffer）、标记 m（dired-mark），
+这些属于 Dired / evil-collection，不属于 Embark 文件动作表。
+
+***** 完整默认动作参考
+
+完整动作表已移到子文档 [[file:embark-actions.org][Embark 默认动作参考]]，包含各目标类型、继承关系、
+编码与排序子菜单、Org / Consult 集成及 Smerge 动作。
+把光标放到链接上，按 , o l（M-x org-open-at-point RET）打开；
+子文档开头有返回本章的链接。它只维护参考说明，不参与 init.el 生成。
+
+***** 依赖、限制与日后维护
+
+所有默认动作都保留，并不表示每个动作在任意目标上均适用。
+外部打开使用系统关联程序；URL、下载和包管理可能访问网络；邮件需要 Emacs 邮件配置。
+VC / Ediff 依赖版本控制后端或比较工具；GPG 区域加解密需要可用的密钥和程序；
+ispell 需要拼写检查器；Info、Man、locate、find、fd、grep、git-grep 等依赖对应文档、程序或索引。
+代码定义与引用需要主模式 / Xref 后端；Flymake 需要诊断数据；Smerge 需要冲突文件和 smerge-mode。
+Org 执行代码块需要语言后端和相应解释器，仍遵循现有 Babel 确认与执行规则；
+区块 t 默认 org-babel-tangle，未传前缀时可能生成整份文档，不等于只生成光标块。
+Org 的日程、计时、归档等使用原有 Org 配置；本文仅保留动作，没有新增完整任务管理工作流。
+
+完整是指这些已核对版本的内置动作和官方集成均未禁用，不包括尚未安装的第三方扩展。
+插件升级后，先在菜单 C-h 查看实际动作，再对照对应源码更新本文与动作参考子文档；
+用 C-h v 查看 embark-keymap-alist、embark-become-keymaps 和 embark-exporters-alist 可检查运行中的分派。
+M-x embark-bindings RET 展示当前键位供查找操作，不替代 Evil 状态下的 helpful-key 实际按键查询。
+除 C-. 外，本轮不增加大量全局快捷键；收集、导出等已有动作菜单入口，低频命令可按 M-x 名称调用。
+
 **** 文本替换
 
 替换保留 Evil 的 =:s= / =:%s= 和内置 =query-replace=、
 =query-replace-regexp=、=project-query-replace-regexp=，不把搜索当作替换功能。
 
-** 文件与项目管理（占位）
+** 文件与项目管理
 
 *** 文件与项目操作
 
-project.el、Dired、recentf、savehist、saveplace。
-补充打开、显式保存、关闭文件缓冲区、项目文件选择和项目切换入口。
+状态：已配置，等待手动启动与验证。本章使用 Emacs 内置功能，不新增第三方插件。
+
+**** 状态文件与项目识别
+
+项目是由 project.el 识别的工作目录，Git 仓库通常可直接识别。
+已知项目列表只是访问入口，不会把任意目录自动变成项目；扫描时只有能被识别的项目才会加入。
+项目文件在磁盘上，项目缓冲区在当前 Emacs 会话中，二者不是同一份列表。
+状态集中在配置根目录的 .cache/，由现有 .gitignore 忽略；更换电脑不会自动携带这些记录。
+以下目录由用户下次加载配置时创建，编写配置和 tangle 不执行它们。
+
+#+begin_src emacs-lisp
+;;; 本机状态目录：供项目、历史、位置与恢复记录共同使用。
+(defconst my/state-directory (expand-file-name ".cache/" my/config-directory)
+  "Directory for local Emacs state.")
+(dolist (directory '("" "auto-save/" "auto-save-list/"))
+  (make-directory (expand-file-name directory my/state-directory) t))
+
+(use-package project
+  :ensure nil                         ; 内置 project.el，不从软件源安装。
+  :demand t                           ; 尽早设置项目列表位置，再读取已有记录。
+  :custom
+  ;; 自定义存放位置；不改项目识别函数，也不新增固定项目路径。
+  (project-list-file (expand-file-name "projects.eld" my/state-directory))
+  ;; 选择项目后的中文操作菜单；第三项为明确的选择键，不依赖默认 keymap 推导。
+  (project-switch-commands
+   '((project-find-file "查找文件" ?f)
+     (project-switch-to-buffer "切换缓冲区" ?b)
+     (project-dired "项目根目录" ?d)
+     (project-find-dir "查找子目录" ?D))))
+#+end_src
+
+当前阶段不迁移其他配置目录中的旧记录；首次使用可通过扫描或访问项目逐步建立列表。
+项目文件列表通常遵循版本控制忽略规则，不保证包含全部隐藏或忽略文件。
+不是 Git 仓库的目录能否识别取决于现有后端；本阶段不自动创建 .git 或项目标记。
+
+**** 项目菜单：打开、切换与管理
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| , p f | project-find-file | 选择当前项目中的文件 |
+| , p p | project-switch-project | 选择项目，再从中文菜单选择操作 |
+| , p b | project-switch-to-buffer | 选择项目缓冲区 |
+| , p B | project-list-buffers | 集中查看项目缓冲区列表 |
+| , p d | project-dired | 用 Dired 打开根目录 |
+| , p D | project-find-dir | 选择项目子目录并打开 Dired |
+| , p s | project-save-some-buffers | 保存当前项目修改，保留默认询问 |
+| , p k | project-kill-buffers | 关闭项目缓冲区，保留确认和保存处理 |
+| , p a | project-remember-projects-under | 扫描父目录下可识别的项目并记住 |
+| , p x | project-forget-project | 移除项目记录，不删除磁盘文件 |
+| , p ! | project-async-shell-command | 在项目根目录异步执行 shell 命令 |
+
+例如打开本仓库的文件，按 , p f 输入 org_configs，选择文件 RET；C-g 取消。
+多个仓库放在同一父目录时，用 , p a 选择该父目录，之后用 , p p 切换。
+默认扫描直接子目录；需要递归扫描时用 C-u M-x project-remember-projects-under RET。
+大目录扫描可能耗时，选择实际工作目录即可。清理不存在的项目用
+M-x project-forget-zombie-projects RET，暂不另设键位。
+
+, p b 适合直接切换，, p B 适合检查当前打开内容；列表的后续操作用 C-h m 查看。
+, p k 不是删除项目；, p x 只是忘记入口，也不会关闭缓冲区。
+项目保存保留默认询问，前缀参数的免询问行为查看 C-h f project-save-some-buffers。
+全文搜索继续使用 , s r（M-x consult-ripgrep RET），无需重复项目搜索键位。
+
+, p ! 输入命令 RET 后在项目根目录运行，输出显示在异步命令缓冲区。
+本配置保留 Emacs 默认 shell：用 M-: shell-file-name RET 和
+M-: shell-command-switch RET 检查；不要把 agent 使用的 Git Bash 当作 Emacs 默认 shell。
+命令语法按实际 shell 编写，取消输入用 C-g；已启动进程的管理在输出缓冲区使用 C-h m 查询。
+本阶段不设置终端、编译器或交互 shell。
+
+**** Dired：目录与批量文件操作
+
+打开 , f d（M-x dired RET）选择目录，或用 , p d 打开项目根目录。
+已有 evil-collection 提供工具界面键位，以下按本机版本核对；实际有效键仍可用 , h k 查询。
+
+| 操作 | 已有键位／M-x 命令 | 使用方法 |
+|------+-------------------+----------|
+| 新建目录 | + / dired-create-directory | 输入目录名 RET |
+| 标记文件 | m / dired-mark | 为当前行文件加标记，可连续选择多个 |
+| 取消标记 | u / dired-unmark | 取消当前行标记 |
+| 复制 | C / dired-do-copy | 有标记时处理标记集合，否则当前文件；输入目标目录 |
+| 重命名或移动 | R / dired-do-rename | 同目录改名或输入其他目录移动；观察确认提示 |
+| 直接删除 | D / dired-do-delete | 处理标记文件或当前文件，确认前核对对象 |
+| 标记待删除 | dired-flag-file-deletion | 先标记删除意图，稍后执行 |
+| 执行待删除标记 | dired-do-flagged-delete | 确认后执行已标记删除项目 |
+| 刷新列表 | revert-buffer | 重新读取目录；在 Dired 中用 M-x 调用 |
+
+例如 m 标记两份临时文件，再 C 输入目标目录 RET 即可批量复制。
+复制、移动和删除修改磁盘，不是只修改编辑缓冲区；不假定所有删除都会进入回收站。
+Windows 外部 ls 的可用性及目录列格式沿用当前 Dired 环境，不引入 Unix 专用 ls 参数。
+若键位被其他模式覆盖，以 M-x 命令和 C-h m 为准。
+
+**** 最近文件、输入历史与阅读位置
+
+#+begin_src emacs-lisp
+(use-package recentf
+  :ensure nil
+  :custom
+  (recentf-save-file (expand-file-name "recentf.eld" my/state-directory))
+  (recentf-max-saved-items 25)         ; 本机默认 25：退出后保留的最近文件上限，可增大。
+  (recentf-auto-cleanup 'mode)         ; 默认 mode：启用时清理失效项；never 为不自动清理。
+  :config
+  (recentf-mode 1))                   ; 记录最近文件；不意味着自动重新打开它们。
+
+(use-package savehist
+  :ensure nil
+  :custom
+  (savehist-file (expand-file-name "history" my/state-directory))
+  (savehist-autosave-interval 300)     ; 默认 300 秒保存历史；nil 关闭定时保存。
+  (savehist-additional-variables nil) ; 默认 nil：不额外保存 kill ring 等变量。
+  :config
+  (savehist-mode 1))                  ; 保存支持历史记录的 minibuffer 输入，正常退出也会保存。
+
+(use-package saveplace
+  :ensure nil
+  :custom
+  (save-place-file (expand-file-name "places.eld" my/state-directory))
+  :config
+  (save-place-mode 1))                ; 记住文件中的阅读位置，不恢复完整窗口布局。
+#+end_src
+
+recentf 记住文件路径；savehist 记住各输入上下文的历史；saveplace 记住文件位置。
+它们与命名书签、当前会话标记历史不同，不是完整桌面恢复功能。
+启用后，, b b（M-x consult-buffer RET）可用最近文件来源，默认输入 f SPC 缩小到最近文件。
+已有菜单保留，最近文件暂不另设专用键位；M-x consult-recent-file RET 也可直接选择。
+清理失效路径用 M-x recentf-cleanup RET，立即保存列表用 M-x recentf-save-list RET。
+
+历史在对应输入区用 M-p / M-n 浏览。例如先执行几次 M-x，再正常退出并重启，观察历史。
+不是所有命令都会记录输入，savehist 也不会将密码读取变成普通历史记录。
+saveplace 可用“打开文件 → 移动到中段 → 关闭文件 → 重开”体验，正常退出重启后再确认持久化。
+书签用 , f m（M-x bookmark-set RET）命名，, f b（M-x consult-bookmark RET）选择；
+本阶段保留书签自身的保存机制，不把它并入 saveplace。
 
 *** 保存、恢复与外部修改刷新
 
-自动保存计划使用 =auto-save-visited-mode=，空闲时直接写回已访问文件；
-它与用于崩溃恢复的自动保存副本是两件事，实施时分别说明和配置。
-外部修改刷新适用于任何外部程序，不限于 agent；有未保存修改时不强行覆盖。
-恢复文件集中放置，避免在项目中散落 =#file#=；关闭 =file~= 编辑备份。
+**** 延迟写回原文件：空闲 5 秒
+
+auto-save-visited-mode 直接保存原文件，与另存恢复副本的 auto-save-mode 不同。
+Emacs 整体没有输入持续 5 秒后，处理所有符合条件且有修改的文件缓冲区，包括后台缓冲区；
+不是每个文件独立倒计时，也不是打字过程中每隔 5 秒强制保存。
+
+#+begin_src emacs-lisp
+;;; 自动写回范围：本地可写文本，排除外部修改和需要交互加密的文件。
+(defun my/auto-save-visited-p ()
+  "Return non-nil when this buffer may be saved automatically."
+  (and buffer-file-name
+       (not (file-remote-p buffer-file-name))
+       (not buffer-read-only)
+       ;; text-mode 覆盖笔记／文档，prog-mode 覆盖源码和配置模式；不按扩展名白名单限制。
+       (derived-mode-p 'text-mode 'prog-mode)
+       ;; 排除以二进制 no-conversion 编码访问的文件。
+       (not (eq (coding-system-base buffer-file-coding-system) 'no-conversion))
+       (not (string-match-p "\\.gpg\\'" (downcase buffer-file-name)))
+       (not (eq (find-file-name-handler buffer-file-name 'write-region) 'epa-file-handler))
+       (not (bound-and-true-p epa-file-encrypt-to))
+       ;; 新文件要求父目录存在；已存在文件被外部修改／删除时跳过，不静默覆盖或重建。
+       (file-directory-p (file-name-directory buffer-file-name))
+       (file-writable-p buffer-file-name)
+       (or (file-exists-p buffer-file-name)
+           (equal (visited-file-modtime) -1))
+       (verify-visited-file-modtime (current-buffer))))
+
+(use-package files
+  :ensure nil
+  :custom
+  (auto-save-visited-interval 5)        ; 默认 5 秒，可改为 10；是 Emacs 空闲时间。
+  (auto-save-visited-predicate #'my/auto-save-visited-p) ; 自定义范围，默认 nil 不额外筛选。
+  (remote-file-name-inhibit-auto-save-visited t) ; 本配置排除远程文件；Emacs 默认 nil。
+  (make-backup-files nil)              ; 本配置关闭 file~ 备份；默认 t，不关闭恢复副本。
+  :config
+  (auto-save-visited-mode 1))
+#+end_src
+
+适用范围是派生自 text-mode 或 prog-mode 的本地文本文件，例如 Org、Markdown、C、Python、Lisp。
+具体配置格式按其主模式判断；不派生于这两个模式的文件默认跳过，需要时调整函数中的模式条件。
+图片、PDF、Hexl、Dired、帮助和 scratch 不自动写回；远程、只读及加密处理文件也跳过。
+新文件已指定路径且父目录存在、可写时会自动创建，因此打开新路径后输入文字即可能落盘。
+需要先留在内存中的草稿应使用没有文件路径的缓冲区。
+
+自动保存仍运行 before-save-hook / after-save-hook：Org 的 toc-org 可以更新目录，
+但不会自动 tangle 或加载 init.el。开启其他保存钩子后也会随自动写回执行。
+单个文件暂停：M-: (setq-local auto-save-visited-mode nil) RET；
+恢复跟随全局设置：M-: (kill-local-variable 'auto-save-visited-mode) RET。
+全局开关可用 M-x auto-save-visited-mode RET；显式保存仍用 , f s（M-x save-buffer RET）。
+, f S（M-x save-some-buffers RET）保存多个文件，, p s 只处理项目范围，均保留默认询问。
+
+**** 外部修改与冲突处理
+
+#+begin_src emacs-lisp
+(use-package autorevert
+  :ensure nil
+  :custom
+  (auto-revert-interval 5)                    ; 默认 5 秒轮询；文件通知可能更早触发。
+  (auto-revert-use-notify t)                  ; 默认 t：支持时使用文件通知，保留轮询兜底。
+  (auto-revert-remote-files nil)              ; 默认 nil：不自动刷新远程文件。
+  (global-auto-revert-non-file-buffers nil)   ; 默认 nil：不全局刷新 Dired 等非文件界面。
+  :config
+  (global-auto-revert-mode 1))                ; 未修改文件可刷新；不强制替换未保存编辑。
+#+end_src
+
+外部 agent 修改磁盘文件，缓冲区未修改时会自动刷新；Dired 仍可手动 M-x revert-buffer。
+双方均修改时自动写回筛选会因磁盘时间变化跳过，自动刷新也不强制覆盖本地编辑。
+这不是自动合并：先检查差异，必要时用 M-x diff-buffer-with-file RET 比较。
+决定采用磁盘版本时，用 , f u（M-x revert-buffer RET）并仔细确认；
+决定保留当前修改时手动保存，仍由 Emacs 原生冲突确认决定是否覆盖。
+磁盘在检查后再次变化的情况仍依靠原生保存检查，不声称完全消除并发写入竞争。
+
+**** 崩溃恢复副本、会话记录与备份
+
+#+begin_src emacs-lisp
+;;; 仅追加本地文件转换：保留原有远程转换及加密文件处理器的行为。
+(add-to-list 'auto-save-file-name-transforms
+             (list "\\`.*\\'"
+                   (expand-file-name "auto-save/" my/state-directory)
+                   'sha256)
+             t) ; 追加到现有规则之后，原有远程规则先匹配；加密处理器优先于转换表。
+;; 默认恢复副本机制保持开启，路径使用哈希防止同名文件冲突和 Windows 长文件名问题。
+(setq auto-save-list-file-prefix
+      (expand-file-name "auto-save-list/.saves-" my/state-directory))
+#+end_src
+
+恢复副本是尚未正常保存的内容快照，不是每次编辑的版本历史；正常保存后可能删除副本。
+auto-save-default 等触发选项保留 Emacs 默认值，加密和远程文件仍由原处理器／规则决定。
+本地普通文件副本放入 .cache/auto-save/；会话清单记录文件与副本的对应关系。
+查看触发参数用 C-h v auto-save-timeout 与 C-h v auto-save-interval。
+
+恢复单文件用 , f R（M-x recover-file RET）选择原文件，先查看提示和比较结果，
+确认恢复后再检查内容并显式保存。恢复整次会话可用 M-x recover-session RET，
+按会话清单选择；不要通过杀死当前会话来测试恢复，先在临时文件上阅读命令说明。
+普通重新读取原文件用 , f u，不是 recover-file。
+file~ 是保存前备份，本配置关闭；#…# 是恢复副本，仍保留；.#… 是编辑锁，也保留。
 
 ** 开发支持（占位）
 
@@ -1476,22 +1904,30 @@ General 不会自动启用 which-key，也不代替插件本身。
   (defvar my/org-map (make-sparse-keymap))
   (defvar my/jump-map (make-sparse-keymap))
   (defvar my/search-map (make-sparse-keymap))
+  (defvar my/project-map (make-sparse-keymap))
+  (defvar my/edit-map (make-sparse-keymap))
 
   (general-def my/file-map
-    "f" '("打开文件" . find-file)                   ; Find file，打开文件
-    "s" '("保存文件" . save-buffer)                 ; Save，保存
-    "a" '("另存为" . write-file)                    ; Save as，另存为
-    "d" '("目录管理" . dired)                       ; Dired，目录管理
+    "f" '("打开文件" . find-file)                  ; Find file，打开文件
+    "s" '("保存文件" . save-buffer)                ; Save，保存
+    "a" '("另存为" . write-file)                   ; Save as，另存为
+    "d" '("目录管理" . dired)                      ; Dired，目录管理
     ;; 保留内置确认：不要用无提示覆盖方式重新读取有未保存修改的文件。
-    "u" '("重新读取文件" . revert-buffer)           ; Update from disk，重新读取磁盘内容
-    "p" '("复制文件完整路径" . my/copy-file-path))  ; Path，文件完整路径
+    "u" '("重新读取文件" . revert-buffer)          ; Update from disk，重新读取磁盘内容
+    "p" '("复制文件完整路径" . my/copy-file-path)  ; Path，文件完整路径
+    "S" '("保存多个文件" . save-some-buffers)      ; Save all，保留保存询问
+    "R" '("恢复文件内容" . recover-file)           ; Recover，读取恢复副本
+    "m" '("设置文件书签" . bookmark-set)           ; Mark，命名文件位置
+    "b" '("选择书签" . consult-bookmark))          ; Bookmark，预览与跳转
 
   (general-def my/buffer-map
-    "b" '("切换与预览缓冲区" . consult-buffer)     ; Buffer，选择与预览缓冲区
-    "i" '("缓冲区列表" . ibuffer)                  ; Ibuffer，缓冲区管理列表
-    "k" '("关闭当前缓冲区" . kill-current-buffer)  ; Kill，关闭缓冲区
-    "n" '("下一个缓冲区" . next-buffer)            ; Next，下一个
-    "p" '("上一个缓冲区" . previous-buffer))       ; Previous，上一个
+    "b" '("切换与预览缓冲区" . consult-buffer)        ; Buffer，选择与预览缓冲区
+    "i" '("缓冲区列表" . ibuffer)                     ; Ibuffer，缓冲区管理列表
+    "k" '("关闭当前缓冲区" . kill-current-buffer)     ; Kill，关闭缓冲区
+    "n" '("下一个缓冲区" . next-buffer)               ; Next，下一个
+    "p" '("上一个缓冲区" . previous-buffer)           ; Previous，上一个
+    "o" '("返回上个缓冲区" . mode-line-other-buffer)  ; Other，返回最近缓冲区
+    "r" '("只读开关" . read-only-mode))               ; Read only，缓冲区只读开关
 
   (general-def my/help-map
     "k" '("解释按键" . helpful-key)                          ; Key，按键帮助
@@ -1513,16 +1949,19 @@ General 不会自动启用 which-key，也不代替插件本身。
 
   ;; Window，窗口布局；关闭显示区域不关闭其中的 Buffer。
   (general-def my/window-map
-    "h" '("左侧窗口" . windmove-left)                   ; Left，沿用 Vim 向左键
-    "j" '("下方窗口" . windmove-down)                   ; Down，沿用 Vim 向下键
-    "k" '("上方窗口" . windmove-up)                     ; Up，沿用 Vim 向上键
-    "l" '("右侧窗口" . windmove-right)                  ; Right，沿用 Vim 向右键
-    "c" '("关闭当前窗口" . delete-window)               ; Close，关闭窗口
-    "w" '("下一个窗口" . other-window)                  ; Window，循环切换窗口
-    "s" '("上下拆分" . split-window-below)              ; Split，上下拆分
-    "v" '("左右拆分" . split-window-right)              ; Vertical split，左右拆分
-    "o" '("保留当前窗口" . delete-other-windows)        ; Only，只保留当前窗口
-    "m" '("最大化或恢复" . my/toggle-window-maximize))  ; Maximize，最大化或恢复
+    "h" '("左侧窗口" . windmove-left)                  ; Left，沿用 Vim 向左键
+    "j" '("下方窗口" . windmove-down)                  ; Down，沿用 Vim 向下键
+    "k" '("上方窗口" . windmove-up)                    ; Up，沿用 Vim 向上键
+    "l" '("右侧窗口" . windmove-right)                 ; Right，沿用 Vim 向右键
+    "c" '("关闭当前窗口" . delete-window)              ; Close，关闭窗口
+    "w" '("下一个窗口" . other-window)                 ; Window，循环切换窗口
+    "s" '("上下拆分" . split-window-below)             ; Split，上下拆分
+    "v" '("左右拆分" . split-window-right)             ; Vertical split，左右拆分
+    "o" '("保留当前窗口" . delete-other-windows)       ; Only，只保留当前窗口
+    "m" '("最大化或恢复" . my/toggle-window-maximize)  ; Maximize，最大化或恢复
+    "u" '("撤销布局变化" . winner-undo)                ; Undo，恢复窗口布局
+    "r" '("重做布局变化" . winner-redo)                ; Redo，重做窗口布局
+    "=" '("均衡窗口大小" . balance-windows))           ; Balance，均衡窗口大小
 
   ;; Quit：退出；Q 按用户选择提供强制退出，跳过常规保存询问。
   (general-def my/quit-map
@@ -1533,22 +1972,55 @@ General 不会自动启用 which-key，也不代替插件本身。
   ;; Org，文档与配置维护，保留标题与结构导航入口。
   ;; 标题跳转与代码块编辑在 Org 中调用；生成和目录更新使用原生命令。
   (general-def my/org-map
-    "b" '("生成当前文档代码" . org-babel-tangle)    ; Babel，提取当前 Org 代码，不执行或加载
-    "g" '("Org 标题跳转" . org-goto)                ; Go to，跳转标题
-    "i" '("当前文件结构索引" . consult-imenu)       ; Index，预览结构索引
-    "t" '("更新当前文档目录" . toc-org-insert-toc)  ; Table of contents，当前文档目录
-    "s" '("编辑 Org 代码块" . org-edit-special))  ; Special，专用编辑界面
+    "b" '("生成当前文档代码" . org-babel-tangle)             ; Babel，提取当前 Org 代码，不执行或加载
+    "g" '("Org 标题跳转" . org-goto)                         ; Go to，跳转标题
+    "i" '("当前文件结构索引" . consult-imenu)                ; Index，预览结构索引
+    "t" '("更新当前文档目录" . toc-org-insert-toc)           ; Table of contents，当前文档目录
+    "s" '("编辑 Org 代码块" . org-edit-special)              ; Special，专用编辑界面
+    "TAB" '("切换当前折叠" . org-cycle)                      ; Cycle，按光标上下文循环
+    "c" '("切换全文概览" . org-shifttab)                     ; Cycle all，全文大纲显示
+    "u" '("上一级标题" . org-up-heading-safe)                ; Up，上级标题
+    "n" '("下一同级标题" . org-forward-heading-same-level)   ; Next，下一个同级
+    "p" '("上一同级标题" . org-backward-heading-same-level)  ; Previous，上一个同级
+    "l" '("打开链接" . org-open-at-point))                   ; Link，打开光标处链接
 
   ;; Jump，当前窗口可见文字定位；字符输入后按标签选择。
   (general-def my/jump-map
     "j" '("字符标签跳转" . avy-goto-char-timer)  ; Jump，字符跳转
-    "l" '("可见行跳转" . avy-goto-line))        ; Line，行跳转
+    "l" '("可见行跳转" . avy-goto-line)          ; Line，行跳转
+    "c" '("单字符跳转" . avy-goto-char)          ; Character，单字符定位
+    "w" '("单词起点跳转" . avy-goto-word-0)      ; Word，单词起点
+    "W" '("按首字符跳词" . avy-goto-word-1)      ; Word initial，单词首字符
+    "n" '("跳到行列位置" . consult-goto-line)    ; Number，行列位置
+    "m" '("当前缓冲区标记" . consult-mark)       ; Mark，本地标记环
+    "M" '("跨缓冲区标记" . consult-global-mark)  ; Global mark，全局标记环
+    "b" '("返回 Avy 跳转前" . avy-pop-mark))     ; Back，返回 Avy 记录位置
 
   ;; Search，全文搜索与结构选择；项目搜索依赖 Emacs 能找到 rg。
   (general-def my/search-map
-    "s" '("搜索当前缓冲区" . consult-line)       ; Search，搜索匹配行
-    "r" '("项目或目录搜索" . consult-ripgrep)   ; Ripgrep，外部文本搜索
-    "i" '("当前文件结构索引" . consult-imenu))  ; Index，预览结构索引
+    "s" '("搜索当前缓冲区" . consult-line)             ; Search，搜索匹配行
+    "r" '("项目或目录搜索" . consult-ripgrep)          ; Ripgrep，外部文本搜索
+    "i" '("当前文件结构索引" . consult-imenu)          ; Index，预览结构索引
+    "S" '("搜索多个缓冲区" . consult-line-multi)       ; Search buffers，搜索缓冲区内容
+    "I" '("项目缓冲区结构索引" . consult-imenu-multi)  ; Index buffers，同模式项目索引
+    "o" '("大纲标题" . consult-outline))               ; Outline，选择大纲标题
+
+  ;; Project，项目管理；沿用内置确认，不固定项目路径或 shell。
+  (general-def my/project-map
+    "f" '("查找项目文件" . project-find-file)                  ; File，项目文件
+    "p" '("切换项目" . project-switch-project)                 ; Project，选择项目
+    "b" '("切换项目缓冲区" . project-switch-to-buffer)         ; Buffer，项目缓冲区
+    "B" '("项目缓冲区列表" . project-list-buffers)             ; Buffer list，集中管理
+    "d" '("项目根目录" . project-dired)                        ; Directory，根目录
+    "D" '("查找项目子目录" . project-find-dir)                 ; Find directory，选择子目录
+    "s" '("保存项目文件" . project-save-some-buffers)          ; Save，保留默认询问
+    "k" '("关闭项目缓冲区" . project-kill-buffers)             ; Kill，关闭并检查保存
+    "a" '("扫描并记住项目" . project-remember-projects-under)  ; Add，扫描项目
+    "x" '("移除项目记录" . project-forget-project)             ; Exclude，仅移除记录
+    "!" '("执行项目命令" . project-async-shell-command))       ; Command，默认 shell 异步命令
+
+  (general-def my/edit-map
+    "y" '("选择剪贴历史" . consult-yank-pop))  ; Yank，选择 kill ring 内容
 
   ;; 根前缀是逗号，再经过两次逗号，得到 ,,,；M-x 本身仍可使用。
   (general-def my/command-map
@@ -1564,7 +2036,9 @@ General 不会自动启用 which-key，也不代替插件本身。
     "q" (cons "退出" my/quit-map)        ; Quit，退出
     "o" (cons "文档与配置" my/org-map)   ; Org，文档与配置
     "j" (cons "跳转" my/jump-map)        ; Jump，屏幕内定位
-    "s" (cons "搜索" my/search-map))     ; Search，搜索与索引
+    "s" (cons "搜索" my/search-map)      ; Search，搜索与索引
+    "p" (cons "项目" my/project-map)     ; Project，项目管理
+    "e" (cons "编辑" my/edit-map))       ; Edit，文本编辑
 
   ;; 普通／可视／motion 状态使用逗号；插入状态不占用逗号。
   ;; motion 覆盖一些只读工具界面；override 减少局部模式遮挡 leader。
@@ -1583,6 +2057,7 @@ General 不会自动启用 which-key，也不代替插件本身。
   ;; 原生 C-h 前缀保留，只增强其中几个具体帮助命令。
   (general-def
     "C-c ," my/leader-map        ; Leader，备用功能前缀
+    "C-." #'embark-act           ; Act，上下文与候选动作菜单
     "C-h k" #'helpful-key        ; Key，按键帮助
     "C-h f" #'helpful-callable   ; Function，函数帮助
     "C-h v" #'helpful-variable   ; Variable，变量帮助
@@ -1630,7 +2105,8 @@ General 当前文档推荐这种 keymap 描述方式，而不是到处添加 =:w
 删除或改名后请重启验证，因为重新执行部分代码可能保留旧绑定。
 
 分组按英文记忆：f（File，文件）、b（Buffer，缓冲区）、h（Help，帮助）、
-o（Org，文档）、d（Diagnostics，诊断）、w（Window，窗口）、q（Quit，退出）。
+o（Org，文档）、d（Diagnostics，诊断）、w（Window，窗口）、q（Quit，退出）、
+j（Jump，跳转）、s（Search，搜索）、p（Project，项目）、e（Edit，编辑）。
 常用子键含义：s（Save，保存）、p（Path，路径）、m（Messages，消息；
 窗口组中为 Maximize，最大化）、c（Close，关闭窗口）、a（All，全部）。
 英文全称只用于这里的说明和代码注释，which-key 菜单描述保持中文。
@@ -1649,6 +2125,56 @@ Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前�
 
 *** 快捷键速查表
 
+**** 第三阶段新增入口
+
+项目菜单完整操作表见“项目菜单：打开、切换与管理”；下面列出其他分组新增项。
+这些入口与既有键位共存，所有 leader 操作也可用 C-c , 备用前缀。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| , f S | save-some-buffers | 多文件保存，保留询问 |
+| , f R | recover-file | 恢复副本内容，随后检查并保存 |
+| , f m | bookmark-set | 命名当前文件位置 |
+| , f b | consult-bookmark | 选择并预览书签 |
+| , b o | mode-line-other-buffer | 当前窗口返回最近的其他缓冲区 |
+| , b r | read-only-mode | 切换缓冲区只读，不修改磁盘权限 |
+| , s S | consult-line-multi | 搜索多个缓冲区 |
+| , s I | consult-imenu-multi | 项目同模式缓冲区结构项 |
+| , s o | consult-outline | 大纲标题 |
+| , j c | avy-goto-char | 单字符标签跳转 |
+| , j w | avy-goto-word-0 | 单词起点标签跳转 |
+| , j W | avy-goto-word-1 | 以输入字符开头的单词跳转 |
+| , j n | consult-goto-line | 指定行列位置 |
+| , j m | consult-mark | 当前缓冲区标记历史 |
+| , j M | consult-global-mark | 全局标记历史 |
+| , j b | avy-pop-mark | 返回 Avy 记录位置 |
+| , w u | winner-undo | 撤销布局变化 |
+| , w r | winner-redo | 重做布局变化 |
+| , w = | balance-windows | 均衡各窗口尺寸 |
+| , o TAB | org-cycle | 局部折叠／展开，依赖光标上下文 |
+| , o c | org-shifttab | 全文大纲概览循环 |
+| , o u | org-up-heading-safe | 上一级标题 |
+| , o n | org-forward-heading-same-level | 下一同级标题 |
+| , o p | org-backward-heading-same-level | 上一同级标题 |
+| , o l | org-open-at-point | 打开光标处链接 |
+| , e y | consult-yank-pop | 选择剪贴历史文字 |
+
+只读开关适合临时阅读：, b r（M-x read-only-mode RET）再次调用可恢复编辑，
+只改变当前缓冲区状态，不更改文件系统权限；Dired 等模式可能对该命令进行模式专用重映射。
+用 , b o 在当前窗口切回上个缓冲区，与 b n / b p 遍历缓冲区列表不同。
+
+布局示例：拆分窗口后用 , w =（M-x balance-windows RET）均分；
+关闭一个窗口后 , w u（M-x winner-undo RET）恢复，再用 , w r（M-x winner-redo RET）重做。
+Winner 记录窗口布局，不恢复已经修改的文件内容；最大化恢复仍用原 , w m。
+
+Org 中把光标放到标题，用 , o TAB（M-x org-cycle RET）切换局部折叠，
+, o c（M-x org-shifttab RET）切换全文概览；在表格等位置 org-cycle 有对应上下文行为。
+, o u / n / p 分别找父标题和前后同级标题；没有对应目标时由 Org 提示。
+把光标放在目录链接上用 , o l（M-x org-open-at-point RET）打开，C-g 可取消后续输入。
+这些入口应在 Org 中调用，其他模式的 leader 菜单不会自动把普通文件转换成 Org。
+
+**** 既有入口
+
 以下是配置写入后的预期操作，需要你启动安装完成后手动确认。
 “交互命令”列就是 M-x 使用的名称：输入 =M-x 命令名 RET= 即可调用，
 也可先按 =,,,= 打开命令输入界面。快捷键只是调用同一个命令的另一种方式。
@@ -1664,6 +2190,7 @@ Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前�
 | , f u | revert-buffer | 从磁盘重新读取当前缓冲区，保留确认提示 |
 | , f p | my/copy-file-path | 复制当前文件完整路径 |
 | , b b | consult-buffer | 切换并预览缓冲区 |
+| C-. | embark-act | 当前候选或光标目标动作；菜单内 C-h 查找动作 |
 | s（仅普通模式） / , j j | avy-goto-char-timer | 当前窗口输入字符后按标签跳转 |
 | , j l | avy-goto-line | 当前窗口可见行跳转 |
 | , s s | consult-line | 当前缓冲区全文行搜索与预览 |
@@ -1730,18 +2257,17 @@ Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前�
 完成后用 =C-c '=（=M-x org-edit-src-exit RET=）返回；
 返回只更新 Org 中的代码文字，不会执行或生成配置。
 
-最近文件入口暂缓，后续随 dashboard 设计；交互替换与正则替换的额外绑定暂缓，
-等搜索／替换方案确定后再安排。其他候选键位不添加。
+最近文件专用入口暂缓，后续随 dashboard 设计；交互替换与正则替换的额外绑定暂缓。
+已配置的搜索与导航按第三阶段菜单补全，其他未批准候选不添加。
 
 *** 后续分组规划（未绑定）
 
 | 分组 | 覆盖功能                                                 |
 |------+----------------------------------------------------------|
-| p    | 项目文件与项目切换                                       |
 | c    | 定义、引用、重命名、代码动作、诊断和文档；格式化暂不绑定   |
 | g    | Magit、修改块导航                                        |
 
-项目文本搜索已在 , s r 接入；最近文件、项目文件选择等入口待对应功能实现后加入。
+项目文件与项目切换已在 , p 接入，文本搜索仍在 , s r；最近文件专用入口留待 dashboard 设计。
 目前菜单中没有空分组。
 不为低频命令强行创建按键，插件默认操作仍通过模式帮助和 M-x 查询。
 
@@ -1749,7 +2275,17 @@ Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前�
 
 本轮没有加载新 init.el，没有安装或编译插件，也没有进行交互验证。
 保持代理运行，从仓库根目录用前面的启动命令打开 Emacs，等待包安装结束。
-根据 *Messages* 判断安装情况；首次安装依赖可能需要一些时间。
+根据 *Messages* 判断安装情况；首次安装依赖可能需要一些时间。第三阶段主要使用内置功能。
+
+- 用 , p f / p / b / B / d / D 体验项目文件、切换、缓冲区和目录；切换后的提示应为中文。
+- 扫描临时项目父目录，移除记录后确认磁盘文件仍在；批量保存和关闭保留询问。
+- 用 M-: shell-file-name RET 检查后，再在临时项目用 , p ! 执行适合该 shell 的简单命令。
+- 正常退出并重启，检查 Consult 最近文件、输入历史和文件阅读位置；不期待完整桌面恢复。
+- 临时本地文本修改后停止输入 5 秒，观察磁盘保存；Org 保存可以更新目录但不能自动 tangle。
+- 无路径草稿、只读、远程、加密文件不应自动写回；试用单缓冲区暂停及恢复方法。
+- 外部修改未编辑文件应自动刷新；双方均修改时应保留本地编辑，先比较再手动处理。
+- 检查 .cache/ 下记录位置及恢复说明，不通过强制结束进程制造恢复测试。
+- 试用 , w u / r / =，以及 , e y、书签、标记、大纲和新增 Org 菜单。
 
 - 用 M-x 和 , f f 观察纵向候选及注释；增加／删除输入，确认候选列表高度动态变化。
 - 连续 C-n / C-p 到候选首尾，确认不循环；候选数量上限保持安装版本默认值。
@@ -1758,10 +2294,15 @@ Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前�
 - 普通模式用 s / , j j 输入可见文字并选标签；用 , j l 选择行，C-g 取消一次。
 - 拆分窗口，在另一个窗口显示目标，确认默认标签只出现在当前窗口；cl 仍可替换字符。
 - 用 , b b 预览并切换缓冲区；用 , o i / , s i 预览 Org 标题或代码结构。
+- 安装 Embark 后，, b b 选择临时缓冲区，C-. 等待菜单，C-h 找动作，C-g 取消。
+- 对临时缓冲区试用 C-. o / w / k；比较 C-u C-. 与默认退出候选会话的区别。
+- 在 find-file、M-x、书签和 Org 链接上检查目标类型，重复 C-. 切换目标。
+- 筛选候选后用 C-. S / L / E 比较快照、实时列表和专用导出；确认 line / ripgrep 导出可跳转。
+- 用 C-. SPC 选两个临时缓冲区，再 C-. A w，确认询问后逐项复制名称；检查未选择时的全部候选范围。
 - 用 , s s 搜索屏幕外的文字，分别确认跳转和 C-g 取消后的位置。
 - 用 M-: (executable-find "rg") RET 检查依赖，再用 , s r 搜索当前仓库并打开结果。
 - 按上文教程使用 M-x consult-yank-pop、consult-mark、consult-outline 和 consult-bookmark。
-- 最近文件与跨会话输入历史尚未接入，不以对应候选是否出现判断本阶段成功与否。
+- 最近文件和支持的输入历史现已接入，访问文件并正常退出重启后再判断持久化效果。
 - 在临时文件体验 i、Esc、hjkl、文本对象、撤销和句点重复。
 - 试用 ysiw"、ds"、cs"'，确认 surround 行为。
 - 普通状态按逗号，确认半秒后出现菜单；插入状态输入逗号仍应是普通文字。
