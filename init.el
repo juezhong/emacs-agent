@@ -556,7 +556,7 @@
 ;;; 本机状态目录：供项目、历史、位置与恢复记录共同使用。
 (defconst my/state-directory (expand-file-name ".cache/" my/config-directory)
   "保存本机 Emacs 状态文件的目录。")
-(dolist (directory '("" "auto-save/" "auto-save-list/"))
+(dolist (directory '("" "auto-save/" "auto-save-list/" "backups/"))
   (make-directory (expand-file-name directory my/state-directory) t))
 
 (use-package project
@@ -627,7 +627,11 @@
   (auto-save-visited-interval 5)        ; 默认 5 秒，可改为 10；是 Emacs 空闲时间。
   (auto-save-visited-predicate #'my/auto-save-visited-p) ; 自定义范围，默认 nil 不额外筛选。
   (remote-file-name-inhibit-auto-save-visited t) ; 本配置排除远程文件；Emacs 默认 nil。
-  (make-backup-files nil)              ; 本配置关闭 file~ 备份；默认 t，不关闭恢复副本。
+  ;; 默认 t，本配置显式开启：保存已有文件时，按 Emacs 原生规则保留保存前的磁盘内容。
+  ;; 备份集中在下方 backup-directory-alist 指定的 .cache/backups/，不在原文件旁生成 file~。
+  ;; 这不是每次保存都新增一个版本；通常每次访问文件后的首次符合条件的保存会创建备份。
+  ;; 改为 nil 可关闭保存前备份，不影响独立的 #文件# 自动保存恢复副本。
+  (make-backup-files t)
   :config
   (auto-save-visited-mode 1))
 
@@ -641,6 +645,15 @@
   (global-auto-revert-non-file-buffers nil)   ; 默认 nil：不全局刷新 Dired 等非文件界面。
   :config
   (global-auto-revert-mode 1))                ; 未修改文件可刷新；不强制替换未保存编辑。
+
+;; 默认 backup-directory-alist=nil：备份通常留在原文件旁；本配置指定集中目录。
+;; "." 匹配文件名，Emacs 为集中存放的备份编码原路径，避免不同目录同名文件互相覆盖。
+;; 目录在前面的状态目录章节创建；路径基于配置根目录，不依赖 HOME 或启动工作目录。
+;; 上面的 make-backup-files=t 负责开启；这里仅指定写入位置，不改变备份频率或版本数量。
+;; 反引号 ` 构造列表，逗号 , 让 expand-file-name 先算出本机绝对目录。
+;; 不同原路径的备份文件名可能含 ! 等编码字符，这是集中目录下避免重名的正常命名。
+(setq backup-directory-alist
+      `(("." . ,(expand-file-name "backups/" my/state-directory))))
 
 ;;; 仅追加本地文件转换：保留原有远程转换及加密文件处理器的行为。
 (add-to-list 'auto-save-file-name-transforms

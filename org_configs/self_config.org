@@ -2186,7 +2186,7 @@ M-x embark-bindings RET 展示当前键位供查找操作，不替代 Evil 状�
 ;;; 本机状态目录：供项目、历史、位置与恢复记录共同使用。
 (defconst my/state-directory (expand-file-name ".cache/" my/config-directory)
   "保存本机 Emacs 状态文件的目录。")
-(dolist (directory '("" "auto-save/" "auto-save-list/"))
+(dolist (directory '("" "auto-save/" "auto-save-list/" "backups/"))
   (make-directory (expand-file-name directory my/state-directory) t))
 
 (use-package project
@@ -2342,7 +2342,11 @@ Emacs 整体没有输入持续 5 秒后，处理所有符合条件且有修改�
   (auto-save-visited-interval 5)        ; 默认 5 秒，可改为 10；是 Emacs 空闲时间。
   (auto-save-visited-predicate #'my/auto-save-visited-p) ; 自定义范围，默认 nil 不额外筛选。
   (remote-file-name-inhibit-auto-save-visited t) ; 本配置排除远程文件；Emacs 默认 nil。
-  (make-backup-files nil)              ; 本配置关闭 file~ 备份；默认 t，不关闭恢复副本。
+  ;; 默认 t，本配置显式开启：保存已有文件时，按 Emacs 原生规则保留保存前的磁盘内容。
+  ;; 备份集中在下方 backup-directory-alist 指定的 .cache/backups/，不在原文件旁生成 file~。
+  ;; 这不是每次保存都新增一个版本；通常每次访问文件后的首次符合条件的保存会创建备份。
+  ;; 改为 nil 可关闭保存前备份，不影响独立的 #文件# 自动保存恢复副本。
+  (make-backup-files t)
   :config
   (auto-save-visited-mode 1))
 #+end_src
@@ -2384,7 +2388,36 @@ Emacs 整体没有输入持续 5 秒后，处理所有符合条件且有修改�
 
 **** 崩溃恢复副本、会话记录与备份
 
+这些文件分别承担恢复、备份和并发编辑保护，不能只按名称中的 # 或 ~ 当成同一类文件。
+当前配置把可以集中管理的恢复副本、会话清单和历史放入配置根目录的 .cache/；
+保存前备份已开启 make-backup-files=t，符合条件的备份集中写入 .cache/backups/，
+不在原文件旁散落 file~；恢复副本与保存前备份仍是两项独立机制。
+参考文件的 make-backup-files=t 实际是开启，其“禁止生成备份”注释与代码相反，不能按注释照抄。
+
+| 文件／记录 | 当前存放位置 | 是否启用及用途 |
+|------------+--------------+----------------|
+| #文件# 恢复副本 | .cache/auto-save/ | 保留原生自动保存恢复；本地文件名使用哈希避免冲突 |
+| .saves-* 会话清单 | .cache/auto-save-list/ | 记录恢复副本与原文件的对应关系 |
+| 文件~ 保存前备份 | .cache/backups/ | 已开启；按原生备份条件保留保存前的磁盘内容 |
+| 最近文件记录 | .cache/recentf.eld | recentf 已开启；是路径列表，不是文件内容备份 |
+| 输入历史 | .cache/history | savehist 已开启；保存支持历史的输入 |
+| 阅读位置 | .cache/places.eld | saveplace 已开启；不是恢复文件内容 |
+| .#文件 编辑锁 | 原文件所在目录 | 保留原生锁位置，供并发编辑检查 |
+
+以上 .cache/ 及全部子目录由仓库 .gitignore 的 /.cache/ 规则忽略，无需给每个子目录再加规则。
+这条 Git 忽略规则只对本仓库生效，不会修改其他项目的 .gitignore，也不会移除已被 Git 跟踪的文件。
+本轮不迁移或删除已有的分散备份、恢复副本和锁文件；新规则在重新启动加载配置后生效。
+
 #+begin_src emacs-lisp
+;; 默认 backup-directory-alist=nil：备份通常留在原文件旁；本配置指定集中目录。
+;; "." 匹配文件名，Emacs 为集中存放的备份编码原路径，避免不同目录同名文件互相覆盖。
+;; 目录在前面的状态目录章节创建；路径基于配置根目录，不依赖 HOME 或启动工作目录。
+;; 上面的 make-backup-files=t 负责开启；这里仅指定写入位置，不改变备份频率或版本数量。
+;; 反引号 ` 构造列表，逗号 , 让 expand-file-name 先算出本机绝对目录。
+;; 不同原路径的备份文件名可能含 ! 等编码字符，这是集中目录下避免重名的正常命名。
+(setq backup-directory-alist
+      `(("." . ,(expand-file-name "backups/" my/state-directory))))
+
 ;;; 仅追加本地文件转换：保留原有远程转换及加密文件处理器的行为。
 (add-to-list 'auto-save-file-name-transforms
              (list "\\`.*\\'"
@@ -2405,7 +2438,21 @@ auto-save-default 等触发选项保留 Emacs 默认值，加密和远程文件�
 确认恢复后再检查内容并显式保存。恢复整次会话可用 M-x recover-session RET，
 按会话清单选择；不要通过杀死当前会话来测试恢复，先在临时文件上阅读命令说明。
 普通重新读取原文件用 , f u，不是 recover-file。
-file~ 是保存前备份，本配置关闭；#…# 是恢复副本，仍保留；.#… 是编辑锁，也保留。
+file~ 是保存前备份，已开启并集中存放；#…# 是恢复副本，仍保留；.#… 是编辑锁，也保留。
+
+需要关闭保存前备份时，将上面保存配置中的 make-backup-files 从 t 改为 nil，
+保存、tangle 并重启；已存在的备份不会因此删除。
+是否为某个文件创建备份仍受版本控制备份策略、文件处理器和备份判定等原生规则影响，
+不等于每次空闲保存都会保留一份新版本，也不额外启用编号备份或修改保留数量。
+检查当前值可用 C-h v backup-directory-alist RET、C-h v make-backup-files RET，
+recover-file／recover-session 用于自动保存恢复副本，不用于读取 file~ 保存前备份。
+检查保存前备份时，用 , f d（M-x dired RET）进入 .cache/backups/，选择文件后 RET 打开，
+核对内容再按需另存或复制回原文件；目录选择时 C-g 取消，不直接覆盖未经检查的现有文件。
+不要将备份目录当作可随时清空的纯缓存。
+
+编辑锁保留 create-lockfiles 的原生设置与默认位置，不设置 lock-file-name-transforms。
+将锁集中到本机目录可能使其他用户或共享文件系统上的其他机器找不到同一把锁，
+因此没有为了隐藏 .# 文件而关闭锁或搬走锁。已有 Git 规则也忽略本仓库的 .# 文件。
 
 ** 启动与导航：Dashboard
 
