@@ -21,6 +21,7 @@
   - [[故障排查入口][故障排查入口]]
 - [[基础环境与软件包][基础环境与软件包]]
   - [[配置入口][配置入口]]
+  - [[文本编码与换行][文本编码与换行]]
   - [[Custom 独立保存][Custom 独立保存]]
   - [[网络代理][网络代理]]
   - [[软件包管理][软件包管理]]
@@ -342,6 +343,58 @@ GPG 先查看实际可执行文件和错误路径；本机 MSYS2 路径问题的
       initial-scratch-message ";; Org config loaded successfully.\n\n")
 ;; t 表示跳过启动欢迎页；scratch 提示只用于确认配置已读取，可改为 nil 或空字符串。
 #+end_src
+
+** 文本编码与换行
+
+本配置编辑的普通文本统一保存为 =UTF-8 Unix=（=utf-8-unix=）：
+UTF-8 不带 BOM，行与行之间使用 LF，不使用 Windows 的 CRLF。
+文件末尾缺少换行时，保存时补上一个换行；这不等于额外插入一行空白，
+也不会删除文档中原有的空行。
+
+只设置默认编码不能转换已有的 CRLF 文件，因此这里分两步处理：
+新文件优先选择 UTF-8 Unix；已有文本仍由 Emacs 自动识别原编码以正确读取，
+在实际保存时统一写为 UTF-8 Unix。打开文件不会立即改写磁盘，
+但已有的空闲自动保存也属于保存，会应用同一规则。
+此规则覆盖 text-mode、prog-mode 及其派生模式，例如 Org、Markdown、Lisp、C；
+图片、PDF、Hexl 等二进制或特殊界面不参与转换。
+
+#+begin_src emacs-lisp
+;;; 文本编码与换行：新文件默认 UTF-8 Unix，已有文本在保存时统一转换。
+;; prefer-coding-system 提高读取识别时的 UTF-8 优先级，并设置默认写入编码。
+;; 仍保留其他编码的自动识别；不强制把 GBK 等已有文件当成 UTF-8 解码。
+(prefer-coding-system 'utf-8-unix)
+(setq-default buffer-file-coding-system 'utf-8-unix)
+;; require-final-newline 默认 nil；本配置选择 t，保存时补齐文件末尾换行。
+;; mode-require-final-newline 默认 t：供会局部设置该选项的主模式使用。
+(setq-default require-final-newline t
+              mode-require-final-newline t)
+
+(defun my/save-text-as-utf-8-unix ()
+  "保存普通文本文件时使用不带 BOM 的 UTF-8 编码及 LF 换行。"
+  (when (and buffer-file-name
+             (derived-mode-p 'text-mode 'prog-mode)
+             (not (eq (coding-system-base buffer-file-coding-system)
+                      'no-conversion)))
+    ;; 明确指定编码和换行方式；不继承原文件的 dos（CRLF）或带 BOM 编码。
+    ;; 第三个参数 t 避免仅设置编码就额外把缓冲区标为已修改。
+    (set-buffer-file-coding-system 'utf-8-unix t t)
+    (setq-local require-final-newline t)))
+
+;; 与手动保存及已有自动保存共用；不新增保存计时器，不批量改写磁盘文件。
+(add-hook 'before-save-hook #'my/save-text-as-utf-8-unix)
+#+end_src
+
+修改方法：默认保持上述 =utf-8-unix= 和 =t= 即可；如某个项目必须保留其他编码，
+应先暂停该文件的自动保存，并为本函数增加明确的项目排除条件，不能只用
+=M-x set-buffer-file-coding-system= 临时改值，因为保存钩子会再次统一编码。
+本规则不改变终端、剪贴板或外部 Git 的编码。
+
+查看当前文件编码：=C-h v buffer-file-coding-system RET=；
+手动保存：=, f s=（=M-x save-buffer RET=）。已打开但未修改的 CRLF 文件，
+可用 =C-x RET f=（=M-x set-buffer-file-coding-system RET=），输入
+=utf-8-unix RET=，再保存。取消编码选择用 =C-g=。
+如果文本已经出现乱码，先用 =M-x revert-buffer-with-coding-system RET=
+选择原文件的正确编码重新读取，确认文字正常后再保存；重新读取可能丢失未保存编辑。
 
 ** Custom 独立保存
 

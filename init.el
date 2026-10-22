@@ -15,6 +15,30 @@
       initial-scratch-message ";; Org config loaded successfully.\n\n")
 ;; t 表示跳过启动欢迎页；scratch 提示只用于确认配置已读取，可改为 nil 或空字符串。
 
+;;; 文本编码与换行：新文件默认 UTF-8 Unix，已有文本在保存时统一转换。
+;; prefer-coding-system 提高读取识别时的 UTF-8 优先级，并设置默认写入编码。
+;; 仍保留其他编码的自动识别；不强制把 GBK 等已有文件当成 UTF-8 解码。
+(prefer-coding-system 'utf-8-unix)
+(setq-default buffer-file-coding-system 'utf-8-unix)
+;; require-final-newline 默认 nil；本配置选择 t，保存时补齐文件末尾换行。
+;; mode-require-final-newline 默认 t：供会局部设置该选项的主模式使用。
+(setq-default require-final-newline t
+              mode-require-final-newline t)
+
+(defun my/save-text-as-utf-8-unix ()
+  "保存普通文本文件时使用不带 BOM 的 UTF-8 编码及 LF 换行。"
+  (when (and buffer-file-name
+             (derived-mode-p 'text-mode 'prog-mode)
+             (not (eq (coding-system-base buffer-file-coding-system)
+                      'no-conversion)))
+    ;; 明确指定编码和换行方式；不继承原文件的 dos（CRLF）或带 BOM 编码。
+    ;; 第三个参数 t 避免仅设置编码就额外把缓冲区标为已修改。
+    (set-buffer-file-coding-system 'utf-8-unix t t)
+    (setq-local require-final-newline t)))
+
+;; 与手动保存及已有自动保存共用；不新增保存计时器，不批量改写磁盘文件。
+(add-hook 'before-save-hook #'my/save-text-as-utf-8-unix)
+
 ;;; Custom 状态独立保存，避免污染由 Org 生成的 init.el。
 ;; 尽早设置：首次安装插件时，包选择记录也应写到 custom.el。
 (setq custom-file (expand-file-name "custom.el" my/config-directory))
