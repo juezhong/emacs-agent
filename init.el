@@ -5,12 +5,63 @@
 
 ;;; 基础入口
 
-;; 以 init.el 所在目录为配置根目录，避免依赖启动时的工作目录。
+;; 平台识别先于包管理与状态路径执行；GUI 检测仍在后面的界面章节。
+(defconst my/platform
+  (cond
+   ((eq system-type 'windows-nt) 'windows)
+   ((eq system-type 'gnu/linux) 'linux)
+   ((eq system-type 'darwin) 'macos)
+   (t 'other))
+  "供平台特有配置使用的系统标识。")
+
+;; WORK PC 本机标识：当前 system-name 为 DESKTOP-QIGH8CJ，避免误作用于其他 Windows 电脑。
+;; 电脑改名时修改这里；其他机器不应仅因为同为 Windows 就启用这些特例。
+(defconst my/work-pc-p
+  (and (eq my/platform 'windows)
+       (string-equal (upcase (system-name)) "DESKTOP-QIGH8CJ"))
+  "当前是否为需要 HOME 与 GPG 兼容处理的 WORK PC。")
+
+;; 本机选项，不是跨平台默认家目录；必须在本章改值，晚于此处的 Custom 加载不能追溯初始化。
+(defvar my/work-pc-home-directory "D:/Software/Msys2/home/HP/"
+  "WORK PC 的统一 HOME；只在 my/work-pc-p 为非 nil 时使用。")
+
+(when my/work-pc-p
+  (unless (file-directory-p my/work-pc-home-directory)
+    (error "WORK PC home directory not found: %s" my/work-pc-home-directory))
+  ;; 尽早改变本 Emacs 进程及之后启动的子进程环境，不修改 Windows 系统环境。
+  ;; 不能回溯改变已经发生的 init.el 搜索；现有 AppData 目录链接仍是有效启动入口。
+  (setenv "HOME" (directory-file-name my/work-pc-home-directory))
+  ;; 清除之前按旧 HOME 生成的文件名缩写缓存，使后续 ~ 显示采用新家目录。
+  (setq abbreviated-home-dir nil))
+
+;; 以 init.el 所在目录为根；WORK PC 解析目录链接，避免 AppData 与真实路径混用。
+;; Linux/macOS 保持原有路径选择，不重写其 HOME 或用户配置目录。
 (defconst my/config-directory
-  (file-name-directory (or load-file-name user-init-file))
+  (let ((directory (file-name-directory (or load-file-name user-init-file))))
+    (if my/work-pc-p
+        (file-name-as-directory (file-truename directory))
+      directory))
   "保存本配置生成的 init.el 的目录。")
 
-;; 关闭欢迎页，在 scratch 中显示加载提示。
+(when my/work-pc-p
+  ;; 仅统一后续功能使用的配置目录；不会重选或重新加载本次 init.el。
+  ;; 不修改 user-init-file，它保留本次启动实际采用的入口路径，便于排查。
+  (setq user-emacs-directory my/config-directory))
+
+;; 等命令行文件参数处理完成后，再统一起始页面目录；不破坏相对文件参数的解析基准。
+(defun liyunfeng/work-pc-start-directory ()
+  "将 WORK PC 的起始页面目录设为统一 HOME，保留文件缓冲区目录。"
+  (dolist (name '("*scratch*" "*Messages*" "*my dashboard*"))
+    (when-let* ((buffer (get-buffer name)))
+      (with-current-buffer buffer
+        (unless buffer-file-name
+          (setq default-directory (file-name-as-directory my/work-pc-home-directory)))))))
+
+(when my/work-pc-p
+  ;; append=t：在 Dashboard 等启动入口之后调整；不改 command-line-default-directory。
+  (add-hook 'emacs-startup-hook #'liyunfeng/work-pc-start-directory t))
+
+;; 关闭原生欢迎页；scratch 保留加载提示，无文件启动另由 Dashboard 提供起始页。
 (setq inhibit-startup-screen t
       initial-scratch-message ";; Org config loaded successfully.\n\n")
 ;; t 表示跳过启动欢迎页；scratch 提示只用于确认配置已读取，可改为 nil 或空字符串。
@@ -75,10 +126,9 @@
 
 ;;; 本机特例：MSYS2 GPG 路径兼容，以及资源管理器启动时缺少 GPG 的回退。
 ;; 仅在找不到当前 GPG 或命中已知问题路径时，使用本机已存在的 Git GPG。
-;; 保留其他已发现的 GPG；Linux、macOS 不执行此回退，不关闭签名校验。
-(require 'epg-config)
-
-(when (eq system-type 'windows-nt)
+;; 保留其他已发现的 GPG；非 WORK PC 不执行此回退，不关闭签名校验。
+(when my/work-pc-p
+  (require 'epg-config)
   (let ((detected (executable-find epg-gpg-program))
         (affected "D:/Software/Msys2/usr/bin/gpg.exe")
         (replacement "D:/Software/Git/usr/bin/gpg.exe"))
@@ -90,20 +140,23 @@
       ;; 清除指向旧 GPG 的配置缓存，让后续校验使用替代程序。
       (setq epg--configurations nil))))
 
-;;; 通用签名密钥环与软件源初始化
-;; 各平台共用独立的 ELPA 密钥环，不修改个人日常使用的 GPG 密钥环。
-(setq package-gnupghome-dir (expand-file-name "gnupg/" package-user-dir))
+;;; WORK PC 额外签名密钥环修复；后面的包激活与索引初始化各平台共用。
+;; 保留签名校验，不修改个人日常使用的 GPG 密钥环。
+;; 必须是独立的顶层表达式：先加载结构定义，再展开下一个表达式中的 setf。
+;; 不能把 require 和 setf 仅放进同一个 when，首次加载时赋值规则可能尚不可用。
+(when my/work-pc-p
+  (require 'epg))
 
-(require 'epg)
-
-(unless (epg-find-configuration 'OpenPGP)
-  (error "GnuPG not found or unusable; install GnuPG and check Emacs exec-path"))
-
-(let ((context (epg-make-context 'OpenPGP)))
-  (setf (epg-context-home-directory context) package-gnupghome-dir)
-  ;; 初次使用或之前初始化失败留下空密钥环时，导入 Emacs 自带的 ELPA 公钥。
-  (unless (epg-list-keys context)
-    (package-import-keyring (expand-file-name "package-keyring.gpg" data-directory))))
+(when my/work-pc-p
+  ;; 仅 WORK PC 主动检查、修复 ELPA 密钥环；其他机器采用 package.el 自身默认流程。
+  (setq package-gnupghome-dir (expand-file-name "gnupg/" package-user-dir))
+  (unless (epg-find-configuration 'OpenPGP)
+    (error "GnuPG not found or unusable; check WORK PC GPG settings"))
+  (let ((context (epg-make-context 'OpenPGP)))
+    (setf (epg-context-home-directory context) package-gnupghome-dir)
+    ;; 初次使用或之前初始化失败留下空密钥环时，导入 Emacs 自带的 ELPA 公钥。
+    (unless (epg-list-keys context)
+      (package-import-keyring (expand-file-name "package-keyring.gpg" data-directory)))))
 
 ;; 激活已经安装的插件；此操作本身不更新或升级它们。
 (package-initialize)
@@ -131,15 +184,7 @@
 ;; 后续第三方插件默认自动安装；内置功能应显式声明 :ensure nil。
 (setq use-package-always-ensure t)
 
-;;; 平台与显示环境：后续界面配置只引用这里的变量。
-(defconst my/platform
-  (cond
-   ((eq system-type 'windows-nt) 'windows)
-   ((eq system-type 'gnu/linux) 'linux)
-   ((eq system-type 'darwin) 'macos)
-   (t 'other))
-  "供界面配置使用的平台标识。")
-
+;;; 平台标识 my/platform 已在基础入口定义；这里仅定义图形 Frame 检测。
 (defun my/graphic-frame-p (&optional frame)
   "判断 FRAME 是否为图形 Emacs 帧。"
   (display-graphic-p (or frame (selected-frame))))
@@ -204,7 +249,7 @@
 ;; 增加排除项就往列表里加对应的 xxx-mode-hook；行号与高亮列表可分别调整。
 (dolist (hook '(magit-mode-hook dired-mode-hook minibuffer-setup-hook
                 help-mode-hook helpful-mode-hook compilation-mode-hook
-                shell-mode-hook term-mode-hook eshell-mode-hook))
+                shell-mode-hook term-mode-hook eshell-mode-hook dashboard-mode-hook))
   (add-hook hook (lambda ()
                    ;; -1 明确关闭当前缓冲区的行号，不是反复切换开／关。
                    (display-line-numbers-mode -1))))
@@ -213,7 +258,7 @@
 ;; 与上面同理：逐个向 hook 添加函数，进入相应界面时才局部关闭高亮。
 (dolist (hook '(minibuffer-setup-hook magit-mode-hook dired-mode-hook
                 help-mode-hook helpful-mode-hook compilation-mode-hook
-                shell-mode-hook term-mode-hook eshell-mode-hook))
+                shell-mode-hook term-mode-hook eshell-mode-hook dashboard-mode-hook))
   (add-hook hook (lambda ()
                    ;; 全局模式有独立的 overlay；只关闭局部模式不能阻止它再次高亮。
                    ;; setq-local 只改变当前缓冲区的值，不关闭其他文件中的全局高亮。
@@ -281,8 +326,9 @@
   (my/load-display-theme my/current-theme-mode))
 
 ;;; 状态栏：成熟的 mode-line 布局；图标依赖单独受开关控制。
-(defcustom my/enable-nerd-icons nil
-  "是否安装并在 doom-modeline 中使用 Nerd Icons。"
+;; 本配置选择 t：开启状态栏与 Dashboard 图标；改为 nil 可恢复文字布局。
+(defcustom my/enable-nerd-icons t
+  "是否安装并在 doom-modeline 与 Dashboard 中使用 Nerd Icons。"
   :type 'boolean)
 
 (use-package doom-modeline
@@ -606,6 +652,74 @@
 (setq auto-save-list-file-prefix
       (expand-file-name "auto-save-list/.saves-" my/state-directory))
 
+;;; Dashboard：复用已有历史与项目数据；不安装额外的项目管理插件。
+(defun liyunfeng/dashboard-on-startup ()
+  "无文件的普通启动完成后打开 Dashboard，不抢占已打开的文件。"
+  (unless (or (daemonp)
+              (seq-some (lambda (buffer)
+                          (buffer-local-value 'buffer-file-name buffer))
+                        (buffer-list)))
+    (dashboard-open)))
+
+(use-package dashboard
+  :demand t                           ; 启动时加载并注册入口；安装仍由 use-package 处理。
+  :custom
+  ;; 插件默认 *dashboard*；本配置沿用参考名称，影响缓冲区切换时的显示名称。
+  (dashboard-buffer-name "*my dashboard*")
+  ;; 上游默认 Welcome to Emacs!；本配置沿用参考标题，可改为自己的短句。
+  (dashboard-banner-logo-title "Have a nice day!")
+  ;; 插件默认 official，本配置保持；也可使用 ascii 或配置目录内的图片绝对路径。
+  (dashboard-startup-banner 'official)
+  ;; 两项默认均 nil；本配置沿用参考开启水平和垂直居中。
+  (dashboard-center-content t)
+  (dashboard-vertically-center-content t)
+  ;; 默认 nil；本配置 t：章节前后导航到首尾时循环，不改变文件列表本身的顺序。
+  (dashboard-navigation-cycle t)
+  ;; 默认 20，本配置保持；各项指定数量优先于此兜底数量，nil 表示不限制。
+  (dashboard-items-default-length 20)
+  ;; 默认最近文件／书签／日程各 5；本配置沿用参考，空数据源不会凭空产生条目。
+  (dashboard-items '((recents . 10) (bookmarks . 5) (projects . 5)
+                     (agenda . 3) (registers . 3)))
+  ;; 默认 project-el，本配置保持，与现有 project.el 共用已知项目。
+  (dashboard-projects-backend 'project-el)
+  ;; 默认 nil：使用后端自带项目切换逻辑；不替换为 Projectile/Counsel 命令。
+  (dashboard-projects-switch-function nil)
+  ;; 默认 t：显示未来一周的日程；改为 nil 只看当天，数据来自 org-agenda-files。
+  (dashboard-week-agenda t)
+  ;; 默认 nil：保留上游栏目标题；下方导航按钮另使用中文。
+  (dashboard-item-names nil)
+  ;; 两项默认 nil；本配置跟随既有图标开关，避免增加第二套启用状态。
+  (dashboard-set-heading-icons my/enable-nerd-icons)
+  (dashboard-set-file-icons my/enable-nerd-icons)
+  ;; 上游默认 display-graphic-p；本配置关闭开关时完全禁用，打开后仍限于图形界面。
+  (dashboard-display-icons-p (and my/enable-nerd-icons #'display-graphic-p))
+  ;; 保持插件默认的统计函数：显示启动耗时与包数量，不等于独立性能分析。
+  (dashboard-init-info #'dashboard-init--info)
+  ;; 上游默认布局没有 navigator；本配置显式插入，保留启动统计与页脚。
+  (dashboard-startupify-list '(dashboard-insert-banner dashboard-insert-newline
+                              dashboard-insert-banner-title dashboard-insert-newline
+                              dashboard-insert-navigator dashboard-insert-newline
+                              dashboard-insert-init-info dashboard-insert-items
+                              dashboard-insert-newline dashboard-insert-footer))
+  ;; 默认 nil；格式为每行一个按钮列表，各按钮依次为图标、标题、帮助、动作。
+  ;; 动作使用已有命令的交互入口，保留路径／项目选择与取消流程。
+  (dashboard-navigator-buttons
+   '((("" "打开文件" "选择文件并打开"
+       (lambda (&rest _) (call-interactively #'find-file)))
+      ("" "切换项目" "选择 project.el 已知项目"
+       (lambda (&rest _) (call-interactively #'project-switch-project)))
+      ("" "个人配置" "从 org_configs 选择配置源文件"
+       (lambda (&rest _) (call-interactively #'liyunfeng/find-config-source))))))
+  :config
+  ;; icon-type 的 setter 会检查包是否可加载，先处理依赖，再指定 nerd-icons。
+  (when my/enable-nerd-icons
+    (use-package nerd-icons :demand t)
+    (setq dashboard-icon-type 'nerd-icons))
+  ;; 不使用 dashboard-setup-startup-hook：它会跳过带 --init-directory 等参数的启动。
+  (add-hook 'emacs-startup-hook #'liyunfeng/dashboard-on-startup)
+  ;; 窗口大小改变时重新排版，沿用插件提供的函数，不执行整个初始化流程。
+  (add-hook 'window-size-change-functions #'dashboard-resize-on-hook))
+
 ;;; Transient：Magit 等工具的参数菜单；本机 Emacs 已内置，Magit 的依赖检查仍照常进行。
 (use-package transient
   :ensure nil
@@ -715,7 +829,7 @@
 (defun liyunfeng/find-config-source ()
   "从 org_configs 选择配置源文件，不生成或加载配置。选择当前主 Org 并 RET 打开，C-g 取消；不依赖固定 Org 文件名。"
   (interactive)
-  (let ((default-directory (expand-file-name "org_configs/" user-emacs-directory)))
+  (let ((default-directory (expand-file-name "org_configs/" my/config-directory)))
     (unless (file-directory-p default-directory)
       (user-error "Config source directory not found: %s" default-directory))
     (call-interactively #'find-file)))
@@ -965,6 +1079,16 @@
     "C-h f" #'helpful-callable   ; Function，函数帮助
     "C-h v" #'helpful-variable   ; Variable，变量帮助
     "C-h x" #'helpful-command))  ; Execute，交互命令帮助
+
+(with-eval-after-load 'dashboard
+  ;; 这五个键也是插件默认值；只在 Dashboard 中定位栏目，不直接打开列表条目。
+  ;; 页面内原有 Evil 字母动作让位于栏目导航，文本缓冲区不受影响。
+  (setq dashboard-item-shortcuts
+        '((recents . "r")              ; Recents，最近文件
+          (bookmarks . "m")            ; Marks，书签
+          (projects . "p")             ; Projects，项目
+          (agenda . "a")               ; Agenda，日程
+          (registers . "e"))))          ; Registers，寄存器
 
 ;;; 可选 Evil 初始状态：以下全为注释，normal/emacs 是示例选择，不是插件默认值。
 ;; 文本与配置编辑：普通状态示例，按 i 开始输入。
