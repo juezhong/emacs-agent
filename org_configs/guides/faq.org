@@ -20,6 +20,8 @@ Embark 默认动作见 [[file:embark-actions.org][Embark 动作参考]]。
 - [[当前模式按键为什么没有列出某个辅助功能][当前模式按键为什么没有列出某个辅助功能]]
 - [[当前模式说明、命令帮助、按键帮助分别什么时候用][当前模式说明、命令帮助、按键帮助分别什么时候用]]
 - [[Esc 与 C-g 是同一个操作吗][Esc 与 C-g 是同一个操作吗]]
+- [[C-u 是重复命令，还是执行用户命令][C-u 是重复命令，还是执行用户命令]]
+- [[怎样通过 M-x 找到 F9 到 F12 对应的个人命令][怎样通过 M-x 找到 F9 到 F12 对应的个人命令]]
 - [[后续常见问题怎样记录][后续常见问题怎样记录]]
 
 * 进入一个陌生页面，不知道可以按什么键
@@ -104,6 +106,30 @@ Magit 总菜单另有 =, g g=（=M-x magit-dispatch RET=），使用教程见 Ma
 也可能退出临时缓冲区或收起其他窗口，因此多窗口页面里不能保证它只取消输入。
 终端的 Esc 与 Meta 前缀编码可能共用 ESC 字节，识别可能有延迟；本配置不覆盖 ESC 前缀。
 两者都不表示撤销文件修改、关闭 Emacs 或取消 Git rebase；Git 专属操作见 Magit 手册。
+
+* C-u 是重复命令，还是执行用户命令
+
+C-u 通常调用 universal-argument，为下一条命令提供前缀参数；打开命令列表用 M-x，
+不是 C-u。默认单次 C-u 提供 4，连续两次提供 16，也可输入 C-u 3 指定数字 3。
+参数如何解释由接收它的命令决定，因此不是一律重复四次，也不是重复上一条操作。
+
+在使用原生 Emacs 键位的状态下，C-u 3 C-n 通常向下移动三行；
+C-u C-x C-e 则执行光标前的 Lisp 并将结果插入正文，不是执行四次。
+输入前缀后若不想继续，按 C-g 取消。
+本配置尚未启用 Evil 的 C-u 半屏滚动；若以后启用，普通等使用 Evil motion 键位的状态
+会优先把 C-u 解释为滚动，不能假定所有状态中的 C-u 都是 universal-argument。
+详情见 [[file:../self_config.org::*Evil 可选行为与初始状态][主配置的 Evil 可选行为说明]]。
+
+* 怎样通过 M-x 找到 F9 到 F12 对应的个人命令
+
+按 M-x，输入 liyunfeng/，通过上下方向键选择命令，RET 执行，C-g 取消候选选择。
+F9 到 F12 分别对应 liyunfeng/set-variable、liyunfeng/find-config-source、
+liyunfeng/eval-last-sexp-insert-result、liyunfeng/eval-last-sexp。
+Marginalia 根据函数 docstring 提供中文用途注释；详细操作见
+[[file:../self_config.org::*配置源入口与临时调整][变量调整与配置源入口]]及
+[[file:../self_config.org::*执行光标前的 Lisp 表达式][Lisp 求值步骤]]。
+候选注释显示还受窗口宽度和当前注释器影响；未显示时可用 C-h f 输入完整命令名阅读帮助。
+这些说明按本机 Marginalia 源码核对，候选中的实际显示效果仍需重启后确认。
 
 * 后续常见问题怎样记录
 

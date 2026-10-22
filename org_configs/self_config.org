@@ -55,6 +55,7 @@
       - [[括号自动补全与配对提示的可选设置][括号自动补全与配对提示的可选设置]]
       - [[Esc 退出提示与 Evil 状态][Esc 退出提示与 Evil 状态]]
     - [[编辑行为与 Vim 模式][编辑行为与 Vim 模式]]
+      - [[Evil 可选行为与初始状态][Evil 可选行为与初始状态]]
       - [[Evil 基本操作][Evil 基本操作]]
       - [[evil-collection 的工具界面][evil-collection 的工具界面]]
       - [[Dired 手动体验与帮助][Dired 手动体验与帮助]]
@@ -88,8 +89,12 @@
     - [[Winner 布局历史与最大化恢复][Winner 布局历史与最大化恢复]]
     - [[退出行为][退出行为]]
   - [[诊断与配置状态][诊断与配置状态]]
+    - [[配置源入口与临时调整][配置源入口与临时调整]]
+      - [[用 M-x 查找个人命令与中文说明][用 M-x 查找个人命令与中文说明]]
+    - [[执行光标前的 Lisp 表达式][执行光标前的 Lisp 表达式]]
   - [[统一快捷键配置（最后配置）][统一快捷键配置（最后配置）]]
     - [[管理方式：General][管理方式：General]]
+      - [[Evil 初始状态的可选清单][Evil 初始状态的可选清单]]
       - [[普通模式 s：Avy 与 Magit 的条件分派][普通模式 s：Avy 与 Magit 的条件分派]]
       - [[General 怎么修改：对照示例][General 怎么修改：对照示例]]
     - [[Leader 与键位取舍][Leader 与键位取舍]]
@@ -257,6 +262,9 @@ Git 工作流已写入 Magit / diff-hl，本机已安装；用户已确认状态
 图形 Frame 使用最大化状态。自动补括号保留可启用示例；配对提示保留内置默认。
 Esc 增加全局退出后备，保留 Evil 状态键位和 C-g；fringe 宽度保持 Emacs 默认。
 彩虹小猫已启用动画和波浪尾迹，帧间隔、轨道长度显式保留插件默认值。
+配置维护新增 F9 调整变量、F10 选择配置源、F11／F12 执行光标前的 Lisp 表达式。
+四个入口统一为 liyunfeng/ 交互命令，并提供 Marginalia 可读取的中文帮助。
+Evil 保留 C-i 跳转和 j/k 实际行移动；初始状态清单仅以注释提供，未启用覆盖。
 本轮新增了界面、字体、主题、状态栏和可选装饰配置，并重新生成 init.el；
 没有加载新配置、安装或编译插件，也没有进行图形／终端交互验证。
 
@@ -1273,6 +1281,31 @@ Evil 的 =evil-want-keybinding= 等加载前选项放在其 =use-package :init= 
   :config
   (global-evil-surround-mode 1))
 #+end_src
+
+**** Evil 可选行为与初始状态
+
+=C-u= 是内置 universal-argument，用于给下一条命令提供前缀参数，
+不是打开用户命令列表（那是 M-x），也不是一律重复执行上一条命令。
+例如 C-u 3 C-n 通常向下移动三行，C-u 本身给下一条命令传入 4，
+连续两次 C-u 通常传入 16；但 eval-last-sexp 会把单次 C-u 解释为“把结果插入正文”。
+因此参数的效果由接收它的命令决定，不等于执行四次任意命令。
+本配置尚未启用 evil-want-C-u-scroll，仍保留其默认 nil；是否改用 Vim 半屏滚动待选择。
+
+=evil-want-C-i-jump= 保持插件默认 t，保留 C-i 向前、C-o 向后浏览 Evil 跳转历史。
+参考设为 nil 的作用是撤掉 Evil 的 C-i 跳转绑定，允许下面的 TAB／模式键位接手；
+终端中 C-i 与 TAB 常共用编码，这是常见的兼容取舍，不是给用户新增一个 prefix。
+参考文件没有解释作者的具体动机，不能将这一常见理由当作作者已确认的原因。
+本配置不采用此改动，也不新增覆盖该默认值的代码。
+
+j/k 保留 Evil 默认的实际文本行移动；需要按屏幕折行移动时用已有 gj/gk。
+不采用参考的全局视觉行替换，以保留操作符组合和代码导航习惯。
+
+初始状态按主模式配置，不按每个文件名或缓冲区名称逐个配置。
+例如所有 Org 文件共用 org-mode，*Messages* 使用 messages-buffer-mode，
+*scratch* 通常是 lisp-interaction-mode；后者也可被用户改变。
+内置和第三方模式可以无限扩展，无法预先枚举所有可能的缓冲区；
+[[*Evil 初始状态的可选清单][末尾清单]] 覆盖当前配置涉及的主要模式和常见可选页面，全部是注释，不改变当前行为。
+表中所写状态是供选择的示例，不代表 Evil 或 evil-collection 的默认值。
 
 **** Evil 基本操作
 
@@ -2436,8 +2469,72 @@ Winner 是 Emacs 内置的窗口布局历史，不需要安装第三方包。
 查看启动消息、错误和配置状态不属于 Org 操作，独立归到诊断分组。
 d 表示 Diagnostics（诊断），范围比 Debug（调试）更广。
 保留 =, d m=（Messages，查看消息）和 =, d d=（Debug，切换错误回溯）。
-不增加行号、变量、函数、按键查询的额外诊断入口，后续按实际工具需要再安排。
+变量、函数、按键的帮助查询继续放在 h 分组；F9 用于修改变量值，与查询帮助不同。
 可用的帮助查询仍保留在 h（Help）分组。候选讨论与审核放在对话里，不写入配置文档。
+
+*** 配置源入口与临时调整
+
+F10（=M-x liyunfeng/find-config-source RET=）从本配置根目录下的 =org_configs/=
+开始选择文件：输入／选择当前主配置 =self_config.org=，按 RET 打开，C-g 取消。
+入口只约定配置源目录，不固定 Org 文件名；以后改名仍在该目录中选择即可。
+这不会打开生成的 init.el，也不会自动保存、tangle 或加载配置。
+原生 =M-x find-file RET= 同样可以打开任意配置文件。
+F10 原来全局用于 =menu-bar-open=，现在改为配置入口；菜单仍可鼠标打开，
+原来的菜单命令仍能用 =M-x menu-bar-open RET= 调用。
+
+F9（=M-x liyunfeng/set-variable RET=）用于临时设置用户选项，内部仍调用内置 set-variable：
+
+1. 按 F9，输入变量名，例如 =scroll-margin=，按 RET。
+2. 输入新的 Lisp 值，例如 =3=，按 RET 应用；任一输入阶段用 C-g 取消。
+3. 可用 =C-h v scroll-margin RET= 查看值与说明。需要恢复时，再按 F9 设置为原值。
+
+值按字面 Lisp 数据读取：字符串写成 ="文字"=，布尔值用 =t=／=nil=，
+符号写 =relative= 而不是 ='relative=，列表直接写 =(a b)=；不会执行输入的表达式。
+F9 不自动修改 Org 或 custom.el；希望重启后保留，应回到对应 Org 参数修改并生成。
+已有 buffer-local 值时作用范围以变量定义和当前缓冲区为准；
+用 =C-u M-x set-variable RET= 可请求局部设置，但 C-u 是否被 Evil 接管取决于当前状态。
+有些 defcustom 通过专用 setter 启停定时器或更新键位，set-variable 不调用该 setter；
+这类参数使用 =M-x customize-set-variable RET=，或按插件教程操作，不能只看变量值已改变。
+例如小猫动画优先用 =M-x nyan-start-animation RET=／=nyan-stop-animation RET=。
+
+**** 用 M-x 查找个人命令与中文说明
+
+这四个函数都有 =(interactive)=，既能按 F9–F12，也能直接用 M-x 调用。
+按 =M-x=，输入 =liyunfeng/=，通过上下方向键选择候选，再按 RET 执行；
+候选阶段用 C-g 取消。也可输入 =liyunfeng config= 等多个词，由 Orderless 筛选。
+这里所说的候选注释插件是 =Marginalia=，它读取函数 docstring 提供用途说明，
+与 =scroll-margin= 等窗口边距参数不是同一概念。
+四个函数的首行文档均为中文；不需要改写内置 set-variable／eval-last-sexp 的帮助。
+更详细的调用步骤见本节与下面的 Lisp 求值说明；帮助查询可用
+=C-h f liyunfeng/set-variable RET= 等命令。
+Marginalia 已配置启用；注释是否完整可见仍受候选注释器、窗口宽度及当前会话加载情况影响。
+
+*** 执行光标前的 Lisp 表达式
+
+F12 调用 =liyunfeng/eval-last-sexp=，内部转交内置 =eval-last-sexp=，相当于通常的 =C-x C-e=：执行光标前的一个表达式，
+结果显示在底部 echo area。F11 调用 =liyunfeng/eval-last-sexp-insert-result=，
+使用相同命令的前缀参数行为，把结果插入当前缓冲区；它不依赖实际按下 C-u，
+因此以后调整 Evil 的 C-u 用途也不会改变 F11 的作用。
+
+例如在临时的 Emacs Lisp 缓冲区输入 =(+ 1 2)=，把光标放在右括号之后，
+按 F12 会在底部看到 =3=；按 F11 会执行并把 =3= 插入正文，误插入可撤销。
+Evil 普通状态的光标可能停在右括号本身，应先进入插入状态并移到右括号之后，
+再执行，避免读取到的不是预期完整表达式。调用立即执行，不弹出确认输入框。
+Org 中建议用 =C-c '= 进入 Lisp 代码块的编辑缓冲区后操作，完成后再用 =C-c '= 返回。
+这与 =C-c C-c= 执行整个 Org 代码块、=C-c C-v t= 生成配置是三种不同操作。
+只读缓冲区中 F11 无法插入结果，且表达式可能已经执行，不能靠只读状态阻止执行。
+这些键用于主动执行已理解的 Lisp，不会因保存 Org 或 tangle 自动执行。
+
+F11 覆盖 Emacs 全局默认的 =toggle-frame-fullscreen=；需要全屏仍可
+=M-x toggle-frame-fullscreen RET=，再次调用恢复。F9／F12 在本机原生全局 keymap 未绑定；
+以上都是全局绑定，具体模式、Evil 或操作系统若截获功能键，以实际有效绑定为准。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| F9 | liyunfeng/set-variable | 临时修改用户选项，不自动写回配置 |
+| F10 | liyunfeng/find-config-source | 从 org_configs 选择配置源文件 |
+| F11 | liyunfeng/eval-last-sexp-insert-result | 执行光标前表达式，并插入结果 |
+| F12 | liyunfeng/eval-last-sexp | 执行光标前表达式，在底部显示结果 |
 
 ** 统一快捷键配置（最后配置）
 
@@ -2482,6 +2579,34 @@ General 不会自动启用 which-key，也不代替插件本身。
   (let ((path (expand-file-name buffer-file-name)))
     (kill-new path)
     (message "Copied: %s" path)))
+
+;; 这四个配置维护命令统一使用 liyunfeng/ 前缀；(interactive) 让它们出现在 M-x 候选中。
+;; 文档字符串首行供 Marginalia 展示用途；保留内置命令及前缀参数语义。
+(defun liyunfeng/set-variable ()
+  "临时修改用户选项，不自动写回 Org 配置。输入变量名和 Lisp 值，RET 确认，C-g 取消；原样传递前缀参数给 set-variable。"
+  (interactive)
+  (call-interactively #'set-variable))
+
+(defun liyunfeng/eval-last-sexp ()
+  "执行光标前的 Lisp 表达式，默认在底部显示结果。保留 eval-last-sexp 的前缀参数行为；如带 C-u，结果会插入正文。"
+  (interactive)
+  (call-interactively #'eval-last-sexp))
+
+;; 只固定配置源目录，不固定 Org 文件名；文件改名后仍从候选中选择。
+(defun liyunfeng/find-config-source ()
+  "从 org_configs 选择配置源文件，不生成或加载配置。选择当前主 Org 并 RET 打开，C-g 取消；不依赖固定 Org 文件名。"
+  (interactive)
+  (let ((default-directory (expand-file-name "org_configs/" user-emacs-directory)))
+    (unless (file-directory-p default-directory)
+      (user-error "Config source directory not found: %s" default-directory))
+    (call-interactively #'find-file)))
+
+;; 直接传递 C-u 对应的原始前缀值，避免键盘宏受 Evil 的 C-u 绑定影响。
+(defun liyunfeng/eval-last-sexp-insert-result ()
+  "执行光标前的 Lisp 表达式，并将结果插入正文。等同于 eval-last-sexp 带 C-u 前缀；需把光标放在表达式之后，误插入可撤销。"
+  (interactive)
+  (let ((current-prefix-arg '(4)))
+    (call-interactively #'eval-last-sexp)))
 
 ;;; 统一键位：General 管理绑定，which-key 显示随 keymap 保存的中文描述。
 (use-package general
@@ -2704,6 +2829,14 @@ General 不会自动启用 which-key，也不代替插件本身。
   ;; Evil 的插入／可视状态仍优先使用原来的 Esc，C-g 继续保留取消／中断用途。
   (general-def "<escape>" #'keyboard-escape-quit)  ; Escape，按上下文退出当前交互
 
+  ;; F10 原为菜单入口，F11 原为全屏；替代调用方式见诊断与配置状态章节。
+  ;; F11 会把求值结果写入正文；F12 只在底部显示结果，不插入正文。
+  (general-def
+    "<f9>"  #'liyunfeng/set-variable                    ; Set variable，临时设置变量
+    "<f10>" #'liyunfeng/find-config-source              ; Find config，选择配置源文件
+    "<f11>" #'liyunfeng/eval-last-sexp-insert-result     ; Evaluate and insert，求值并插入结果
+    "<f12>" #'liyunfeng/eval-last-sexp)                 ; Evaluate，求值并显示结果
+
   ;; 全局备用前缀访问同一份菜单，适用于插入状态及 Emacs 状态。
   ;; 原生 C-h 前缀保留，只增强其中几个具体帮助命令。
   (general-def
@@ -2724,6 +2857,85 @@ General 当前文档推荐这种 keymap 描述方式，而不是到处添加 =:w
 例如 =, f s= 保存，which-key 在 =,= 后显示“文件”等分组，
 在 =, f= 后显示“保存文件”等命令。插入状态下用 =C-c , f s= 调用同一操作。
 以后更换 leader，只需修改绑定根 keymap 的前缀；子菜单无需逐条修改。
+
+**** Evil 初始状态的可选清单
+
+下面的块参与 tangle，但所有 Lisp 行都以双分号注释，当前不设置任何初始状态。
+启用某一项时，只去掉对应行开头的 =;; =，按需把 normal 改为 insert、motion 或 emacs，
+保存、生成并重启，再重新进入相应页面验证；不要一次启用整份清单。
+也可在启用配置前用 C-h m 查询页面实际主模式，避免把辅助模式或缓冲区名称写进去。
+已有 evil-collection 适配可能在首次打开模式时调整状态；如发现覆盖，应针对那个模式
+检查加载顺序，而不是全局改变所有缓冲区。父模式设置还可能影响没有单独设置的派生模式。
+例如去掉 messages-buffer-mode 那一行的注释，才表示希望日志页面以普通状态进入。
+若要撤销，重新注释后生成并重启；只重新加载不会自动撤销旧会话里的状态列表修改。
+
+#+begin_src emacs-lisp
+;;; 可选 Evil 初始状态：以下全为注释，normal/emacs 是示例选择，不是插件默认值。
+;; 文本与配置编辑：普通状态示例，按 i 开始输入。
+;; (evil-set-initial-state 'fundamental-mode 'normal)
+;; (evil-set-initial-state 'text-mode 'normal)
+;; (evil-set-initial-state 'org-mode 'normal)
+;; (evil-set-initial-state 'emacs-lisp-mode 'normal)
+;; (evil-set-initial-state 'lisp-interaction-mode 'normal)
+;; (evil-set-initial-state 'prog-mode 'normal)
+
+;; 文件、列表与帮助页面：普通状态示例，保留各模式的只读约束。
+;; (evil-set-initial-state 'dired-mode 'normal)
+;; (evil-set-initial-state 'ibuffer-mode 'normal)
+;; (evil-set-initial-state 'Buffer-menu-mode 'normal)
+;; (evil-set-initial-state 'bookmark-bmenu-mode 'normal)
+;; (evil-set-initial-state 'recentf-dialog-mode 'normal)
+;; (evil-set-initial-state 'help-mode 'normal)
+;; (evil-set-initial-state 'helpful-mode 'normal)
+;; (evil-set-initial-state 'Info-mode 'normal)
+;; (evil-set-initial-state 'apropos-mode 'normal)
+;; (evil-set-initial-state 'messages-buffer-mode 'normal)
+;; (evil-set-initial-state 'Custom-mode 'normal)
+;; (evil-set-initial-state 'custom-theme-choose-mode 'normal)
+;; (evil-set-initial-state 'debugger-mode 'normal)
+
+;; 搜索、诊断与候选收集；minibuffer／Vertico 不是另一个主模式，不在这里统一设状态。
+;; (evil-set-initial-state 'occur-mode 'normal)
+;; (evil-set-initial-state 'grep-mode 'normal)
+;; (evil-set-initial-state 'compilation-mode 'normal)
+;; (evil-set-initial-state 'embark-collect-mode 'normal)
+
+;; Magit 主要页面：模式有派生关系，子模式的特定设置可能覆盖父模式。
+;; (evil-set-initial-state 'magit-mode 'normal)
+;; (evil-set-initial-state 'magit-status-mode 'normal)
+;; (evil-set-initial-state 'magit-diff-mode 'normal)
+;; (evil-set-initial-state 'magit-log-mode 'normal)
+;; (evil-set-initial-state 'magit-log-select-mode 'normal)
+;; (evil-set-initial-state 'magit-revision-mode 'normal)
+;; (evil-set-initial-state 'magit-merge-preview-mode 'normal)
+;; (evil-set-initial-state 'magit-reflog-mode 'normal)
+;; (evil-set-initial-state 'magit-refs-mode 'normal)
+;; (evil-set-initial-state 'magit-stash-mode 'normal)
+;; (evil-set-initial-state 'magit-stashes-mode 'normal)
+;; (evil-set-initial-state 'magit-cherry-mode 'normal)
+;; (evil-set-initial-state 'magit-process-mode 'normal)
+;; (evil-set-initial-state 'magit-repolist-mode 'normal)
+;; (evil-set-initial-state 'magit-submodule-list-mode 'normal)
+
+;; 提交消息通常是 text-mode；git-commit-mode 是辅助模式，不能当作这里的主模式。
+;; (evil-set-initial-state 'git-rebase-mode 'normal)
+
+;; 终端与交互输入：emacs 状态示例，让原生键位接手；term 还区分字符／行模式。
+;; (evil-set-initial-state 'shell-mode 'emacs)
+;; (evil-set-initial-state 'eshell-mode 'emacs)
+;; (evil-set-initial-state 'term-mode 'emacs)
+;; (evil-set-initial-state 'comint-mode 'emacs)
+;; (evil-set-initial-state 'ielm-mode 'emacs)
+
+;; 可选功能：尚未配置或未启用的模式，写入示例不安装任何插件。
+;; (evil-set-initial-state 'dashboard-mode 'normal)
+;; (evil-set-initial-state 'message-mode 'normal)
+;; (evil-set-initial-state 'calendar-mode 'normal)
+;; (evil-set-initial-state 'doc-view-mode 'normal)
+;; (evil-set-initial-state 'image-mode 'normal)
+;; (evil-set-initial-state 'diff-mode 'normal)
+
+#+end_src
 
 **** 普通模式 s：Avy 与 Magit 的条件分派
 
@@ -2900,6 +3112,10 @@ Org 中把光标放到标题，用 , o TAB（M-x org-cycle RET）切换局部折
 |--------+---------------------+------|
 | ,,, | execute-extended-command | 打开命令输入界面，等同 M-x |
 | Esc（全局后备） | keyboard-escape-quit | 退出当前交互，Evil／局部 Esc 优先 |
+| F9 | liyunfeng/set-variable | 临时修改用户选项 |
+| F10 | liyunfeng/find-config-source | 从配置源目录选择文件 |
+| F11 | liyunfeng/eval-last-sexp-insert-result | 执行光标前 Lisp 并插入结果 |
+| F12 | liyunfeng/eval-last-sexp | 执行光标前 Lisp，在底部显示结果 |
 | , f f | find-file | 打开文件 |
 | , f s | save-buffer | 保存当前文件 |
 | , f a | write-file | 另存为 |
@@ -3039,6 +3255,8 @@ Embark 已由用户确认本机使用正常、符合需求；以下旧体验条�
 - 按上文教程使用 M-x consult-yank-pop、consult-mark、consult-outline 和 consult-bookmark。
 - 最近文件和支持的输入历史现已接入，访问文件并正常退出重启后再判断持久化效果。
 - 在临时文件体验 i、Esc、hjkl、文本对象、撤销和句点重复。
+- 按 F10 选择主 Org 后取消／打开，确认不会自动生成或加载；F9 临时修改 scroll-margin 后恢复原值。
+- 在临时 Lisp 缓冲区的 (+ 1 2) 之后分别按 F12／F11，检查底部结果和正文插入的区别。
 - 试用 ysiw"、ds"、cs"'，确认 surround 行为。
 - 普通状态按逗号，确认半秒后出现菜单；插入状态输入逗号仍应是普通文字。
 - 用 C-c , 访问同一菜单，试用文件保存、切换缓冲区和帮助查询。

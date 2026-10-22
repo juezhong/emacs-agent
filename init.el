@@ -666,6 +666,34 @@
     (kill-new path)
     (message "Copied: %s" path)))
 
+;; 这四个配置维护命令统一使用 liyunfeng/ 前缀；(interactive) 让它们出现在 M-x 候选中。
+;; 文档字符串首行供 Marginalia 展示用途；保留内置命令及前缀参数语义。
+(defun liyunfeng/set-variable ()
+  "临时修改用户选项，不自动写回 Org 配置。输入变量名和 Lisp 值，RET 确认，C-g 取消；原样传递前缀参数给 set-variable。"
+  (interactive)
+  (call-interactively #'set-variable))
+
+(defun liyunfeng/eval-last-sexp ()
+  "执行光标前的 Lisp 表达式，默认在底部显示结果。保留 eval-last-sexp 的前缀参数行为；如带 C-u，结果会插入正文。"
+  (interactive)
+  (call-interactively #'eval-last-sexp))
+
+;; 只固定配置源目录，不固定 Org 文件名；文件改名后仍从候选中选择。
+(defun liyunfeng/find-config-source ()
+  "从 org_configs 选择配置源文件，不生成或加载配置。选择当前主 Org 并 RET 打开，C-g 取消；不依赖固定 Org 文件名。"
+  (interactive)
+  (let ((default-directory (expand-file-name "org_configs/" user-emacs-directory)))
+    (unless (file-directory-p default-directory)
+      (user-error "Config source directory not found: %s" default-directory))
+    (call-interactively #'find-file)))
+
+;; 直接传递 C-u 对应的原始前缀值，避免键盘宏受 Evil 的 C-u 绑定影响。
+(defun liyunfeng/eval-last-sexp-insert-result ()
+  "执行光标前的 Lisp 表达式，并将结果插入正文。等同于 eval-last-sexp 带 C-u 前缀；需把光标放在表达式之后，误插入可撤销。"
+  (interactive)
+  (let ((current-prefix-arg '(4)))
+    (call-interactively #'eval-last-sexp)))
+
 ;;; 统一键位：General 管理绑定，which-key 显示随 keymap 保存的中文描述。
 (use-package general
   ;; :after 等待 Evil；:demand t 立即创建统一 leader keymap，后面的绑定才会生效。
@@ -887,6 +915,14 @@
   ;; Evil 的插入／可视状态仍优先使用原来的 Esc，C-g 继续保留取消／中断用途。
   (general-def "<escape>" #'keyboard-escape-quit)  ; Escape，按上下文退出当前交互
 
+  ;; F10 原为菜单入口，F11 原为全屏；替代调用方式见诊断与配置状态章节。
+  ;; F11 会把求值结果写入正文；F12 只在底部显示结果，不插入正文。
+  (general-def
+    "<f9>"  #'liyunfeng/set-variable                    ; Set variable，临时设置变量
+    "<f10>" #'liyunfeng/find-config-source              ; Find config，选择配置源文件
+    "<f11>" #'liyunfeng/eval-last-sexp-insert-result     ; Evaluate and insert，求值并插入结果
+    "<f12>" #'liyunfeng/eval-last-sexp)                 ; Evaluate，求值并显示结果
+
   ;; 全局备用前缀访问同一份菜单，适用于插入状态及 Emacs 状态。
   ;; 原生 C-h 前缀保留，只增强其中几个具体帮助命令。
   (general-def
@@ -896,5 +932,70 @@
     "C-h f" #'helpful-callable   ; Function，函数帮助
     "C-h v" #'helpful-variable   ; Variable，变量帮助
     "C-h x" #'helpful-command))  ; Execute，交互命令帮助
+
+;;; 可选 Evil 初始状态：以下全为注释，normal/emacs 是示例选择，不是插件默认值。
+;; 文本与配置编辑：普通状态示例，按 i 开始输入。
+;; (evil-set-initial-state 'fundamental-mode 'normal)
+;; (evil-set-initial-state 'text-mode 'normal)
+;; (evil-set-initial-state 'org-mode 'normal)
+;; (evil-set-initial-state 'emacs-lisp-mode 'normal)
+;; (evil-set-initial-state 'lisp-interaction-mode 'normal)
+;; (evil-set-initial-state 'prog-mode 'normal)
+
+;; 文件、列表与帮助页面：普通状态示例，保留各模式的只读约束。
+;; (evil-set-initial-state 'dired-mode 'normal)
+;; (evil-set-initial-state 'ibuffer-mode 'normal)
+;; (evil-set-initial-state 'Buffer-menu-mode 'normal)
+;; (evil-set-initial-state 'bookmark-bmenu-mode 'normal)
+;; (evil-set-initial-state 'recentf-dialog-mode 'normal)
+;; (evil-set-initial-state 'help-mode 'normal)
+;; (evil-set-initial-state 'helpful-mode 'normal)
+;; (evil-set-initial-state 'Info-mode 'normal)
+;; (evil-set-initial-state 'apropos-mode 'normal)
+;; (evil-set-initial-state 'messages-buffer-mode 'normal)
+;; (evil-set-initial-state 'Custom-mode 'normal)
+;; (evil-set-initial-state 'custom-theme-choose-mode 'normal)
+;; (evil-set-initial-state 'debugger-mode 'normal)
+
+;; 搜索、诊断与候选收集；minibuffer／Vertico 不是另一个主模式，不在这里统一设状态。
+;; (evil-set-initial-state 'occur-mode 'normal)
+;; (evil-set-initial-state 'grep-mode 'normal)
+;; (evil-set-initial-state 'compilation-mode 'normal)
+;; (evil-set-initial-state 'embark-collect-mode 'normal)
+
+;; Magit 主要页面：模式有派生关系，子模式的特定设置可能覆盖父模式。
+;; (evil-set-initial-state 'magit-mode 'normal)
+;; (evil-set-initial-state 'magit-status-mode 'normal)
+;; (evil-set-initial-state 'magit-diff-mode 'normal)
+;; (evil-set-initial-state 'magit-log-mode 'normal)
+;; (evil-set-initial-state 'magit-log-select-mode 'normal)
+;; (evil-set-initial-state 'magit-revision-mode 'normal)
+;; (evil-set-initial-state 'magit-merge-preview-mode 'normal)
+;; (evil-set-initial-state 'magit-reflog-mode 'normal)
+;; (evil-set-initial-state 'magit-refs-mode 'normal)
+;; (evil-set-initial-state 'magit-stash-mode 'normal)
+;; (evil-set-initial-state 'magit-stashes-mode 'normal)
+;; (evil-set-initial-state 'magit-cherry-mode 'normal)
+;; (evil-set-initial-state 'magit-process-mode 'normal)
+;; (evil-set-initial-state 'magit-repolist-mode 'normal)
+;; (evil-set-initial-state 'magit-submodule-list-mode 'normal)
+
+;; 提交消息通常是 text-mode；git-commit-mode 是辅助模式，不能当作这里的主模式。
+;; (evil-set-initial-state 'git-rebase-mode 'normal)
+
+;; 终端与交互输入：emacs 状态示例，让原生键位接手；term 还区分字符／行模式。
+;; (evil-set-initial-state 'shell-mode 'emacs)
+;; (evil-set-initial-state 'eshell-mode 'emacs)
+;; (evil-set-initial-state 'term-mode 'emacs)
+;; (evil-set-initial-state 'comint-mode 'emacs)
+;; (evil-set-initial-state 'ielm-mode 'emacs)
+
+;; 可选功能：尚未配置或未启用的模式，写入示例不安装任何插件。
+;; (evil-set-initial-state 'dashboard-mode 'normal)
+;; (evil-set-initial-state 'message-mode 'normal)
+;; (evil-set-initial-state 'calendar-mode 'normal)
+;; (evil-set-initial-state 'doc-view-mode 'normal)
+;; (evil-set-initial-state 'image-mode 'normal)
+;; (evil-set-initial-state 'diff-mode 'normal)
 
 ;;; init.el ends here
