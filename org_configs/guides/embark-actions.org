@@ -3,7 +3,7 @@
 #+startup: overview num
 #+options: toc:2 num:2
 
-本文是 [[file:Windows_config.org::*Embark 候选与上下文操作][主配置 Embark 章节]] 的子文档，仅维护完整动作参考，不生成配置代码。
+本文是 [[file:../self_config.org::*Embark 候选与上下文操作][主配置 Embark 章节]] 的子文档，仅维护完整动作参考，不生成配置代码。
 配置参数、入门操作、菜单翻页和依赖条件仍在主配置中维护。
 
 动作表核对 Embark 1.2、embark-consult 1.2；Smerge 部分核对本机 Emacs 31.1。

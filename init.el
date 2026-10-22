@@ -1,7 +1,7 @@
 ;;; init.el --- 由 Org 生成的 Emacs 配置 -*- lexical-binding: t; -*-
-;; 本文件由 org_configs/Windows_config.org 生成；请修改 Org 源文件，不要直接改本文件。
+;; 本文件由 org_configs/self_config.org 生成；请修改 Org 源文件，不要直接改本文件。
 ;; 本文件由 Org 生成；注释也维护在 Org 代码块中，避免下次生成时丢失。
-;; 已配置基础环境、Org 目录、编辑搜索、文件项目、保存恢复和菜单；开发等仍占位。
+;; 已配置基础环境、基础编辑、界面、Org 目录、编辑搜索、文件项目、保存恢复和菜单；开发等仍占位。
 
 ;;; 基础入口
 
@@ -145,10 +145,40 @@
 (defconst my/graphic-session-p (my/graphic-frame-p)
   "记录初始 Emacs 会话是否有图形帧。")
 
-;;; 基础显示：使用 Emacs 内置功能，不引入外观插件。
-(when (display-graphic-p)
-  (tool-bar-mode -1)
-  (scroll-bar-mode -1))
+;;; 基础界面：使用内置菜单、工具提示和 Frame 参数。
+;; 本配置显式启用菜单栏；改为 -1 可关闭，命令仍可通过 M-x 调用。
+(menu-bar-mode 1)
+
+(defun my/setup-graphic-frame (frame)
+  "为图形 FRAME 设置精简工具界面和明确的最大化状态。"
+  (when (my/graphic-frame-p frame)
+    (with-selected-frame frame
+      ;; -1 关闭工具栏和滚动条；1 启用 tooltip 鼠标帮助弹窗。
+      (tool-bar-mode -1)
+      (scroll-bar-mode -1)
+      (tooltip-mode 1)
+      ;; 本配置选择 maximized；改为 fullboth 为全屏，nil 为普通窗口。
+      (set-frame-parameter frame 'fullscreen 'maximized))))
+
+;; 只影响图形 Frame；新建 Frame 时同样处理，不依赖启动时是否已有图形窗口。
+(my/setup-graphic-frame (selected-frame))
+(add-hook 'after-make-frame-functions #'my/setup-graphic-frame)
+
+;; 内置默认 ring-bell-function=nil、visible-bell=nil；本配置选择完全静音。
+;; 如需可视提醒，把 ignore 改为 nil，保留 visible-bell=t；效果取决于显示环境。
+;; 如需默认声音提醒，把 ring-bell-function 和 visible-bell 都改为 nil。
+(setq ring-bell-function #'ignore
+      visible-bell t)
+
+(use-package mwheel
+  :ensure nil                         ; 内置鼠标滚轮支持，不安装第三方包。
+  :demand t                           ; 先加载滚轮定义，再设置修饰键对应的行为。
+  :custom
+  ;; 本配置沿用参考列表：1 为一行；Shift 为一行；Ctrl 的 nil 是近一屏，不是禁用。
+  ;; Emacs 31.1 默认 Shift=hscroll、Ctrl=text-scale；想恢复时替换对应值即可。
+  (mouse-wheel-scroll-amount '(1 ((shift) . 1) ((control) . nil)))
+  ;; 插件默认 t：滚得越快额外加速；本配置 nil：关闭这层加速。
+  (mouse-wheel-progressive-speed nil))
 
 ;; 行号和当前行提示使用内置功能；特殊工具界面不显示行号。
 ;; display-line-numbers-type=t 选择绝对行号；改为 'relative 可使用相对行号，nil 可关闭默认行号类型。
@@ -271,8 +301,18 @@
   (error "Enable only one of my/enable-nyan-mode and my/enable-poke-line"))
 (when my/enable-nyan-mode
   (use-package nyan-mode
-    :demand t
-    :custom (nyan-animate-nyancat nil)
+    :demand t                          ; 启动时加载位置指示器，随后启用模式。
+    :custom
+    ;; 插件默认 nil；本配置沿用参考设为 t，让小猫持续播放动画；nil 为静态显示。
+    (nyan-animate-nyancat t)
+    ;; 插件默认 nil；本配置沿用参考设为 t，让彩虹尾迹呈波浪状。
+    ;; 本机版本源码仍保留此效果的已知问题备注，实际外观需在当前显示环境确认。
+    (nyan-wavy-trail t)
+    ;; 插件默认 0.2 秒，本配置保持；越小动画越快、刷新越频繁，例如 0.4 会更慢。
+    (nyan-animation-frame-interval 0.2)
+    ;; 插件默认 32 单位，本配置保持；每单位是 8px 图像，图形轨道约 256px，最少 3 单位。
+    ;; 这是轨道的总显示宽度，不是文件长度；可改为 16 或 24 给其他状态栏信息让出空间。
+    (nyan-bar-length 32)
     :config (nyan-mode 1)))
 (when my/enable-poke-line
   (use-package poke-line
@@ -298,6 +338,13 @@
 (use-package toc-org
   ;; :hook 让每个 Org 缓冲区启用 toc-org；插件只在文档有 TOC 标签时更新目录。
   :hook (org-mode . toc-org-mode))
+
+(use-package delsel
+  :ensure nil                         ; 内置选区替换，不需要安装插件。
+  :demand t                           ; 启动时加载并立即启用全局选区替换。
+  :config
+  ;; 内置默认关闭；本配置沿用参考选择启用，改为 -1 可关闭。
+  (delete-selection-mode 1))
 
 ;;; Vim 风格编辑：Evil。
 ;; 必须先关闭 Evil 自带的部分模式键位，交由 evil-collection 统一适配。
@@ -835,6 +882,10 @@
    :keymaps 'override
    "s" (general-predicate-dispatch #'avy-goto-char-timer
          (derived-mode-p 'magit-mode) nil))  ; Jump，字符标签跳转；Magit 保留局部暂存键
+
+  ;; 此前未自定义全局 Esc；这里只绑定独立事件，不覆盖 ESC / Meta 前缀。
+  ;; Evil 的插入／可视状态仍优先使用原来的 Esc，C-g 继续保留取消／中断用途。
+  (general-def "<escape>" #'keyboard-escape-quit)  ; Escape，按上下文退出当前交互
 
   ;; 全局备用前缀访问同一份菜单，适用于插入状态及 Emacs 状态。
   ;; 原生 C-h 前缀保留，只增强其中几个具体帮助命令。

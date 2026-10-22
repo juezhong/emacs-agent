@@ -1,4 +1,4 @@
-#+title: Windows Emacs 配置
+#+title: 个人 Emacs 配置
 #+property: header-args:emacs-lisp :tangle ../init.el :mkdirp yes
 #+startup: overview num
 #+options: toc:4 num:4
@@ -33,9 +33,16 @@
 - [[配置关系总览][配置关系总览]]
 - [[个人配置][个人配置]]
   - [[界面与显示][界面与显示]]
+    - [[平台与显示环境检测][平台与显示环境检测]]
     - [[基础界面与提示行为][基础界面与提示行为]]
+      - [[菜单栏、工具提示与启动最大化][菜单栏、工具提示与启动最大化]]
+      - [[声音与可视提示][声音与可视提示]]
+      - [[鼠标滚轮][鼠标滚轮]]
+      - [[行号与当前行提示][行号与当前行提示]]
+      - [[Fringe 与 Git 修改标记][Fringe 与 Git 修改标记]]
     - [[字体与文字显示][字体与文字显示]]
     - [[主题与状态栏][主题与状态栏]]
+      - [[彩虹小猫：位置、动画与轨道长度][彩虹小猫：位置、动画与轨道长度]]
   - [[Org 文档编辑与导航][Org 文档编辑与导航]]
     - [[Org 内置功能][Org 内置功能]]
     - [[自动编号与目录如何配合][自动编号与目录如何配合]]
@@ -43,6 +50,10 @@
     - [[标题跳转：org-goto][标题跳转：org-goto]]
     - [[标题与符号索引：Imenu][标题与符号索引：Imenu]]
   - [[编辑与文本导航][编辑与文本导航]]
+    - [[基础编辑行为][基础编辑行为]]
+      - [[选中文字后输入替换][选中文字后输入替换]]
+      - [[括号自动补全与配对提示的可选设置][括号自动补全与配对提示的可选设置]]
+      - [[Esc 退出提示与 Evil 状态][Esc 退出提示与 Evil 状态]]
     - [[编辑行为与 Vim 模式][编辑行为与 Vim 模式]]
       - [[Evil 基本操作][Evil 基本操作]]
       - [[evil-collection 的工具界面][evil-collection 的工具界面]]
@@ -113,7 +124,7 @@
 所有配置改动以本 Org 文件为源头，init.el 仅通过 tangle 更新，不手工维护两份代码。
 Emacs 自定义界面的持久化状态单独保存在 custom.el，不再追加到生成文件末尾。
 在 Emacs 中打开本文件，按 =C-c C-v t=，或执行 =M-x org-babel-tangle RET= 生成配置。
-有 Git 基线时，可在仓库根目录执行 =git diff -- org_configs/Windows_config.org init.el=
+有 Git 基线时，可在仓库根目录执行 =git diff -- org_configs/self_config.org init.el=
 检查源文件和生成结果；尚未提交的全新文件也需要直接检查内容。
 
 简单参数变更可以用 =M-x load-file RET= 选择生成的 =init.el= 进行试验，
@@ -124,7 +135,7 @@ Emacs 自定义界面的持久化状态单独保存在 custom.el，不再追加�
 也可以在仓库根目录使用命令行生成：
 
 #+begin_src sh :tangle no
-emacs -Q --batch --load org --eval '(org-babel-tangle-file "org_configs/Windows_config.org")'
+emacs -Q --batch --load org --eval '(org-babel-tangle-file "org_configs/self_config.org")'
 #+end_src
 
 *** 代码块编辑、执行与生成
@@ -242,6 +253,10 @@ Helpful、General 和内置 which-key 的配置；toc-org 继续提供自动目�
 Git 工作流已写入 Magit / diff-hl，本机已安装；用户已确认状态页和日志入口可用，
 暂存、提交、推送、修改标记及其他流程待分别验证。
 尚未安装的包由你手动启动时交给 use-package 安装，已安装则复用。
+基础行为已补充选区输入替换、静音提示和滚轮规则；界面显式启用菜单栏／tooltip，
+图形 Frame 使用最大化状态。自动补括号保留可启用示例；配对提示保留内置默认。
+Esc 增加全局退出后备，保留 Evil 状态键位和 C-g；fringe 宽度保持 Emacs 默认。
+彩虹小猫已启用动画和波浪尾迹，帧间隔、轨道长度显式保留插件默认值。
 本轮新增了界面、字体、主题、状态栏和可选装饰配置，并重新生成 init.el；
 没有加载新配置、安装或编译插件，也没有进行图形／终端交互验证。
 
@@ -273,7 +288,7 @@ Git 工作流已写入 Magit / diff-hl，本机已安装；用户已确认状态
 
 ** 跨平台迁移
 
-文件名保留 =Windows_config.org=，但当前生成的基础配置也按跨平台方式编写。
+主配置源为 =self_config.org=，Windows、Linux、macOS 共用这份配置；教程位于 =guides/=。
 建议各平台使用 Emacs 29 或更新版本；目前实际验证环境是 Windows Emacs 31.1，
 没有在 Linux / macOS 真机运行验证。
 
@@ -327,9 +342,9 @@ GPG 先查看实际可执行文件和错误路径；本机 MSYS2 路径问题的
 
 #+begin_src emacs-lisp
 ;;; init.el --- 由 Org 生成的 Emacs 配置 -*- lexical-binding: t; -*-
-;; 本文件由 org_configs/Windows_config.org 生成；请修改 Org 源文件，不要直接改本文件。
+;; 本文件由 org_configs/self_config.org 生成；请修改 Org 源文件，不要直接改本文件。
 ;; 本文件由 Org 生成；注释也维护在 Org 代码块中，避免下次生成时丢失。
-;; 已配置基础环境、Org 目录、编辑搜索、文件项目、保存恢复和菜单；开发等仍占位。
+;; 已配置基础环境、基础编辑、界面、Org 目录、编辑搜索、文件项目、保存恢复和菜单；开发等仍占位。
 
 ;;; 基础入口
 
@@ -625,6 +640,7 @@ which-key 使用内置版本。Consult 等后续插件仍未声明，不会因�
    │  ├─ org-num：自动章节编号
    │  └─ toc-org：保存时重建目录链接
    ├─ 编辑与文本导航
+   │  ├─ 基础编辑：选区输入替换；括号自动补全／配对提示说明示例
    │  ├─ Vim 编辑：Evil / evil-collection / evil-surround
    │  ├─ 屏幕定位：Avy
    │  ├─ 搜索选择：Vertico / Orderless / Marginalia / Consult
@@ -683,14 +699,86 @@ cnfonts 负责中英文混排字体，doom-themes 提供主题集合，doom-mode
 
 *** 基础界面与提示行为
 
-欢迎页已在配置入口关闭。下面只关闭会持续占用编辑空间的工具栏和滚动条；
-文件恢复、外部修改检测、锁文件和冲突保护继续保留。
+欢迎页已在配置入口关闭。下面使用内置功能设置菜单、工具提示、初始窗口、
+铃声和滚轮；行号、当前行提示放在后面单独说明。文件恢复、外部修改检测、
+锁文件和冲突保护继续保留。这里没有新增全局快捷键。
+
+**** 菜单栏、工具提示与启动最大化
+
+菜单栏使用 =menu-bar-mode=，本配置显式启用，便于发现命令；工具栏继续关闭。
+图形界面中 =tooltip-mode= 显式启用，鼠标停在带帮助文字的按钮等位置时弹出提示；
+关闭后帮助文字改在底部 echo area 显示，终端也主要使用底部提示。
+参考文件里的 =(menu-bar-mode 1)= 和 =(tooltip-mode 1)= 实际都是启用，
+与其“禁用”注释相反，这里按代码行为配置。
+
+图形 Frame 创建时使用最大化状态，而非反复调用切换命令，避免已最大化时被反向恢复。
+普通启动和后续 =emacsclient -c= 创建的图形 Frame 都适用；终端窗口大小由终端控制。
+“最大化”保留系统标题栏／任务栏，不等于真正的全屏。
 
 #+begin_src emacs-lisp
-;;; 基础显示：使用 Emacs 内置功能，不引入外观插件。
-(when (display-graphic-p)
-  (tool-bar-mode -1)
-  (scroll-bar-mode -1))
+;;; 基础界面：使用内置菜单、工具提示和 Frame 参数。
+;; 本配置显式启用菜单栏；改为 -1 可关闭，命令仍可通过 M-x 调用。
+(menu-bar-mode 1)
+
+(defun my/setup-graphic-frame (frame)
+  "为图形 FRAME 设置精简工具界面和明确的最大化状态。"
+  (when (my/graphic-frame-p frame)
+    (with-selected-frame frame
+      ;; -1 关闭工具栏和滚动条；1 启用 tooltip 鼠标帮助弹窗。
+      (tool-bar-mode -1)
+      (scroll-bar-mode -1)
+      (tooltip-mode 1)
+      ;; 本配置选择 maximized；改为 fullboth 为全屏，nil 为普通窗口。
+      (set-frame-parameter frame 'fullscreen 'maximized))))
+
+;; 只影响图形 Frame；新建 Frame 时同样处理，不依赖启动时是否已有图形窗口。
+(my/setup-graphic-frame (selected-frame))
+(add-hook 'after-make-frame-functions #'my/setup-graphic-frame)
+#+end_src
+
+**** 声音与可视提示
+
+本配置沿用参考的静音选择：=ring-bell-function= 设为 =ignore=。
+同时显式保留 =visible-bell=t=，但只有把前者改回 =nil= 后，可视铃声才会生效。
+两者不是两个能同时独立生效的提醒：静音函数会接管响铃请求。
+错误文字和确认提示仍会显示，静音不隐藏错误信息。
+
+#+begin_src emacs-lisp
+;; 内置默认 ring-bell-function=nil、visible-bell=nil；本配置选择完全静音。
+;; 如需可视提醒，把 ignore 改为 nil，保留 visible-bell=t；效果取决于显示环境。
+;; 如需默认声音提醒，把 ring-bell-function 和 visible-bell 都改为 nil。
+(setq ring-bell-function #'ignore
+      visible-bell t)
+#+end_src
+
+**** 鼠标滚轮
+
+按参考设置普通滚轮每次滚动一行，Shift 加滚轮也滚动一行，Ctrl 加滚轮近一屏；
+关闭连续滚动的额外加速。这里只设置传统滚轮，不新增像素滚动插件。
+本机 Emacs 31.1 默认普通滚轮已是一行，但 Shift 默认水平滚动、Ctrl 默认缩放文字，
+所以复制参考参数会改变这些修饰键行为，下面明确记录这一点。
+
+#+begin_src emacs-lisp
+(use-package mwheel
+  :ensure nil                         ; 内置鼠标滚轮支持，不安装第三方包。
+  :demand t                           ; 先加载滚轮定义，再设置修饰键对应的行为。
+  :custom
+  ;; 本配置沿用参考列表：1 为一行；Shift 为一行；Ctrl 的 nil 是近一屏，不是禁用。
+  ;; Emacs 31.1 默认 Shift=hscroll、Ctrl=text-scale；想恢复时替换对应值即可。
+  (mouse-wheel-scroll-amount '(1 ((shift) . 1) ((control) . nil)))
+  ;; 插件默认 t：滚得越快额外加速；本配置 nil：关闭这层加速。
+  (mouse-wheel-progressive-speed nil))
+#+end_src
+
+cnfonts 或其他模式如果绑定了专用 Ctrl 加滚轮命令，实际按键优先级可能覆盖这里的规则。
+可用 =C-h k= 后滚动鼠标检查当前有效命令；终端可能截获滚轮，触控板／像素滚动也有各自行为。
+修改行数只改列表最前面的 =1=，例如 =3=；恢复加速则改最后的 =nil= 为 =t=。
+
+**** 行号与当前行提示
+
+行号和当前行提示继续使用内置模式；本轮没有改动其适用范围。
+
+#+begin_src emacs-lisp
 
 ;; 行号和当前行提示使用内置功能；特殊工具界面不显示行号。
 ;; display-line-numbers-type=t 选择绝对行号；改为 'relative 可使用相对行号，nil 可关闭默认行号类型。
@@ -711,6 +799,20 @@ cnfonts 负责中英文混排字体，doom-themes 提供主题集合，doom-mode
                    (setq-local hl-line-mode nil)
                    (hl-line-mode -1))))
 #+end_src
+
+**** Fringe 与 Git 修改标记
+
+Fringe 是图形 Emacs 每个窗口左右的窄条区域，用于显示折行箭头、边界指示器、
+diff-hl 修改标记等。它不是行号栏，也不是正文中的空白字符。
+参考文件的 =(set-fringe-mode 10)= 是把两侧宽度设为 10 像素。
+当前配置没有覆盖 Emacs 的 fringe 宽度；diff-hl 负责在其中绘制标记，并不等于已经设置宽度。
+
+现有图形 fringe／终端 margin 回退说明见 [[*修改标记与运行条件][修改标记与运行条件]]，
+具体操作见 [[file:guides/magit-guide.org::*修改标记与外部环境排查][Magit 手册的修改标记章节]]。
+宽度保持 Emacs 当前默认值，不加入 =(set-fringe-mode 10)=，也不隐藏 diff-hl 使用的显示区域。
+这是已确定的配置选择，并非遗漏待配项。默认宽度由 Emacs 和显示环境决定，
+不把参考文件的 10 像素描述为内置默认值。
+以后若需临时调整，可用内置 =M-x fringe-mode RET= 选择宽度，=C-g= 取消。
 
 *** 字体与文字显示
 
@@ -837,8 +939,18 @@ doom-modeline 只接管 mode-line，不要求使用 Doom Emacs。图标默认关
   (error "Enable only one of my/enable-nyan-mode and my/enable-poke-line"))
 (when my/enable-nyan-mode
   (use-package nyan-mode
-    :demand t
-    :custom (nyan-animate-nyancat nil)
+    :demand t                          ; 启动时加载位置指示器，随后启用模式。
+    :custom
+    ;; 插件默认 nil；本配置沿用参考设为 t，让小猫持续播放动画；nil 为静态显示。
+    (nyan-animate-nyancat t)
+    ;; 插件默认 nil；本配置沿用参考设为 t，让彩虹尾迹呈波浪状。
+    ;; 本机版本源码仍保留此效果的已知问题备注，实际外观需在当前显示环境确认。
+    (nyan-wavy-trail t)
+    ;; 插件默认 0.2 秒，本配置保持；越小动画越快、刷新越频繁，例如 0.4 会更慢。
+    (nyan-animation-frame-interval 0.2)
+    ;; 插件默认 32 单位，本配置保持；每单位是 8px 图像，图形轨道约 256px，最少 3 单位。
+    ;; 这是轨道的总显示宽度，不是文件长度；可改为 16 或 24 给其他状态栏信息让出空间。
+    (nyan-bar-length 32)
     :config (nyan-mode 1)))
 (when my/enable-poke-line
   (use-package poke-line
@@ -863,6 +975,42 @@ doom-modeline 只接管 mode-line，不要求使用 Doom Emacs。图标默认关
 切换 profile。彩虹小猫、宝可梦、鹦鹉、宠物和小鱼的开关集中在上面的变量中，
 修改后重启即可；当前会话可使用各插件提供的关闭命令。图形／终端和窄窗口的动画
 效果需要分别验证，配置生成成功不等于这些插件已安装或运行验证通过。
+
+**** 彩虹小猫：位置、动画与轨道长度
+
+小猫是当前缓冲区的位置指示器，不是文件加载、保存或编译任务的进度条。
+在普通、未缩小范围的文件中，光标越接近文件末尾，小猫越靠右，彩虹越长；
+文件有 100 行还是 10 万行，都会使用同一条轨道表示相对位置。
+位置按字符位置计算，不是按行数，也不是只看窗口滚动条的位置；
+本机版本对 narrowing 的计算未完整按可访问区间归一化，不把缩小范围后的比例视为精确读数。
+
+=nyan-bar-length= 控制整条轨道留多宽，移动光标不会自动增加轨道总长度。
+显式写出插件默认的 32，是为了方便以后调整布局，不是插件必须手填才会显示。
+图形界面中每单位对应 8 像素图像，32 约为 256 像素，16 约为 128 像素；
+长度最少为小猫本身所需的 3 单位。终端没有图像时使用文字回退，不能照搬像素宽度。
+插件默认在窗口宽度小于 64 列时隐藏指示器，这与轨道宽度是两项不同设置；
+目前保留该阈值，不新增随窗口连续缩放轨道的逻辑。
+
+=nyan-animate-nyancat=t= 控制小猫动画，=nyan-wavy-trail=t= 控制波浪尾迹；
+=nyan-animation-frame-interval= 的单位是秒，当前 0.2 秒约为每秒 5 帧。
+静态显示也会随光标位置更新比例；关闭动画不等于关闭位置指示器。
+波浪尾迹的本机源码带有已知问题备注，是否呈现预期效果需手动确认，暂不改插件源码。
+
+体验时打开文本文件，先后移动到文件开头、中间、末尾，观察小猫相对位置；
+再拆分窗口，确认文件名和其他状态栏信息仍有足够空间。
+临时停止／启动动画可用 =M-x nyan-stop-animation RET=／=M-x nyan-start-animation RET=；
+=M-x nyan-toggle-wavy-trail RET= 切换尾迹，=M-x nyan-mode RET= 切换整个指示器。
+这些命令直接执行，不需要输入或确认；命令名尚未输入完成时用 =C-g= 取消。
+临时切换不自动写回 Org；持久修改请改上面参数、保存、生成，再重启。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| 未另绑定 | nyan-mode | 切换整个小猫位置指示器 |
+| 未另绑定 | nyan-start-animation | 临时启动小猫动画 |
+| 未另绑定 | nyan-stop-animation | 临时停止小猫动画，保留位置指示 |
+| 未另绑定 | nyan-toggle-wavy-trail | 临时切换波浪尾迹 |
+
+这些是低频外观调整，通过 M-x 调用即可，暂不另占用快捷键。
 
 ** Org 文档编辑与导航
 
@@ -1000,6 +1148,86 @@ Imenu 是 Emacs 内置的“当前缓冲区结构索引”，不是另一个目�
 | 查找当前文件的标题／代码符号 | imenu 或 consult-imenu    |
 
 ** 编辑与文本导航
+
+*** 基础编辑行为
+
+**** 选中文字后输入替换
+
+启用 Emacs 内置 =delete-selection-mode=：在可写文本中用鼠标拖选文字，
+直接输入会替换活动选区。也可用 =C-SPC= 设置 mark，再移动光标选择；
+取消选区用 =C-g=，尚未保存的误替换通常可用撤销恢复。
+此模式只处理支持选区删除机制的命令，不让所有命令都变成“先删选区”。
+Evil 可视状态仍使用自身的操作，例如 =c= 修改所选文本；不要把它等同于原生选区。
+
+#+begin_src emacs-lisp
+(use-package delsel
+  :ensure nil                         ; 内置选区替换，不需要安装插件。
+  :demand t                           ; 启动时加载并立即启用全局选区替换。
+  :config
+  ;; 内置默认关闭；本配置沿用参考选择启用，改为 -1 可关闭。
+  (delete-selection-mode 1))
+#+end_src
+
+临时开关可用 =M-x delete-selection-mode RET=，会反转当前状态。
+永久关闭请修改上面的 =1= 为 =-1=，保存 Org、tangle 后重启确认。
+
+**** 括号自动补全与配对提示的可选设置
+
+两个功能不同：=electric-pair-mode= 在输入左括号／引号时自动补上右侧字符；
+=show-paren-mode= 只高亮已有的配对括号，不插入文字。
+参考文件中这两项都被注释，因此本轮不新增启用调用。
+需要修正此前的分类：本机 Emacs 31.1 的 =show-paren-mode= 默认已开启，
+所以“参考文件没有启用代码”不等于“当前配对提示关闭”。保留内置默认，不强制关闭它。
+
+下面为可启用示例：=:tangle no= 表示不生成到 init.el，生成时也不执行。
+以后需要某项时，删掉对应代码块的 =:tangle no=，以继承本文件的
+=:tangle ../init.el=，再保存、tangle、重启。不要改成 =:tangle yes=，
+因为它会按 Org 默认规则选择输出文件，不保证与本配置生成到同一位置。
+
+#+begin_src emacs-lisp :tangle no
+(use-package elec-pair
+  :ensure nil                         ; 内置自动配对，默认未启用。
+  :demand t                           ; 启用本示例后立即加载并运行全局模式。
+  :config
+  (electric-pair-mode 1))              ; 改为 -1 可关闭自动补齐括号和引号。
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+(use-package paren
+  :ensure nil                         ; 内置括号高亮；本机 Emacs 31.1 默认已开启。
+  :demand t                           ; 如需明确管理该行为，可启用此声明。
+  :config
+  (show-paren-mode 1))                 ; 改为 -1 可关闭配对提示，不影响文件中的文字。
+#+end_src
+
+临时体验用 =M-x electric-pair-mode RET= 或 =M-x show-paren-mode RET=；
+命令会反转现有状态，先用 =C-h v= 查询对应变量，避免把已开启的模式反而关闭。
+
+**** Esc 退出提示与 Evil 状态
+
+全局 =<escape>= 绑定到内置 =keyboard-escape-quit=，正式绑定集中在
+[[*管理方式：General][统一快捷键章节]]。它提供类似 Vim 的“按 Esc 退出当前交互”体验，
+但并不是把 Esc 简单映射为 =C-g=。
+=C-g= 通常调用 =keyboard-quit=，也是中断正在执行的 Lisp 命令的常用按键；
+=keyboard-escape-quit= 会按上下文取消前缀参数、活动选区、minibuffer／递归编辑，
+还可能退出临时缓冲区或收起其他窗口，只保留当前窗口。
+不确定当前交互该怎样取消时，仍优先用 =C-g=；Esc 不替代强制中断。
+
+全局绑定是后备行为，Evil 和模式局部 keymap 通常优先：插入状态按 Esc 返回普通状态，
+可视状态按 Esc 退出选区；minibuffer 中若没有更高优先级绑定，则使用全局退出命令。
+终端常用同一 ESC 字节表示 Esc 和 Meta 前缀，可能存在识别延迟；
+这里只绑定 =<escape>= 事件，不重写 =ESC= 前缀，以免破坏 =M-x= 等组合。
+这不会关闭 Emacs，也不等同于取消正在进行的 Git rebase 等外部操作。
+实际键位可用 =C-h k= 再按 Esc 查询；跨插件说明见
+[[file:guides/faq.org::*Esc 与 C-g 是同一个操作吗][常见问题：Esc 与 C-g]]。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| 未另绑定 | delete-selection-mode | 临时开关原生选区输入替换 |
+| 未另绑定 | electric-pair-mode | 临时开关自动补齐括号／引号 |
+| 未另绑定 | show-paren-mode | 临时开关已有括号的配对提示 |
+| C-g | keyboard-quit | 取消当前命令／选区，适用性以当前模式为准 |
+| Esc（全局后备） | keyboard-escape-quit | 按上下文退出；Evil／模式局部绑定优先 |
 
 *** 编辑行为与 Vim 模式
 
@@ -1590,7 +1818,7 @@ Vertico 显示候选，Orderless 筛选，Marginalia 提供注释，Consult 提�
 Embark 针对当前候选或光标处对象选择动作；embark-consult 负责 Consult 结果导出等桥接。
 Marginalia 的注释不会自动提示 Embark 入口，which-key 也不负责这里的动作菜单。
 本配置使用 Embark 自带的英文菜单；配置与使用教程维护在本文，完整中文动作表见子文档
-[[file:embark-actions.org][Embark 默认动作参考]]。
+[[file:guides/embark-actions.org][Embark 默认动作参考]]。
 
 ***** 加载与默认参数
 
@@ -1723,7 +1951,7 @@ Grep 导出和跳转不需要 wgrep。本机 Emacs 31 已提供内置 grep-edit-
 批量动作对整个集合生效，确认前查看目标范围；删除、重命名、执行 shell 或包管理动作保留默认能力，
 它们的原有确认与依赖仍然有效，本文的编写和 tangle 不会执行这些动作。
 
-Collect 模式的原生键位见 [[file:embark-actions.org::*Collect 列表的原生按键（直接在列表内按，不先按 C-.）][子文档的 Collect 按键表]]，继承 tabulated-list-mode；RET 可打开光标所在候选。
+Collect 模式的原生键位见 [[file:guides/embark-actions.org::*Collect 列表的原生按键（直接在列表内按，不先按 C-.）][子文档的 Collect 按键表]]，继承 tabulated-list-mode；RET 可打开光标所在候选。
 默认不启用 Collect 的直接动作模式；M-a（embark-collect-direct-action-minor-mode）切换后，
 光标处候选的动作键可直接输入，不需要先 C-.，并可能覆盖原来的列表键；再调用一次关闭。
 动作帮助的补全选择器内，默认 @ 可返回按键动作选择器；通常直接用 C-h 查找动作即可。
@@ -1736,7 +1964,7 @@ Dired 中 C-. 操作光标处文件；返回上级目录用 -（dired-up-directo
 
 ***** 完整默认动作参考
 
-完整动作表已移到子文档 [[file:embark-actions.org][Embark 默认动作参考]]，包含各目标类型、继承关系、
+完整动作表已移到子文档 [[file:guides/embark-actions.org][Embark 默认动作参考]]，包含各目标类型、继承关系、
 编码与排序子菜单、Org / Consult 集成及 Smerge 动作。
 把光标放到链接上，按 , o l（M-x org-open-at-point RET）打开；
 子文档开头有返回本章的链接。它只维护参考说明，不参与 init.el 生成。
@@ -2085,7 +2313,7 @@ Transient 的值、菜单级别与历史文件在需要保存时写入 .cache/tr
 
 *** Git 入口与入门流程
 
-详细使用说明已拆到 [[file:magit-guide.org][Magit 与 Git 操作手册]]：从缓冲区与 Git 基本概念开始，
+详细使用说明已拆到 [[file:guides/magit-guide.org][Magit 与 Git 操作手册]]：从缓冲区与 Git 基本概念开始，
 提供一次完整的暂存、提交与取消练习，并说明远端同步、分支、stash、冲突处理和常见疑问。
 完整三列入口表也在子文档及本文 [[*Git 新增入口][统一快捷键速查表]] 中保留。
 
@@ -2096,20 +2324,20 @@ Transient 的值、菜单级别与历史文件在需要保存时写入 .cache/tr
 
 第一次使用可按“编辑保存 → , g s → 展开差异 → s 暂存 → c c 创建提交”的顺序练习。
 在提交说明中用 =C-c C-c=（with-editor-finish）完成，=C-c C-k=（with-editor-cancel）取消。
-请结合 [[file:magit-guide.org::*第一次练习：从一个文件到本地提交][子文档的完整步骤]] 理解各界面中的按键和确认方式。
+请结合 [[file:guides/magit-guide.org::*第一次练习：从一个文件到本地提交][子文档的完整步骤]] 理解各界面中的按键和确认方式。
 
 *** 修改标记与运行条件
 
 diff-hl 保存后更新，并随 Magit 刷新同步；当前保留已暂存修改的标记，提交后再随刷新消失。
 用 =, g h n / p / s=（diff-hl-next-hunk / diff-hl-previous-hunk / diff-hl-show-hunk）导航和查看。
 图形界面使用 fringe，终端回退到 margin。细节与恢复修改块说明见
-[[file:magit-guide.org::*修改标记与外部环境排查][子文档的标记与环境章节]]。
+[[file:guides/magit-guide.org::*修改标记与外部环境排查][子文档的标记与环境章节]]。
 
 Magit 依赖 Emacs 能找到外部 Git，以及 Git 已有的 SSH 或 HTTPS 认证环境。
 检查路径用 =M-: (executable-find "git") RET=；失败用 =M-x magit-process-buffer RET= 查看输出。
 URL 代理不自动影响 Git / SSH；本配置不存储凭据，不修改 Git 身份、签名或提交默认参数。
 Signed-off-by、菜单参数保存和本仓库提交说明示例见
-[[file:magit-guide.org::*提交说明、Signed-off-by 与取消提交][子文档的提交章节]]。
+[[file:guides/magit-guide.org::*提交说明、Signed-off-by 与取消提交][子文档的提交章节]]。
 
 ** 帮助与交互提示
 
@@ -2135,7 +2363,7 @@ Consult 主要负责搜索和选择，不是帮助文档增强包。
 它会识别该模式中的 Evil 适配；模式继承的按键也可能列出，不是全局有效键位总表。
 需要展开全部层级时用 =M-x which-key-show-full-major-mode RET=；辅助模式的独立键位
 可用 =M-x which-key-show-minor-mode-keymap RET= 选择查看，暂不另外绑定。
-窗口、缓冲区与帮助范围的区别见 [[file:faq.org][使用常见问题]]。
+窗口、缓冲区与帮助范围的区别见 [[file:guides/faq.org][使用常见问题]]。
 =, h m= 查看当前模式怎么操作，=, h b= 列出当前有效按键，
 =, h w= 根据命令查找已有快捷键。忘记命令名时仍可用 =M-x= 搜索。
 Helpful 中的“光标处符号”主要指 Emacs Lisp 符号，不代替未来 clangd 的代码文档。
@@ -2472,6 +2700,10 @@ General 不会自动启用 which-key，也不代替插件本身。
    "s" (general-predicate-dispatch #'avy-goto-char-timer
          (derived-mode-p 'magit-mode) nil))  ; Jump，字符标签跳转；Magit 保留局部暂存键
 
+  ;; 此前未自定义全局 Esc；这里只绑定独立事件，不覆盖 ESC / Meta 前缀。
+  ;; Evil 的插入／可视状态仍优先使用原来的 Esc，C-g 继续保留取消／中断用途。
+  (general-def "<escape>" #'keyboard-escape-quit)  ; Escape，按上下文退出当前交互
+
   ;; 全局备用前缀访问同一份菜单，适用于插入状态及 Emacs 状态。
   ;; 原生 C-h 前缀保留，只增强其中几个具体帮助命令。
   (general-def
@@ -2667,6 +2899,7 @@ Org 中把光标放到标题，用 , o TAB（M-x org-cycle RET）切换局部折
 | 快捷键 | 交互命令（M-x 名称） | 作用 |
 |--------+---------------------+------|
 | ,,, | execute-extended-command | 打开命令输入界面，等同 M-x |
+| Esc（全局后备） | keyboard-escape-quit | 退出当前交互，Evil／局部 Esc 优先 |
 | , f f | find-file | 打开文件 |
 | , f s | save-buffer | 保存当前文件 |
 | , f a | write-file | 另存为 |
@@ -2763,6 +2996,13 @@ Embark 已由用户确认本机使用正常、符合需求；以下旧体验条�
 保持代理运行，从仓库根目录用前面的启动命令打开 Emacs，等待包安装结束。
 根据 *Messages* 判断安装情况；首次安装依赖可能需要一些时间。第三阶段主要使用内置功能。
 
+- 图形启动和新建图形 Frame 检查最大化、菜单栏、tooltip；工具栏／滚动条保持关闭。
+- 在可写临时文本中用鼠标选择几个字并输入，检查选区被替换；用 C-g 取消另一次选区。
+  Evil 可视状态仍用 c 修改。自动补括号示例不参与生成；配对高亮保留本机内置默认。
+- 检查声音提示为静音，错误文字仍可见；不要把 visible-bell=t 单独视为已启用闪屏。
+- 普通及 Shift 滚轮检查每次一行、连续滚动不额外加速；Ctrl 滚轮检查当前模式实际绑定，
+  cnfonts 等模式可能覆盖全局滚轮规则。终端行为单独观察，不以图形结果代替。
+
 - 在临时 Git 仓库用 , g s 打开状态页，检查 , g 各用途子菜单和 C-c , g 备用入口。
 - 从文件缓冲区直接打开 , g c c 和 , g r f / l / p；先用 C-g 取消，确认不执行操作。
 - 修改并保存已跟踪文件，检查图形 fringe / 终端 margin 标记；用 , g h n / p / s 导航与查看。
@@ -2810,7 +3050,9 @@ Embark 已由用户确认本机使用正常、符合需求；以下旧体验条�
   用 =M-x cnfonts-switch-profile RET= 切换；确认 Windows 与其他平台的 profile 目录隔离。
 - 用 =M-x my/load-display-theme RET= 分别选择 dark 和 light，检查 doom-one 与
   doom-one-light 的正文、选区、Org、Magit、diff-hl、Vertico 和 which-key 对比度。
-- 默认体验 nyan-mode；再分别关闭它并启用 poke-line。parrot、emacs-pets 和
+- 默认体验 nyan-mode 的动画与波浪尾迹，移动到文件开头／中间／末尾检查比例，拆分窗口检查宽度；
+  用 M-x nyan-stop-animation 临时停止动画，确认位置指示仍会更新。
+  再分别关闭它并启用 poke-line。parrot、emacs-pets 和
   flappy-fish 保持关闭，需体验时一次只打开相应开关并重启。
 - 用 , w v 拆分，, w h/j/k/l 切换，, w m 最大化后再次调用恢复，, w c 关闭当前窗口。
 - 先在临时缓冲区熟悉操作，关闭窗口不会关闭其中的缓冲区。

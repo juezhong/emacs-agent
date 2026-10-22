@@ -9,7 +9,7 @@
 
 ## 配置维护
 
-- Org 是唯一配置源，`init.el` 是生成物。当前源文件为 `org_configs/Windows_config.org`；只修改 Org，再通过 tangle 更新 `init.el`。
+- Org 是唯一配置源，`init.el` 是生成物。当前源文件为 `org_configs/self_config.org`；只修改 Org，再通过 tangle 更新 `init.el`。
 - 生成位置以 Org 的 `:tangle` 属性为准。源文件可能改名，不新增依赖固定 Org 文件名的生成、打开或加载包装函数。
 - 区分保存 Org、tangle 生成和加载配置：保存不自动生成，生成不执行生成的配置。
 - `:tangle no` 表示不参与生成，仍可手动执行；说明中准确区分“不生成”和“不执行”。
@@ -42,9 +42,9 @@
 
 ## 文档入口与常见问题维护
 
-- 回答按键发现、当前模式帮助或跨插件操作疑问前，先查阅 [使用常见问题](org_configs/faq.org)；配置与正式键位仍以主 Org 为准。
-- 回答 Magit 操作问题时查阅 [Magit 操作手册](org_configs/magit-guide.org)；Embark 动作映射查阅 [Embark 动作参考](org_configs/embark-actions.org)。
-- 用户提出可复用的使用疑问时，将已核实的解释补充到对应教程；跨插件的共性问题记录在 `org_configs/faq.org`，插件专属细节留在其子文档并互相链接。
+- 回答按键发现、当前模式帮助或跨插件操作疑问前，先查阅 [使用常见问题](org_configs/guides/faq.org)；配置与正式键位仍以主 Org 为准。
+- 回答 Magit 操作问题时查阅 [Magit 操作手册](org_configs/guides/magit-guide.org)；Embark 动作映射查阅 [Embark 动作参考](org_configs/guides/embark-actions.org)。
+- 用户提出可复用的使用疑问时，将已核实的解释补充到对应教程；跨插件的共性问题记录在 `org_configs/guides/faq.org`，插件专属细节留在其子文档并互相链接。
 - 常见问题说明适用界面、进入方式、实际步骤、确认／取消及限制；区分源码核对与用户运行反馈。更新后同步目录和相关入口，复用已有答案，避免重复维护同一细节。
 
 ## 快捷键

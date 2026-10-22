@@ -3,7 +3,7 @@
 #+startup: overview num
 #+options: toc:3 num:3
 
-本文是 [[file:Windows_config.org::*版本控制][主配置版本控制章节]] 的子文档，面向尚不熟悉 Magit 的使用者。
+本文是 [[file:../self_config.org::*版本控制][主配置版本控制章节]] 的子文档，面向尚不熟悉 Magit 的使用者。
 配置声明、可调参数与自定义键位的实际定义仍在主配置；本文不生成配置代码。
 按键核对 Magit 4.7.1 与本机 evil-collection 3.0.3 的适配；diff-hl 核对 1.11.2。
 安装或升级后，以实际菜单和 =, h k=（=M-x helpful-key RET=）查询结果为准。
@@ -1105,7 +1105,7 @@ motion 或 Emacs 状态中的 s 沿用该状态和模式的原绑定，不能一
 查键时命中 Magit 条件，这一层返回 nil，让 Emacs 继续查优先级较低的局部键位；
 在 Magit 状态页中通常就找到 s → magit-stage。其他普通状态缓冲区未命中条件，
 这一层返回 avy-goto-char-timer，执行标签跳转。
-源代码和逐项解释见 [[file:Windows_config.org::*普通模式 s：Avy 与 Magit 的条件分派][主配置的条件分派说明]]。
+源代码和逐项解释见 [[file:../self_config.org::*普通模式 s：Avy 与 Magit 的条件分派][主配置的条件分派说明]]。
 
 在 Magit 中想用 Avy，按 =, j j=（=M-x avy-goto-char-timer RET=），
 输入可见目标字符，等待标签后选标签；C-g 取消。这个入口没有被上述规则移除。
