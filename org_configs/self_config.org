@@ -264,7 +264,8 @@ Esc 增加全局退出后备，保留 Evil 状态键位和 C-g；fringe 宽度�
 彩虹小猫已启用动画和波浪尾迹，帧间隔、轨道长度显式保留插件默认值。
 配置维护新增 F9 调整变量、F10 选择配置源、F11／F12 执行光标前的 Lisp 表达式。
 四个入口统一为 liyunfeng/ 交互命令，并提供 Marginalia 可读取的中文帮助。
-Evil 保留 C-i 跳转和 j/k 实际行移动；初始状态清单仅以注释提供，未启用覆盖。
+Evil 使用 C-u 向上半屏，保留 C-i 跳转和 j/k 实际行移动；初始状态清单仅以注释提供。
+左侧启用相对行号，当前行保留绝对行号；状态栏启用行列位置；Org 保留行号和当前行高亮。
 本轮新增了界面、字体、主题、状态栏和可选装饰配置，并重新生成 init.el；
 没有加载新配置、安装或编译插件，也没有进行图形／终端交互验证。
 
@@ -404,6 +405,8 @@ UTF-8 不带 BOM，行与行之间使用 LF，不使用 Windows 的 CRLF。
     (setq-local require-final-newline t)))
 
 ;; 与手动保存及已有自动保存共用；不新增保存计时器，不批量改写磁盘文件。
+;; before-save-hook 在写入文件前执行；add-hook 只登记函数，不会现在保存文件。
+;; #' 引用前面定义的函数；函数会自行判断是否为适用的文本文件，再统一编码。
 (add-hook 'before-save-hook #'my/save-text-as-utf-8-unix)
 #+end_src
 
@@ -741,6 +744,8 @@ cnfonts 负责中英文混排字体，doom-themes 提供主题集合，doom-mode
 
 ;; 只影响图形 Frame；新建 Frame 时同样处理，不依赖启动时是否已有图形窗口。
 (my/setup-graphic-frame (selected-frame))
+;; 上一行立即处理已有 Frame；这里登记以后每次创建 Frame 后要执行的函数。
+;; after-make-frame-functions 会把新 Frame 作为参数传入，函数内部跳过终端 Frame。
 (add-hook 'after-make-frame-functions #'my/setup-graphic-frame)
 #+end_src
 
@@ -784,27 +789,81 @@ cnfonts 或其他模式如果绑定了专用 Ctrl 加滚轮命令，实际按键
 
 **** 行号与当前行提示
 
-行号和当前行提示继续使用内置模式；本轮没有改动其适用范围。
+行号和当前行提示使用两项独立的内置功能。左侧行号由 display-line-numbers-mode 控制；
+光标所在整行的背景提示由 hl-line 控制，后者不改变文字，也不是选区高亮。
+
+本配置全局启用行号，但在 Magit、Dired、帮助、编译输出、Shell、Term、Eshell 等工具界面关闭。
+这些页面主要使用自己的列表、提示符或输出位置，不必额外占用行号栏。
+参考也排除了 Org；本配置按个人选择保留 Org 行号，只补齐 Shell 的排除项。
+这是“哪些模式显示行号”的选择，不是关闭所有文件的行号。
+
+当前选择相对行号，display-line-numbers-type 设为 'relative；
+若需全局恢复绝对行号，改回 t，保存、生成并重启。
+相对行号表示距离当前行有几行，例如当前第 120 行时，上方相邻行显示 1，
+下方第三行显示 3，可据此用 Evil 的 3j 移动；当前行默认仍显示绝对行号 120。
+它不修改文件内容，也不改变 j/k 的移动规则。保持 relative 而非 visual，
+是为了按实际文本行计数；折行、Org 折叠等显示方式可能让可见距离与实际行距离不同。
+
+绝对与相对行号都使用 Emacs 内置显示机制，不需要插件。
+相对数字随光标移动更新，会增加行号区域重绘；普通文件通常可以先体验，
+但没有在本机对大文件、长行或复杂 Org 显示做性能测量，不能保证所有文件无额外开销。
+若大文件滚动变慢，可以局部切回绝对行号，或用 M-x display-line-numbers-mode RET 临时关闭。
+临时调整当前缓冲区：M-x liyunfeng/set-variable RET display-line-numbers RET relative RET；
+恢复绝对行号时把值设为 t，取消输入用 C-g。这修改的是当前实际显示变量，
+仅改 display-line-numbers-type 不会立即更新已经开启行号的缓冲区。
+
+状态栏的行／列位置与左侧行号栏独立。B7 所说的列号是光标在当前行横向的位置，
+不是新增一条竖直标尺；doom-modeline 的本机默认行列格式为 %l:%c。
+列计数默认从 0 开始，行号从 1 开始；TAB 和宽字符也会影响显示列数，不能一概当作字符个数。
+本配置显式启用 line-number-mode 与 column-number-mode，状态栏显示当前绝对行号和列号，
+即使左侧使用相对行号，也可以随时读取绝对位置。M-x column-number-mode RET 可临时切换列号。
+
+当前全局启用 hl-line，Org、文本和代码保留当前行背景提示；
+minibuffer、Magit、Dired、帮助、编译输出、Shell、Term、Eshell 关闭本配置的当前行高亮。
+行号与当前行高亮的排除范围仍分别维护，便于以后独立调整。
+关闭局部 hl-line-mode 不足以屏蔽 global-hl-line-mode；下面按内置源码说明，
+将 global-hl-line-mode 在排除缓冲区局部设为 nil，并清理已有的高亮 overlay。
+这只控制 hl-line，不会关闭插件自己提供的选中项／差异／搜索高亮。
 
 #+begin_src emacs-lisp
 
 ;; 行号和当前行提示使用内置功能；特殊工具界面不显示行号。
-;; display-line-numbers-type=t 选择绝对行号；改为 'relative 可使用相对行号，nil 可关闭默认行号类型。
+;; 内置默认 t 为绝对行号；本配置选择 'relative，相邻行显示距离，方便 3j / 5k。
+;; 改回 t 恢复绝对行号；当前行保留绝对行号，relative 不按屏幕折行计数。
 ;; display-line-numbers-width=3 预留三列；数字较多时可改为 4 或 nil 让 Emacs 自动计算。
-(setq-default display-line-numbers-type t
-              display-line-numbers-width 3)
+(setq-default display-line-numbers-type 'relative
+              display-line-numbers-width 3
+              ;; 内置默认 t，本配置保持：当前行显示绝对行号，而非 0。
+              display-line-numbers-current-absolute t)
+;; 状态栏独立显示绝对行号和列号；均使用内置模式，不新增插件。
+;; line-number-mode 默认开启；column-number-mode 默认关闭，本配置显式开启。
+(line-number-mode 1)
+(column-number-mode 1)
+;; 全局默认开启行号，再通过下面的 hook 排除工具界面；Org 不在排除列表中。
 (global-display-line-numbers-mode 1)
+;; hook 是进入某个模式时自动执行的动作列表；minibuffer-setup-hook 在进入输入区时执行。
+;; dolist 逐个取出下面的 hook 名称，add-hook 为它登记关闭行号的动作。
+;; lambda () 表示一个不需要参数的临时函数：这里只登记，进入对应界面时才执行。
+;; 增加排除项就往列表里加对应的 xxx-mode-hook；行号与高亮列表可分别调整。
 (dolist (hook '(magit-mode-hook dired-mode-hook minibuffer-setup-hook
                 help-mode-hook helpful-mode-hook compilation-mode-hook
-                term-mode-hook eshell-mode-hook))
+                shell-mode-hook term-mode-hook eshell-mode-hook))
   (add-hook hook (lambda ()
+                   ;; -1 明确关闭当前缓冲区的行号，不是反复切换开／关。
                    (display-line-numbers-mode -1))))
+;; 全局默认开启当前行高亮；下面为同一批工具界面登记关闭动作。
 (global-hl-line-mode 1)
+;; 与上面同理：逐个向 hook 添加函数，进入相应界面时才局部关闭高亮。
 (dolist (hook '(minibuffer-setup-hook magit-mode-hook dired-mode-hook
-                help-mode-hook helpful-mode-hook term-mode-hook
-                eshell-mode-hook))
+                help-mode-hook helpful-mode-hook compilation-mode-hook
+                shell-mode-hook term-mode-hook eshell-mode-hook))
   (add-hook hook (lambda ()
-                   (setq-local hl-line-mode nil)
+                   ;; 全局模式有独立的 overlay；只关闭局部模式不能阻止它再次高亮。
+                   ;; setq-local 只改变当前缓冲区的值，不关闭其他文件中的全局高亮。
+                   (setq-local global-hl-line-mode nil)
+                   ;; 清除当前缓冲区已有的全局高亮覆盖层，避免旧背景残留。
+                   (global-hl-line-unhighlight)
+                   ;; 同时关闭可能单独开启的局部高亮模式。
                    (hl-line-mode -1))))
 #+end_src
 
@@ -862,6 +921,8 @@ Windows、Linux、macOS 可以使用相同的 profile 名称而不会互相覆�
         (cnfonts-mode 1))))
   (when (display-graphic-p)
     (cnfonts-mode 1))
+  ;; cnfonts 加载后登记：以后创建 Frame 时传入该 Frame，图形界面才启用字体管理。
+  ;; 此行位于 :config 内；包尚未加载时不会登记，也不会仅因新建 Frame 就自动加载包。
   (add-hook 'after-make-frame-functions #'my/cnfonts-enable-on-frame))
 #+end_src
 
@@ -1119,6 +1180,8 @@ Org 没有用 =#+options: num:4= 设置编辑器编号深度的含义，
 ;; 不配置全局 org-num hook；正文编号由每份文件的 #+startup: num 决定。
 (use-package toc-org
   ;; :hook 让每个 Org 缓冲区启用 toc-org；插件只在文档有 TOC 标签时更新目录。
+  ;; (org-mode . toc-org-mode) 表示进入 org-mode 时调用 toc-org-mode。
+  ;; use-package 自动补成 org-mode-hook，并提供按需加载；无需再重复写 add-hook。
   :hook (org-mode . toc-org-mode))
 #+end_src
 
@@ -1253,7 +1316,10 @@ Evil 的 =evil-want-keybinding= 等加载前选项放在其 =use-package :init= 
   ;; :demand t 启动时立即启用 Evil；:init 中的变量必须在加载前设置。
   :demand t
   :init
-  (setq evil-want-keybinding nil)
+  (setq evil-want-keybinding nil
+        ;; 插件默认 nil：C-u 传递 Emacs 前缀参数；本配置 t：采用 Vim 向上半屏滚动。
+        ;; 必须在 Evil 加载前设置；C-d 继续向下半屏，其他状态以有效键位为准。
+        evil-want-C-u-scroll t)
   :config
   ;; Evil 1.15.0 仍读取旧的初始化队列；Emacs 31.1 不再创建该变量。
   ;; 只在已知版本组合且变量未定义时补空队列，不覆盖其他版本或已有状态。
@@ -1289,7 +1355,12 @@ Evil 的 =evil-want-keybinding= 等加载前选项放在其 =use-package :init= 
 例如 C-u 3 C-n 通常向下移动三行，C-u 本身给下一条命令传入 4，
 连续两次 C-u 通常传入 16；但 eval-last-sexp 会把单次 C-u 解释为“把结果插入正文”。
 因此参数的效果由接收它的命令决定，不等于执行四次任意命令。
-本配置尚未启用 evil-want-C-u-scroll，仍保留其默认 nil；是否改用 Vim 半屏滚动待选择。
+本配置将 evil-want-C-u-scroll 从插件默认 nil 改为 t：普通等使用 Evil motion 键位的状态，
+C-u 向上半屏、C-d 向下半屏；滚动次数沿用 Evil 的计数规则。
+需要 Emacs 原始前缀时，可先用 M-x universal-argument RET，再输入下一条命令；
+例如 M-x universal-argument RET M-x consult-ripgrep RET，仍可使用其带前缀的目录选择流程。
+下面其他教程中的 C-u 示例均以该键实际调用 universal-argument 的状态为前提；
+普通状态中优先用此显式命令方式，F11 求值插入结果不受影响。
 
 =evil-want-C-i-jump= 保持插件默认 t，保留 C-i 向前、C-o 向后浏览 Evil 跳转历史。
 参考设为 nil 的作用是撤掉 Evil 的 C-i 跳转绑定，允许下面的 TAB／模式键位接手；
@@ -1326,7 +1397,7 @@ j/k 保留 Evil 默认的实际文本行移动；需要按屏幕折行移动时�
 | 保存／退出                 | :w / :q；退出前仍会提示未保存修改             |
 | 临时切换 Emacs 状态        | C-z；再次按 C-z 返回原 Evil 状态               |
 
-这里保留 Evil 默认撤销和滚动行为，不额外覆盖 C-u 等按键。
+这里保留 Evil 默认撤销；滚动选择 Vim 习惯，普通状态 C-u / C-d 向上／向下半屏。
 Emacs 中按键表示法 =C-r= 指 Ctrl+r，=M-x= 通常指 Alt+x。
 不确定当前状态时查看模式行，或按 Esc 返回普通模式。
 
@@ -2336,6 +2407,8 @@ Magit 4.7.1 要求 Emacs 28.1、Transient 0.13、with-editor 3.5 等依赖；
     (global-diff-hl-mode 1)
     ;; 默认在保存后更新；本配置不启用 flydiff，不在每次输入时定时计算差异。
     ;; Magit 修改暂存区或提交并刷新后同步标记；无需旧的 pre-refresh 钩子。
+    ;; Magit 刷新结束后调用 diff-hl 的同步函数，让文件旁的修改标记跟随仓库状态更新。
+    ;; 这里只登记回调，不会立即打开或刷新 Magit，也不会执行暂存、提交等 Git 操作。
     (add-hook 'magit-post-refresh-hook #'diff-hl-magit-post-refresh))
 #+end_src
 
@@ -3254,7 +3327,8 @@ Embark 已由用户确认本机使用正常、符合需求；以下旧体验条�
 - 用 M-: (executable-find "rg") RET 检查依赖，再用 , s r 搜索当前仓库并打开结果。
 - 按上文教程使用 M-x consult-yank-pop、consult-mark、consult-outline 和 consult-bookmark。
 - 最近文件和支持的输入历史现已接入，访问文件并正常退出重启后再判断持久化效果。
-- 在临时文件体验 i、Esc、hjkl、文本对象、撤销和句点重复。
+- 在临时文件体验 i、Esc、hjkl、文本对象、撤销和句点重复；C-u / C-d 应向上／向下半屏。
+- Org 保留相对行号与当前行高亮；检查 Magit、Dired、帮助、编译输出及各 Shell／终端的排除效果。
 - 按 F10 选择主 Org 后取消／打开，确认不会自动生成或加载；F9 临时修改 scroll-margin 后恢复原值。
 - 在临时 Lisp 缓冲区的 (+ 1 2) 之后分别按 F12／F11，检查底部结果和正文插入的区别。
 - 试用 ysiw"、ds"、cs"'，确认 surround 行为。
@@ -3262,7 +3336,7 @@ Embark 已由用户确认本机使用正常、符合需求；以下旧体验条�
 - 用 C-c , 访问同一菜单，试用文件保存、切换缓冲区和帮助查询。
 - 在 Dired、Helpful 中体验导航与退出，遇到不确定的操作使用 , h m 或 C-h m。
 - 图形 Emacs 和 emacs -nw 分别试用，特别检查 Esc、逗号、中文提示和帮助界面。
-- 图形 Emacs 检查绝对行号、当前行提示、中文 Org 表格和 CaskaydiaMono Nerd Font 回退；
+- 图形 Emacs 检查相对行号、当前行绝对行号、状态栏行列位置、当前行提示、中文 Org 表格和 CaskaydiaMono Nerd Font 回退；
   在终端 Emacs 确认字体由终端控制且行号、主题和状态栏仍可读。
 - 用 =M-x cnfonts-edit-profile RET= 分别建立 program、org、reading profile，
   用 =M-x cnfonts-switch-profile RET= 切换；确认 Windows 与其他平台的 profile 目录隔离。

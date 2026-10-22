@@ -37,6 +37,8 @@
     (setq-local require-final-newline t)))
 
 ;; 与手动保存及已有自动保存共用；不新增保存计时器，不批量改写磁盘文件。
+;; before-save-hook 在写入文件前执行；add-hook 只登记函数，不会现在保存文件。
+;; #' 引用前面定义的函数；函数会自行判断是否为适用的文本文件，再统一编码。
 (add-hook 'before-save-hook #'my/save-text-as-utf-8-unix)
 
 ;;; Custom 状态独立保存，避免污染由 Org 生成的 init.el。
@@ -162,6 +164,8 @@
 
 ;; 只影响图形 Frame；新建 Frame 时同样处理，不依赖启动时是否已有图形窗口。
 (my/setup-graphic-frame (selected-frame))
+;; 上一行立即处理已有 Frame；这里登记以后每次创建 Frame 后要执行的函数。
+;; after-make-frame-functions 会把新 Frame 作为参数传入，函数内部跳过终端 Frame。
 (add-hook 'after-make-frame-functions #'my/setup-graphic-frame)
 
 ;; 内置默认 ring-bell-function=nil、visible-bell=nil；本配置选择完全静音。
@@ -181,22 +185,42 @@
   (mouse-wheel-progressive-speed nil))
 
 ;; 行号和当前行提示使用内置功能；特殊工具界面不显示行号。
-;; display-line-numbers-type=t 选择绝对行号；改为 'relative 可使用相对行号，nil 可关闭默认行号类型。
+;; 内置默认 t 为绝对行号；本配置选择 'relative，相邻行显示距离，方便 3j / 5k。
+;; 改回 t 恢复绝对行号；当前行保留绝对行号，relative 不按屏幕折行计数。
 ;; display-line-numbers-width=3 预留三列；数字较多时可改为 4 或 nil 让 Emacs 自动计算。
-(setq-default display-line-numbers-type t
-              display-line-numbers-width 3)
+(setq-default display-line-numbers-type 'relative
+              display-line-numbers-width 3
+              ;; 内置默认 t，本配置保持：当前行显示绝对行号，而非 0。
+              display-line-numbers-current-absolute t)
+;; 状态栏独立显示绝对行号和列号；均使用内置模式，不新增插件。
+;; line-number-mode 默认开启；column-number-mode 默认关闭，本配置显式开启。
+(line-number-mode 1)
+(column-number-mode 1)
+;; 全局默认开启行号，再通过下面的 hook 排除工具界面；Org 不在排除列表中。
 (global-display-line-numbers-mode 1)
+;; hook 是进入某个模式时自动执行的动作列表；minibuffer-setup-hook 在进入输入区时执行。
+;; dolist 逐个取出下面的 hook 名称，add-hook 为它登记关闭行号的动作。
+;; lambda () 表示一个不需要参数的临时函数：这里只登记，进入对应界面时才执行。
+;; 增加排除项就往列表里加对应的 xxx-mode-hook；行号与高亮列表可分别调整。
 (dolist (hook '(magit-mode-hook dired-mode-hook minibuffer-setup-hook
                 help-mode-hook helpful-mode-hook compilation-mode-hook
-                term-mode-hook eshell-mode-hook))
+                shell-mode-hook term-mode-hook eshell-mode-hook))
   (add-hook hook (lambda ()
+                   ;; -1 明确关闭当前缓冲区的行号，不是反复切换开／关。
                    (display-line-numbers-mode -1))))
+;; 全局默认开启当前行高亮；下面为同一批工具界面登记关闭动作。
 (global-hl-line-mode 1)
+;; 与上面同理：逐个向 hook 添加函数，进入相应界面时才局部关闭高亮。
 (dolist (hook '(minibuffer-setup-hook magit-mode-hook dired-mode-hook
-                help-mode-hook helpful-mode-hook term-mode-hook
-                eshell-mode-hook))
+                help-mode-hook helpful-mode-hook compilation-mode-hook
+                shell-mode-hook term-mode-hook eshell-mode-hook))
   (add-hook hook (lambda ()
-                   (setq-local hl-line-mode nil)
+                   ;; 全局模式有独立的 overlay；只关闭局部模式不能阻止它再次高亮。
+                   ;; setq-local 只改变当前缓冲区的值，不关闭其他文件中的全局高亮。
+                   (setq-local global-hl-line-mode nil)
+                   ;; 清除当前缓冲区已有的全局高亮覆盖层，避免旧背景残留。
+                   (global-hl-line-unhighlight)
+                   ;; 同时关闭可能单独开启的局部高亮模式。
                    (hl-line-mode -1))))
 
 ;;; 字体管理：cnfonts 只在需要时安装和加载，profile 按平台隔离。
@@ -227,6 +251,8 @@
         (cnfonts-mode 1))))
   (when (display-graphic-p)
     (cnfonts-mode 1))
+  ;; cnfonts 加载后登记：以后创建 Frame 时传入该 Frame，图形界面才启用字体管理。
+  ;; 此行位于 :config 内；包尚未加载时不会登记，也不会仅因新建 Frame 就自动加载包。
   (add-hook 'after-make-frame-functions #'my/cnfonts-enable-on-frame))
 
 ;;; 主题：默认暗色，另提供浅色主题；名称可替换为已安装主题。
@@ -337,6 +363,8 @@
 ;; 不配置全局 org-num hook；正文编号由每份文件的 #+startup: num 决定。
 (use-package toc-org
   ;; :hook 让每个 Org 缓冲区启用 toc-org；插件只在文档有 TOC 标签时更新目录。
+  ;; (org-mode . toc-org-mode) 表示进入 org-mode 时调用 toc-org-mode。
+  ;; use-package 自动补成 org-mode-hook，并提供按需加载；无需再重复写 add-hook。
   :hook (org-mode . toc-org-mode))
 
 (use-package delsel
@@ -353,7 +381,10 @@
   ;; :demand t 启动时立即启用 Evil；:init 中的变量必须在加载前设置。
   :demand t
   :init
-  (setq evil-want-keybinding nil)
+  (setq evil-want-keybinding nil
+        ;; 插件默认 nil：C-u 传递 Emacs 前缀参数；本配置 t：采用 Vim 向上半屏滚动。
+        ;; 必须在 Evil 加载前设置；C-d 继续向下半屏，其他状态以有效键位为准。
+        evil-want-C-u-scroll t)
   :config
   ;; Evil 1.15.0 仍读取旧的初始化队列；Emacs 31.1 不再创建该变量。
   ;; 只在已知版本组合且变量未定义时补空队列，不覆盖其他版本或已有状态。
@@ -614,6 +645,8 @@
   (global-diff-hl-mode 1)
   ;; 默认在保存后更新；本配置不启用 flydiff，不在每次输入时定时计算差异。
   ;; Magit 修改暂存区或提交并刷新后同步标记；无需旧的 pre-refresh 钩子。
+  ;; Magit 刷新结束后调用 diff-hl 的同步函数，让文件旁的修改标记跟随仓库状态更新。
+  ;; 这里只登记回调，不会立即打开或刷新 Magit，也不会执行暂存、提交等 Git 操作。
   (add-hook 'magit-post-refresh-hook #'diff-hl-magit-post-refresh))
 
 ;;; 帮助增强：调用时加载 Helpful，安装由 use-package 处理。
