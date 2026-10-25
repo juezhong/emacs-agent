@@ -1,0 +1,258 @@
+#+title: cnfonts main 正文字体配置手册
+#+property: header-args :tangle no
+#+startup: overview num
+#+options: toc:3 num:3
+
+正式配置只维护在 [[file:../self_config.org::*main 正文方案：只修改这里][主 Org 的 main 方案]]。
+本页解释参数、操作与常用修改，示例不生成、不因打开文档执行，也不是另一份正式配置源。
+适配依据为本机 cnfonts 20251223.636 源码，实际字体效果待用户验证；Linux／macOS 未真机验证。
+
+* 目录 :TOC_3_org:
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+
+- [[你只需要修改一个位置][你只需要修改一个位置]]
+- [[main 完整字段][main 完整字段]]
+- [[常用修改示例][常用修改示例]]
+  - [[所有正文一起放大][所有正文一起放大]]
+  - [[只把中文调大][只把中文调大]]
+  - [[保持整体大小，只改英文][保持整体大小，只改英文]]
+  - [[更换字体][更换字体]]
+  - [[跨平台差异确实需要分开设置][跨平台差异确实需要分开设置]]
+- [[确定正文家族与缺字回退的区别][确定正文家族与缺字回退的区别]]
+- [[四类显示边界与 Org][四类显示边界与 Org]]
+- [[cnfonts 选项及平台差异][cnfonts 选项及平台差异]]
+- [[文件、应用与 cnfonts 适配原理][文件、应用与 cnfonts 适配原理]]
+- [[不再使用的调节入口][不再使用的调节入口]]
+- [[生效检查与常见问题][生效检查与常见问题]]
+
+* 你只需要修改一个位置
+
+编辑 self_config.org 中的 my/cnfonts-main，就是编辑 main 正文方案。
+英文／中文家族、统一字体大小、各组单独大小都明确写在一起。
+不使用 cnfonts-personal-fontnames 作为个人候选入口，不需要维护配套字号表或另一份 conf。
+main 是项目指定的唯一方案名，不是 cnfonts 强制的名称，代码、Org、阅读正文都使用它。
+没有 program／org／reading 场景切换，旧 program 运行文件保留但不再作为配置来源。
+
+1. 修改主 Org 中 main 的对应字段，C-x C-s／M-x save-buffer RET 保存。
+2. 在主 Org 执行 C-c C-v t／M-x org-babel-tangle RET 生成 init.el。
+3. 重启 Emacs，例如 M-x restart-emacs RET，按保存退出提示操作；退出完成前可用 C-g 取消。
+4. 在中英文字符上 M-x describe-char RET，核对实际字体，观察大小与混排。
+
+保存不自动生成，生成不执行新配置；M-x 是可选的命令调用入口，不是必须交互修改字体的要求。
+改完文件在旧会话执行应用命令，不会自动读取文件中的新值；完整流程仍是保存、生成、重启。
+只在图形 Emacs 应用，终端字形由终端字体决定；不能以终端显示评价 GUI 配置是否生效。
+
+* main 完整字段
+
+下例展示正式字段结构，实际值以主 Org 为准，示例不要额外复制成第二份定义。
+
+#+begin_src emacs-lisp
+(defconst my/cnfonts-main
+  '(:english-family "JetBrainsMono Nerd Font Mono"
+    :chinese-family "LXGW WenKai Mono GB"
+    :size 12.5
+    :english-size nil
+    :chinese-size nil
+    :extb-size nil
+    :symbol-size nil
+    :ornament-size nil)
+  "main 正文方案。")
+#+end_src
+
+这是本项目为明确方案提供的接口，不是 cnfonts 原生 plist 格式。
+cnfonts 仍负责实际设置 default、fontset、粗斜体和保存运行文件；适配函数把 main 转换为它接受的数据。
+
+| 字段 | 含义 | 怎样修改 |
+|------+------|----------|
+| :english-family | 确定的正文英文家族 | 填目标系统已安装且 Emacs 可识别的家族名称，不是 ttf 路径 |
+| :chinese-family | 确定的正文中文家族 | 同上，不自动添加微软雅黑等替代正文家族 |
+| :size | 统一正文大小 | 一个正数，当前限定 6 到 32；初始 12.5 来源为插件默认英文大小 |
+| :english-size | 英文单独大小 | nil 跟随 :size，6 到 32 的数字覆盖英文，符合插件内部大小索引范围 |
+| :chinese-size | 中文单独大小 | nil 跟随 :size，数字覆盖中文 |
+| :extb-size | 补充汉字等组的大小 | nil 跟随 :size，不是独立图标大小 |
+| :symbol-size | 符号组大小 | nil 跟随 :size，不等于所有 Emoji 的统一显示保证 |
+| :ornament-size | cnfonts 装饰字符组大小 | nil 跟随 :size，不控制 nerd-icons |
+
+nil 是“不单独覆盖大小”，不是隐藏、禁用或字体家族回退。
+所有覆盖大小必须为正数；不要在同一 plist 重复字段，也不要把数字写成字符串。
+大小通常按字体点数理解，不能当成固定像素高；系统 DPI、字体版本、字体后端会影响实际宽度与视觉大小。
+相同数值不保证英文与中文等宽或等大，统一数值是当前要求的起点，不是已验证的混排校准。
+
+* 常用修改示例
+
+每个例子都修改主 Org 的原定义，其他字段保留。不要把每段例子另建成重复变量。
+每次修改都按保存、生成、重启的流程应用，无需编辑 main.el 或 cnfonts.conf。
+
+** 所有正文一起放大
+
+把 :size 12.5 改为 :size 14。各组覆盖保持 nil，所有正文组统一为 14。
+不是选择隐藏的配套档位，不再同时得到另一套中文大小。
+若某组已有数字覆盖，它不会跟随 :size；希望全部一致时，将覆盖恢复 nil。
+
+#+begin_src emacs-lisp
+:size 14
+:english-size nil
+:chinese-size nil
+:extb-size nil
+:symbol-size nil
+:ornament-size nil
+#+end_src
+
+** 只把中文调大
+
+保持 :size 12.5，将 :chinese-size nil 改为 :chinese-size 15。
+英文和其他未覆盖组仍为 12.5。想恢复中文跟随统一大小，只需改回 nil。
+EXT-B 不会自动跟随中文覆盖，它仍跟随统一 :size；需要时另设 :extb-size。
+
+** 保持整体大小，只改英文
+
+设置 :english-size 13，其他组 nil；英文为 13，其他组跟随 :size。
+通常先调整 :size，再针对不协调的组覆盖，避免不必要地让每一组都独立。
+
+** 更换字体
+
+只改 :english-family 或 :chinese-family 的字符串。比如用本机已有 Consolas 做英文试验，
+可把英文改为 "Consolas"；这只是修改方法，不是改变当前 JetBrains 选择的建议。
+字体家族名以图形 Emacs 可识别名称为准，不能照字体文件名猜测。
+换字体后仍需观察中英宽度、粗斜体、回退；大小相同不表示与之前效果完全一致。
+
+** 跨平台差异确实需要分开设置
+
+迁移主 Org 即迁移 main；所选字体必须在目标系统安装，不会自动下载。
+原则上保持同一方案，需要有意按系统选择时才在主 Org 用 pcase 表达，例如：
+
+#+begin_src emacs-lisp
+;; 结构示例，替换主 Org 的方案值时应保留完整字段；字体可用性仍需在目标系统确认。
+(pcase system-type
+  ('windows-nt '(:english-family "Consolas" :chinese-family "LXGW WenKai Mono GB" :size 12.5))
+  (_ '(:english-family "JetBrainsMono Nerd Font Mono" :chinese-family "LXGW WenKai Mono GB" :size 12.5)))
+#+end_src
+
+省略的大小覆盖按 nil 处理。这仍是一份 main 按平台明确取值，不是让旧缓存决定方案。
+当前正式配置未采用这个示例，也没有安装字体或验证其他平台。
+
+* 确定正文家族与缺字回退的区别
+
+英文固定 JetBrains，中文固定 LXGW；找不到任一家族时，在应用前明确提示，
+不追加其他英文／中文家族静默替代。迁移后“缺字体”是环境依赖问题，不算同一方案已经正确应用。
+已找到字体家族并不保证它含所有字形；缺失字符仍可能由 Emacs fontset 补充。
+
+cnfonts 原生五组是英文、中文、EXT-B、符号、装饰。适配明确设置前两组，
+后三组保留插件默认补充候选，但所有大小默认统一跟随 :size。
+这不是让 main 的正文选型不确定，而是为正文家族未覆盖的字符保留补字机制。
+EXT-B、符号、装饰组不是状态栏字体组，也不是 nerd-icons 图标字体组。
+cnfonts 装饰范围由 cnfonts-ornaments 指定，包含部分圈号与箭头；符号组也不等于完整 Emoji 支持。
+
+统一按字符类别设计回退，不逐字打补丁。但原生缺字查找仍可能只为缺字使用其他字体，
+不会自动发现一个缺字就把整类所有字符替换。Emoji 组合序列更不能简单等同于一个 Unicode 块。
+本轮不新增 Emoji 或数学符号专用配置，缺字与混排问题应先查实际字体再决定类别方案。
+
+* 四类显示边界与 Org
+
+| 显示内容 | 管理方式 |
+|----------+----------|
+| 正文英文 | main 的英文家族与大小 |
+| 正文中文 | main 的中文家族与大小 |
+| 状态栏文字 | 当前主题与 mode-line face，本轮不单设 |
+| 状态栏／Dashboard 图标 | nerd-icons 原生接口，不由 main 设置 |
+
+default 及默认 fontset 可能被状态栏等 face 继承，所以正文变化可能间接改变其他区域的普通文字。
+Org 标题、表格、代码块保留当前 face 和主题；可以以后分别设置字体家族、颜色、粗细、高度，
+本轮不新增覆盖，也不打开比例字体模式。字形、字号、颜色与主题不是同一个参数。
+
+* cnfonts 选项及平台差异
+
+| 选项 | 当前取舍 | 需要知道的作用 |
+|------+----------+----------------|
+| cnfonts-directory | 配置根下 .cache/cnfonts/ | 跨平台相对目录，保存运行产物，不是需手工维护的第二配置源 |
+| cnfonts-profiles | 仅 main | 不改此列表来增加场景，正式内容在 my/cnfonts-main |
+| cnfonts-personal-fontnames | nil | 不使用个人候选机制定义 main |
+| cnfonts-use-system-type | t，插件默认 nil | 分开 profile 目录，conf 仍共用根目录；不代表自动安装字体 |
+| cnfonts-use-face-font-rescale | nil，插件默认 | 分别设置各组字号，不用比例缩放路径 |
+| cnfonts-keep-frame-size | t，插件默认 | 尽量保持 GUI Frame 大小，不保证系统不重排 |
+| cnfonts-disable-bold／italic／bold-italic | 均 nil，插件默认 | 保留英文样式设置，取决于字体实际样式 |
+| cnfonts-set-font-finish-hook | nil，插件默认 | 不额外联动其他 face；回调本来需接收字号列表 |
+
+Windows：插件明确说明 face-font-rescale=t 会让其对齐失效，保持 nil。
+Linux：插件称多数环境可用 t，但不是必须；本配置仍 nil，字体后端／DPI 差异需实际验证。
+macOS：插件未给出同等保证，保持 nil；Retina／系统缩放不保证同数值与 Windows 视觉相同。
+终端：不应用 main 的 GUI 字体；应设置终端字体与缩放，不用 GUI 参数排查终端字形。
+字体家族与粗斜体在各平台可能不同，LXGW 缺独立斜体不能靠英文的 Italic 自动保证中文同效果。
+新 Frame 的尺寸受系统窗口管理器影响，keep-frame-size 只是尽量保持，不是绝对锁定。
+
+* 文件、应用与 cnfonts 适配原理
+
+| 文件 | 是否需要手工编辑 |
+|------+------------------|
+| self_config.org | 是，唯一正式配置 |
+| init.el | 否，tangle 生成 |
+| .cache/cnfonts/v4/系统类型/main.el | 否，应用时 cnfonts 保存的产物 |
+| .cache/cnfonts/cnfonts.conf | 否，运行记录，当前方案由 Org 重建 |
+
+系统类型通常为 windows-nt／gnu-linux／darwin；v4 是当前插件格式版本，不保证未来不变。
+当前编写与 tangle 不执行字体代码，不更新运行产物；用户加载后才由 cnfonts 保存。
+
+初始化先验证字段和指定字体家族存在，再将 main 转为五组家族与一行五列大小，
+写入 cnfonts 内存数据，跳过旧 profile／conf，随后由 cnfonts-set-font 应用并保存。
+英文大小是插件内部的该行索引，这是实现细节，不要求用户选择或维护多个档位。
+与先前追加所有候选、23 档表的实现不同，现在不让旧 main 或插件其他正文家族覆盖选择。
+
+适配涉及 cnfonts--custom-set-fontnames、cnfonts--custom-set-fontsizes、cnfonts--config-info，
+以及默认补字常量；这是本项目为“Org 直接维护 main”所加的代码，不是原生 profile UI。
+没有修改插件源码；升级后需要复核读取缓存条件、fontset 设置和内部行索引机制。
+本次未执行新配置或保存运行文件，不能把静态检查当运行验证。
+
+图形启动直接应用；daemon／终端启动后首次创建 GUI Frame 时初始化；
+后续 Frame 由 cnfonts 自带 hook 使用当前方案。它不是每缓冲区独立字体配置。
+主动调用 M-x liyunfeng/apply-body-fonts RET 可重新应用当前内存参数到现存 GUI Frame；
+它不读取新 Org、不生成代码，不能替代保存生成重启。
+
+* 不再使用的调节入口
+
+当前方案只有一行统一／分组大小，不提供多档切换。
+cnfonts 原生增大／缩小依赖内置多档表，不适用于这套单行配置，不作为日常调整入口。
+原生 cnfonts-edit-profile 也不作为持久设置入口；临时修改运行文件不会写回 Org。
+本机 cnfonts-reset-fontsize 实际只是取当前档位调用 next-fontsize 0，并未按帮助承诺重置默认值，
+现在同样不依赖它。插件自带 Ctrl+滚轮可能走缓冲区缩放或原生多档路径，应查实际绑定，不以它配置 main。
+模式自带按键不等于本项目新增自定义绑定，当前没有为字体另加快捷键。
+
+需要临时缩放当前缓冲区，可用 C-x C-+／C-x C-- 或 M-x text-scale-adjust RET，按当前提示继续加减，
+0 恢复；这是缓冲区相对缩放，不持久改变 main，也不能替代中文组单独校准。
+输入命令阶段 C-g 取消；已经应用的字体或缩放不保证 C-g 自动回滚。
+
+| 快捷键 | 交互命令（M-x 名称） | 用途 |
+|--------+---------------------+------|
+| C-c C-v t（主 Org 内） | org-babel-tangle | 生成配置，不执行 |
+| 未另绑定 | restart-emacs | 重启并读取新生成配置 |
+| 未另绑定 | liyunfeng/apply-body-fonts | 重新应用当前内存 main，非读取文件 |
+| C-x C-+／C-x C-- | text-scale-adjust | 临时缩放当前缓冲区 |
+| 未另绑定 | describe-char | 查询光标字符的实际字体 |
+
+* 生效检查与常见问题
+
+先确认使用本仓库生成配置且处于 GUI；C-h v my/cnfonts-main RET 查看已加载的方案，
+C-h v cnfonts-mode RET 查看模式状态，再在英文、中文字符上 M-x describe-char RET 查看实际字形。
+输入查询阶段 C-g 取消，帮助查询不修改字体。新 Frame 再检查一次。
+
+#+begin_example
+英文辨识：0 O o 1 I l | ! {} [] () <> -> => != ==
+宽度对照：AAAA中文BBBB测试CCCC
+标点对照：，。；：“”「」（）《》、！？
+| 英文 | 中文 | 数字 |
+| name | 测试 | 1234 |
+#+end_example
+
+大小太小：改 :size。中文不协调：改 :chinese-size。改 :size 却有组不动：检查该组是否已有数字覆盖。
+有明显中英文宽度差：同数值并不保证等宽，查看实际家族、标点、TAB、回退和局部 face，再调中文覆盖。
+改 Org 没变化：确认保存、在主 Org tangle、重启正确配置；旧会话应用命令不会自动读新文件。
+出现缺字体提示：目标机器安装方案指定字体或有意修改 main 家族，不到 conf 填候选绕过。
+出现参数提示：检查大小为正数、:size 在允许范围、家族字符串及 plist 引号括号，勿重复字段。
+图标方框：查 nerd-icons 和系统图标字体，不用 cnfonts 中文组修图标。
+Org 标题不同：查标题 face 与主题，不假定其全部属性都继承 default。
+终端没效果：终端自己的字体是独立设置，不表示 GUI 方案失效。
+
+关闭 cnfonts-mode 只移除后续处理，不会自动恢复已设置的 face/fontset；
+持久停用需在主 Org 改启用逻辑并重启，不要删除运行目录或同时启用多套字体管理器来覆盖。
+通用帮助入口见 [[file:faq.org][使用常见问题]]；正式入口始终是 [[file:../self_config.org::*main 正文方案：只修改这里][main 方案]]。

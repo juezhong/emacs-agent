@@ -13,7 +13,7 @@
   - [[目录与大纲导航][目录与大纲导航]]
     - [[“目录”后面的标签是什么][“目录”后面的标签是什么]]
     - [[章节索引与跳转][章节索引与跳转]]
-      - [[待完成：目录中的章节编号][待完成：目录中的章节编号]]
+      - [[目录不添加章节编号][目录不添加章节编号]]
     - [[Org 的行内标记][Org 的行内标记]]
   - [[启动时选择本配置目录][启动时选择本配置目录]]
   - [[当前阶段][当前阶段]]
@@ -41,6 +41,9 @@
       - [[行号与当前行提示][行号与当前行提示]]
       - [[Fringe 与 Git 修改标记][Fringe 与 Git 修改标记]]
     - [[字体与文字显示][字体与文字显示]]
+      - [[正文、状态栏和图标的职责][正文、状态栏和图标的职责]]
+      - [[main 正文方案：只修改这里][main 正文方案：只修改这里]]
+      - [[修改、生成与验证][修改、生成与验证]]
     - [[主题与状态栏][主题与状态栏]]
       - [[彩虹小猫：位置、动画与轨道长度][彩虹小猫：位置、动画与轨道长度]]
   - [[Org 文档编辑与导航][Org 文档编辑与导航]]
@@ -79,7 +82,8 @@
     - [[启动、重新打开与布局][启动、重新打开与布局]]
     - [[五类列表的数据与操作][五类列表的数据与操作]]
     - [[页面导航、确认与限制][页面导航、确认与限制]]
-  - [[开发支持（占位）][开发支持（占位）]]
+  - [[开发支持][开发支持]]
+    - [[嵌套括号着色：rainbow-delimiters][嵌套括号着色：rainbow-delimiters]]
     - [[代码理解、补全与诊断][代码理解、补全与诊断]]
     - [[格式化（暂不启用）][格式化（暂不启用）]]
   - [[版本控制][版本控制]]
@@ -93,6 +97,8 @@
     - [[Winner 布局历史与最大化恢复][Winner 布局历史与最大化恢复]]
     - [[退出行为][退出行为]]
   - [[诊断与配置状态][诊断与配置状态]]
+    - [[启动耗时与 GC 次数][启动耗时与 GC 次数]]
+    - [[可选启动性能分析：ESUP][可选启动性能分析：ESUP]]
     - [[配置源入口与临时调整][配置源入口与临时调整]]
       - [[用 M-x 查找个人命令与中文说明][用 M-x 查找个人命令与中文说明]]
     - [[执行光标前的 Lisp 表达式][执行光标前的 Lisp 表达式]]
@@ -208,13 +214,12 @@ Org 内置的 =org-num-mode= 在标题前显示 =1=、=1.1=、=1.1.1= 等编号�
 需要跳转时使用目录链接、=org-goto= 或 Imenu；章节号用于阅读定位和沟通，
 不是输入一个数字就自动跳转的命令。
 
-**** 待完成：目录中的章节编号
+**** 目录不添加章节编号
 
-状态：待配置。目前 toc-org 只生成无序标题链接，目录没有与正文对应的章节号。
-目标是目录与正文使用一致编号，并在章节增删、移动后自动更新。
-实现前需要统一目录标题是否计数、UNNUMBERED 属性和导出行为；
-不得通过全局编号 hook 改变所有 Org 文件的默认行为。
-不手工给生成目录加数字，因为下次保存会覆盖它们。
+已取消目录编号扩展。当前 toc-org 只生成无序标题链接，
+不会自动把 org-num 的正文显示编号写入目录；实现一致编号需要额外代码维护。
+本配置保留 toc-org 原生目录和正文的 org-num 编号，不增加自定义编号逻辑，
+也不手工给生成目录加数字，以免下次保存时被覆盖。
 
 *** Org 的行内标记
 
@@ -253,6 +258,9 @@ emacs -nw --init-directory . --user ""
 
 ** 当前阶段
 
+正文 cnfonts 以主 Org 为唯一参数源：确定字体、统一大小、分组大小覆盖集中维护，
+启动时重新初始化 main；完整教程见 [[file:guides/cnfonts-guide.org][cnfonts 正文字体配置手册]]。
+
 基础环境包含代理、软件源和 =use-package=，参考仓库中的
 =example_Emacs_Windows.org=。第一阶段已写入 Evil、evil-collection、evil-surround、
 Helpful、General 和内置 which-key 的配置；toc-org 继续提供自动目录。
@@ -272,6 +280,8 @@ Esc 增加全局退出后备，保留 Evil 状态键位和 C-g；fringe 宽度�
 Evil 使用 C-u 向上半屏，保留 C-i 跳转和 j/k 实际行移动；初始状态清单仅以注释提供。
 左侧启用相对行号，当前行保留绝对行号；状态栏启用行列位置；Org 保留行号和当前行高亮。
 Dashboard 已配置五类列表、内置横幅、导航按钮、居中布局及页脚；本机尚未安装，待启动验证。
+启动完成输出耗时与 GC 快照；ESUP 保留默认不生成的可选示例，不参与正常启动分析。
+目录章节编号扩展已取消，保留 toc-org 原生无序目录。
 本轮新增了界面、字体、主题、状态栏和可选装饰配置，并重新生成 init.el；
 没有加载新配置、安装或编译插件，也没有进行图形／终端交互验证。
 
@@ -287,17 +297,19 @@ Dashboard 已配置五类列表、内置横幅、导航按钮、居中布局及�
 | Org 导航层级设置             | 说明示例 | :tangle no，仅供按文档局部设置                     |
 | toc-org 自动目录              | 已配置   | Org 缓冲区启用；仅带 TOC 标签的文档生成目录         |
 | org-num 正文编号              | 已配置   | 本文件头部 num 元数据；无全局编号 hook             |
-| 与正文一致的目录编号         | 待配置   | 需要该功能的文档；当前 toc-org 不提供               |
+| 目录章节编号扩展             | 已取消   | 保留 toc-org 原生无序目录，不增加自定义编号逻辑     |
 | 界面、字体、主题与状态栏     | 已配置   | 平台及图形／终端分支已写入；等待各平台手动验证       |
 | Evil、evil-collection、surround | 已配置 | Vim 编辑；等待手动启动安装和验证                   |
 | Avy、搜索与候选界面         | 已配置   | 第二阶段；普通模式 s 跳转，等待手动安装和验证       |
 | Embark 候选与上下文操作     | 已配置   | C-. 英文动作菜单；用户已确认本机使用正常、符合需求 |
 | 文件、项目、保存与刷新       | 已配置   | 本地文本延迟保存；保留冲突检查，等待手动验证        |
-| 开发支持                    | 待配置   | 按模式和项目启用，外部工具另行准备                 |
+| 开发支持                    | 部分配置 | 括号着色已写入；补全、语言服务与诊断仍待配置       |
 | Git 操作与修改标记          | 已配置   | 本机已安装；状态页与日志入口可用，其他流程待验证   |
 | Helpful 与 which-key        | 已配置   | 帮助查询与按键提示；等待手动启动验证                |
 | General 与统一键位          | 已配置   | 逗号 leader，备用 C-c ,；集中在个人配置最后         |
 | 窗口、布局恢复与退出         | 已配置   | 内置 Winner 与基础操作；等待手动验证               |
+| 启动耗时与 GC 报告           | 已配置   | 启动 hook 输出快照，不改变 GC 策略或启动页面       |
+| ESUP 启动性能分析            | 暂不启用 | :tangle no；启用并安装后手动分析，启动不运行       |
 | Dashboard 起始页            | 已配置   | 无文件普通启动；复用历史与项目，待安装和交互验证     |
 | 格式化                       | 暂不启用 | 只记录需求                                        |
 | 带 :tangle no 的演示代码     | 说明示例 | 不写入 init.el；仍可能手动执行                     |
@@ -740,7 +752,7 @@ which-key 使用内置版本。Consult 等后续插件仍未声明，不会因�
    │  ├─ project.el / Dired / recentf / savehist / saveplace
    │  └─ 自动保存、恢复与外部修改刷新
    ├─ Dashboard：最近文件／书签／项目／日程／寄存器
-   ├─ 开发支持（占位）
+   ├─ 开发支持
    │  ├─ Eglot / clangd / Corfu / Flymake / Eldoc / Tree-sitter
    │  └─ 格式化（暂不启用）
    ├─ 版本控制：Magit / diff-hl
@@ -797,6 +809,8 @@ cnfonts 负责中英文混排字体，doom-themes 提供主题集合，doom-mode
 图形 Frame 创建时使用最大化状态，而非反复调用切换命令，避免已最大化时被反向恢复。
 普通启动和后续 =emacsclient -c= 创建的图形 Frame 都适用；终端窗口大小由终端控制。
 “最大化”保留系统标题栏／任务栏，不等于真正的全屏。
+macOS 原生菜单通常显示在系统菜单栏，Windows／Linux 由 GUI 后端决定位置；
+最大化及标题栏／任务栏表现受系统窗口管理器影响，不保证各平台外观完全一致。
 
 #+begin_src emacs-lisp
 ;;; 基础界面：使用内置菜单、工具提示和 Frame 参数。
@@ -955,48 +969,135 @@ diff-hl 修改标记等。它不是行号栏，也不是正文中的空白字符
 
 *** 字体与文字显示
 
-cnfonts 同时管理英文字体、中文字体、字号和 profile。开启按系统隔离后，
-Windows、Linux、macOS 可以使用相同的 profile 名称而不会互相覆盖设置。
-具体字体仍由每台机器的 profile 维护；本机检测到的 CaskaydiaMono Nerd Font
-可在 Windows 的 profile 编辑界面中选择，不强制要求其他平台安装它。终端 Emacs 的字体由终端程序控制，
-因此只保留 profile 和字号命令，不在终端中强行设置 frame 字体。
+正文统一使用 cnfonts 的一份 main 方案：英文 JetBrains、中文 LXGW，不分代码／Org／阅读场景。
+main 的确定字体、统一大小、分组大小覆盖及平台选项都在下面维护。
+日常操作只需修改本 Org → 保存 → tangle → 重启；不需要编辑 main.el 或 cnfonts.conf。
+保存不自动生成，生成不执行配置；只在重启或主动调用应用命令时才更新运行中的字体。
+详细手册见 [[file:guides/cnfonts-guide.org][cnfonts 正文字体配置手册]]：包含参数逐项解释、五组结构、修改示例、平台差异和故障排查。
 
-`cnfonts-use-face-font-rescale` 保持默认 `nil`。cnfonts 文档说明该路径在 Windows
-上会使对齐失效；Linux 的表现可能不同，macOS 也不能预先视为已验证。
+**** 正文、状态栏和图标的职责
+
+| 显示内容 | 当前管理方式 | 作用与限制 |
+|----------+--------------+------------|
+| 正文英文 | cnfonts 英文组 | 字母、数字、ASCII 标点；选用本机可用的第一个候选 |
+| 正文中文 | cnfonts 中文组 | 中文与部分 CJK 字符的字体和配套字号；需实际检查混排宽度 |
+| 状态栏文字 | 现有 mode-line face 与主题 | 不新增专用字体；继承正文的属性仍可能间接受正文变化影响 |
+| 状态栏／Dashboard 图标 | nerd-icons 原生接口 | 保留现有设置，不通过 cnfonts 配置 |
+
+Org 标题、代码块、表格保持现有 face 和主题，不新增字体家族或比例字体设置。
+Emoji、数学符号、生僻字不单独创建场景，仍涉及 fontset 的字形覆盖与回退。
+统一按字符类别配置候选，不逐字补丁；但原生缺字回退仍可能为缺失字符选择其他字体，
+不保证同组所有字符必然由一个字体绘制。EXT-B、符号、装饰组不是状态栏／图标组。
+
+**** main 正文方案：只修改这里
+
+唯一正式定义是下面的 my/cnfonts-main：英文 JetBrains、中文 LXGW，统一大小先用 12.5。
+修改 :size 即调整所有未单独覆盖的正文组；单独调整中文用 :chinese-size，nil 表示跟随统一大小。
+无需选择字号档、不维护配套表，不修改 main.el 或 cnfonts.conf；代码将方案交给 cnfonts 应用。
+指定的两款字体必须在目标图形 Emacs 中可用；缺字体明确提示，不悄悄更换正文家族。
+后三组沿用 cnfonts 的补字候选，字形回退仍可能发生，不等于另选一套正文方案。
 
 #+begin_src emacs-lisp
-;;; 字体管理：cnfonts 只在需要时安装和加载，profile 按平台隔离。
-(defconst my/cnfonts-profiles '("program" "org" "reading")
-  "按名称共用、按平台分别保存的字体 profile 列表。")
+;;; main 是完整的正文方案：所有持久修改都在这里，不需要编辑插件运行文件。
+;; 以下是本项目的方案字段，不是 cnfonts 原生“个人候选”接口。
+(defconst my/cnfonts-main
+  '(:english-family "JetBrainsMono Nerd Font Mono"
+    :chinese-family "LXGW WenKai Mono GB"
+    :size 12.5
+    :english-size nil
+    :chinese-size nil
+    :extb-size nil
+    :symbol-size nil
+    :ornament-size nil)
+  "main 正文方案，由主 Org 唯一维护。
+:size 为统一字体大小，初始取 cnfonts 默认英文字号 12.5；各组 nil 跟随它。
+例如全部变大只改 :size 为 14；仅中文更大则设 :chinese-size 为 15，恢复跟随改回 nil。
+英文／中文家族是确定选择，不自动追加其他正文家族；目标平台必须安装这两款字体。
+后三组没有新增专用家族，沿用 cnfonts 的补充字形默认组；大小默认同样跟随 :size。
+同数值不保证中英文等宽或视觉等大，需看实际字体、DPI 和字形再校准。
+状态栏文字、nerd-icons 图标和 Org 专用 face 不在此方案单独设置。")
 
 (use-package cnfonts
-  :commands (cnfonts-mode cnfonts-edit-profile cnfonts-switch-profile
-             cnfonts-next-profile cnfonts-increase-fontsize
-             cnfonts-decrease-fontsize)
+  :demand t                           ; 启动时加载；图形 Frame 应用正文，终端字体由终端控制。
   :custom
-  ;; 默认目录位于 user-emacs-directory；这里统一放入本配置根目录的 .cache/。
-  ;; 该章节位于状态目录声明之前，因此直接使用配置根目录构造路径。
+  ;; 默认 cnfonts/；本配置使用根目录下 .cache/cnfonts/，运行产物不作为手工配置源。
   (cnfonts-directory (expand-file-name ".cache/cnfonts/" my/config-directory))
-  ;; 三个 profile 名称可改为自己的名称；切换后 cnfonts 会在该目录保存对应文件。
-  (cnfonts-profiles my/cnfonts-profiles)
-  ;; t 按 system-type 隔离同名 profile；改为 nil 可让多个平台共用同一目录。
+  ;; 插件默认三个方案；本配置唯一 main，字体与大小都以 my/cnfonts-main 为准。
+  (cnfonts-profiles '("main"))
+  ;; 插件默认 nil；本方案不使用“个人候选”接口，不把旧 profile 或后备家族混入确定的正文选型。
+  (cnfonts-personal-fontnames nil)
+  ;; 插件默认 nil；t 隔离 windows-nt／gnu-linux／darwin 的 main 产物，conf 仍共用根目录。
   (cnfonts-use-system-type t)
-  ;; 保持 nil，避免 Windows 下通过 face-font-rescale 调整字号后破坏中英文对齐。
+  ;; 插件默认 nil：分别设字号。Windows 文档警告 t 破坏对齐；Linux 多数可用但非必需。
+  ;; macOS 未获同等保证，统一保持 nil；不同 DPI／后端仍需校准，终端不受此 GUI 选项控制。
   (cnfonts-use-face-font-rescale nil)
-  ;; t 调整字号时尽量保持当前图形 Frame 大小；改为 nil 可让窗口随字号重新计算。
+  ;; 插件默认 t：尽量保持图形 Frame 大小；窗口管理器／系统缩放仍会影响结果。
   (cnfonts-keep-frame-size t)
+  ;; 默认均 nil：保留英文粗体／斜体／粗斜体，实际需要所选字体有对应样式。
+  ;; 中文字体没有独立 Italic 时不能据此保证同样的斜体效果。
+  (cnfonts-disable-bold nil)
+  (cnfonts-disable-italic nil)
+  (cnfonts-disable-bold-italic nil)
+  ;; 默认 nil：不添加状态栏、图标或 Org 字体联动，回调入口不是原生的四类字体管理器。
+  (cnfonts-set-font-finish-hook nil)
   :config
+;;; TODO 这个函数是必须的吗？由它来生成 main.el 的吗？
+  (defun liyunfeng/apply-body-fonts ()
+    "将主 Org 定义的 main 正文方案应用到现有图形 Frame。
+不读取 Org 文件、不生成 init.el；文件修改需保存、tangle、重启后才成为当前参数。"
+    (interactive)
+    (let* ((frames (seq-filter #'display-graphic-p (frame-list)))
+           (base (plist-get my/cnfonts-main :size))
+           (english (plist-get my/cnfonts-main :english-family))
+           (chinese (plist-get my/cnfonts-main :chinese-family))
+           (keys '(:english-size :chinese-size :extb-size :symbol-size :ornament-size))
+           (sizes (mapcar (lambda (key) (or (plist-get my/cnfonts-main key) base)) keys)))
+      ;; 在改动字体／缓存前校验；家族缺失明确报错，不静默换用其他英文／中文家族。
+      (unless frames (user-error "No graphical frame is available"))
+      (unless (and (numberp base) (<= 6 base 32)
+                   (cl-every (lambda (n) (and (numberp n) (> n 0))) sizes)
+                   (<= 6 (car sizes) 32)
+                   (stringp english) (> (length english) 0)
+                   (stringp chinese) (> (length chinese) 0))
+        (user-error "Check main: font families, positive sizes, base and English size in 6..32"))
+      (dolist (frame frames)
+        (with-selected-frame frame
+          (unless (and (find-font (font-spec :family english))
+                       (find-font (font-spec :family chinese)))
+            (user-error "main requires installed fonts: %s / %s" english chinese))))
+      ;; 集中适配本机 cnfonts 20251223.636 内部读取机制，旧 main／conf 不得覆盖主 Org。
+      ;; cnfonts 用英文大小作为索引；生成单行完整表，五组实际大小全由 main 决定。
+      ;; 不读取旧方案，也不向正文英文／中文追加插件其他家族；后三组保留默认补字机制。
+      (setq cnfonts-default-fontsize (car sizes)
+            cnfonts--custom-set-fontnames
+            (append (list (list english) (list chinese))
+                    (copy-tree (nthcdr 2 cnfonts--fontnames-fallback)))
+            cnfonts--custom-set-fontsizes (list (copy-sequence sizes))
+            cnfonts--config-info (list (cons "main" (car sizes))))
+      (cnfonts-mode 1)
+      (dolist (frame frames)
+        ;; cnfonts 自身负责设置 default/fontset 和保存运行产物，agent 不预执行它。
+        (cnfonts-set-font frame))))
+
   (defun my/cnfonts-enable-on-frame (frame)
-    "只在图形 FRAME 中启用 cnfonts。"
-    (when (display-graphic-p frame)
-      (with-selected-frame frame
-        (cnfonts-mode 1))))
-  (when (display-graphic-p)
-    (cnfonts-mode 1))
-  ;; cnfonts 加载后登记：以后创建 Frame 时传入该 Frame，图形界面才启用字体管理。
-  ;; 此行位于 :config 内；包尚未加载时不会登记，也不会仅因新建 Frame 就自动加载包。
+    "首次创建图形 FRAME 时应用 main 正文方案。"
+    (when (and (display-graphic-p frame) (not cnfonts-mode))
+      (with-selected-frame frame (liyunfeng/apply-body-fonts))))
+  (when (display-graphic-p) (liyunfeng/apply-body-fonts))
+  ;; 后续新 Frame 由 cnfonts 自带 hook 应用内存方案；daemon 首个 GUI 由此初始化。
   (add-hook 'after-make-frame-functions #'my/cnfonts-enable-on-frame))
 #+end_src
+
+**** 修改、生成与验证
+
+只需修改 my/cnfonts-main → 保存主 Org → C-c C-v t／M-x org-babel-tangle RET → 重启。
+本配置没有把 main 作为个人候选，而是直接构造确定的正文方案；旧运行文件不会覆盖它。
+配置会在图形应用时更新运行产物，编写／tangle 本身不执行字体设置或安装字体。
+状态栏和图标不单独调整，Org 专用 face 保持现状；统一数值不代表已经完成视觉对齐。
+本适配使用 cnfonts 内部变量，升级须复核；完整解释与修改示例见 [[file:guides/cnfonts-guide.org][cnfonts 正文字体配置手册]]。
+cnfonts 的原生增大／缩小按固定多档表遍历，与本配置单行大小方案不匹配，不作为本项目调整入口。
+直接改 Org 的统一大小或各组覆盖即可；要临时看效果可用原生缓冲区 text-scale-adjust，
+它只是当前缓冲区的文本缩放，不能替代主方案中英比例配置。
 
 *** 主题与状态栏
 
@@ -1006,6 +1107,15 @@ doom-themes 提供默认暗色主题 `doom-one` 和浅色主题 `doom-one-light`
 
 doom-modeline 只接管 mode-line，不要求使用 Doom Emacs。本配置已开启 Nerd Icons，
 需要对应图标字体；若显示方框，可先关闭下面的图标开关，文字信息仍可使用。
+
+nerd-icons 是 Emacs 的第三方图标库插件，不是系统字体本身。
+本机已安装 nerd-icons 20261011.1410，位于本配置的 elpa 目录，使用 package.el 管理；
+use-package 负责声明、按需安装并加载包。本机 doom-modeline 的依赖声明也明确要求 nerd-icons，
+因此即使关闭图标显示，它仍可能作为状态栏的依赖被安装，开关不等于卸载包。
+当前文件只能确认安装结果与依赖关系，不能据此确定当初是手动安装还是随依赖安装。
+图标实际显示还需要系统可用的字体；本机包默认使用 Symbols Nerd Font Mono。
+只安装包不代表对应字体已安装，也不等于已把该图标字体设为正文／中文字体。
+本配置选择开启状态栏与 Dashboard 图标，实际显示效果需启动后确认。
 
 #+begin_src emacs-lisp
 ;;; 主题：默认暗色，另提供浅色主题；名称可替换为已安装主题。
@@ -1032,7 +1142,7 @@ doom-modeline 只接管 mode-line，不要求使用 Doom Emacs。本配置已开
   :demand t
   :config
   (my/load-display-theme my/current-theme-mode))
-
+;;; TODO 这里考虑到底要不要这么复杂，需不需要用单独的一个函数/变量代替，可以做简化，直接写，后面需要就手动开关就可以了，不用这样单独设置
 ;;; 状态栏：成熟的 mode-line 布局；图标依赖单独受开关控制。
 ;; 本配置选择 t：开启状态栏与 Dashboard 图标；改为 nil 可恢复文字布局。
 (defcustom my/enable-nerd-icons t
@@ -1113,8 +1223,7 @@ doom-modeline 只接管 mode-line，不要求使用 Doom Emacs。本配置已开
 #+end_src
 
 可用 =M-x my/load-display-theme RET dark RET= 或 =light RET= 切换主题；
-字体使用 =M-x cnfonts-edit-profile RET= 调整，使用 =M-x cnfonts-switch-profile RET=
-切换 profile。彩虹小猫、宝可梦、鹦鹉、宠物和小鱼的开关集中在上面的变量中，
+字体只在本 Org 的参数章节修改，保存、生成并重启；main 是运行产物，不另行编辑。彩虹小猫、宝可梦、鹦鹉、宠物和小鱼的开关集中在上面的变量中，
 修改后重启即可；当前会话可使用各插件提供的关闭命令。图形／终端和窄窗口的动画
 效果需要分别验证，配置生成成功不等于这些插件已安装或运行验证通过。
 
@@ -2235,8 +2344,10 @@ M-x project-forget-zombie-projects RET，暂不另设键位。
 全文搜索继续使用 , s r（M-x consult-ripgrep RET），无需重复项目搜索键位。
 
 , p ! 输入命令 RET 后在项目根目录运行，输出显示在异步命令缓冲区。
-本配置保留 Emacs 默认 shell：用 M-: shell-file-name RET 和
+本配置保留 Emacs 默认 shell：Windows 可能为 cmd 或用户设置的 shell，Linux／macOS 常为 POSIX shell；
+配置没有强制它们相同，因此不能把一套命令字符串直接当作全平台语法。用 M-: shell-file-name RET 和
 M-: shell-command-switch RET 检查；不要把 agent 使用的 Git Bash 当作 Emacs 默认 shell。
+macOS 从桌面启动时 PATH 可能不含 shell 初始化加入的工具路径；外部命令需在 Emacs 内核对。
 命令语法按实际 shell 编写，取消输入用 C-g；已启动进程的管理在输出缓冲区使用 C-h m 查询。
 本阶段不设置终端、编译器或交互 shell。
 
@@ -2365,6 +2476,9 @@ Emacs 整体没有输入持续 5 秒后，处理所有符合条件且有修改�
 , f S（M-x save-some-buffers RET）保存多个文件，, p s 只处理项目范围，均保留默认询问。
 
 **** 外部修改与冲突处理
+
+Windows、Linux、macOS 的文件通知后端不同，网络盘／挂载文件系统的通知支持也可能不同；
+支持通知时可较早刷新，否则依靠轮询，不保证各平台在完全相同的时间检测到外部修改。
 
 #+begin_src emacs-lisp
 (use-package autorevert
@@ -2592,7 +2706,7 @@ Dashboard 内的 r/m/p/a/e 会占用该页面上这些字母原有的 Evil 操�
 只限此模式，不更改文本文件键位；用 C-h k 查询实际绑定。
 行号和本配置的当前行高亮在该页面关闭，页面自身的按钮高亮保留。
 页脚沿用插件默认随机短句；统计显示的是启动信息和包数量，不包含独立 GC 报告，
-因此不把这部分算作另一个待办 D3 已经全部完成。
+独立的 GC 报告见 [[*启动耗时与 GC 次数][启动统计]]，两者互补而不重复执行分析。
 
 | 快捷键 | 交互命令（M-x 名称） | 作用 |
 |--------+---------------------+------|
@@ -2604,7 +2718,43 @@ Dashboard 内的 r/m/p/a/e 会占用该页面上这些字母原有的 Evil 操�
 | 未另绑定 | dashboard-next-section / dashboard-previous-section | 前后栏目循环导航 |
 
 
-** 开发支持（占位）
+** 开发支持
+
+*** 嵌套括号着色：rainbow-delimiters
+
+状态：已配置，等待启动安装和手动验证。
+rainbow-delimiters 按嵌套深度给括号着色，帮助辨认 Lisp 等代码中每层括号的范围。
+与 show-paren-mode 不同：前者持续显示各层颜色，后者提示光标附近的配对关系；
+与 electric-pair-mode 也不同，它不会自动补括号、修改代码或检查程序语义。
+本机尚未安装，参数按上游源码核对；由你下次启动时交给 use-package 安装。
+
+#+begin_src emacs-lisp
+(use-package rainbow-delimiters
+  ;; :hook 创建自动加载入口；进入 prog-mode 及其派生编程模式时才加载并开启。
+  ;; Org 主模式不属于 prog-mode，编辑 Lisp 代码块时可用 C-c ' 进入对应编程模式。
+  :hook (prog-mode . rainbow-delimiters-mode)
+  :custom
+  ;; 插件默认 9，本配置保持：使用九种深度颜色，超过后循环；可调小减少颜色种类。
+  (rainbow-delimiters-max-face-count 9)
+  ;; 插件默认 0，本配置保持：不为外层保留专用颜色；须小于上面的颜色数量。
+  ;; 例如改为 1，可让最外层颜色不参与更深层的循环。
+  (rainbow-delimiters-outermost-only-face-count 0))
+#+end_src
+
+安装后打开 Emacs Lisp 文件，或在本 Org 的 Lisp 代码块中按 C-c ' 进入编辑缓冲区，
+观察 (+ 1 (* 2 3)) 等嵌套括号的颜色；完成后按 C-c ' 返回 Org。
+它主要依据当前模式语法表识别括号，字符串／注释中的字符不按普通代码括号处理；
+没有对应语法信息的语言不能保证有相同效果。
+颜色受当前主题与 rainbow-delimiters-depth-N-face 等 face 影响，不硬编码一套颜色。
+可用 M-x rainbow-delimiters-mode RET 临时开关当前缓冲区，命令直接切换，
+输入命令名时可用 C-g 取消；不修改文件内容，也不自动改变其他缓冲区。
+大文件可临时关闭；本轮未测量性能，也未验证所有编程模式的外观。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| 未另绑定 | rainbow-delimiters-mode | 临时切换当前缓冲区的嵌套括号着色 |
+
+编程模式自动开启，低频开关通过 M-x 调用，不另占快捷键。
 
 *** 代码理解、补全与诊断
 
@@ -2710,6 +2860,8 @@ diff-hl 保存后更新，并随 Magit 刷新同步；当前保留已暂存修�
 [[file:guides/magit-guide.org::*修改标记与外部环境排查][子文档的标记与环境章节]]。
 
 Magit 依赖 Emacs 能找到外部 Git，以及 Git 已有的 SSH 或 HTTPS 认证环境。
+Windows 的 Git／SSH、Linux 软件包和 macOS 桌面启动的 PATH 来源可能不同；
+系统终端里可用不保证 GUI Emacs 能找到，同步检查 executable-find 与认证程序所在环境。
 检查路径用 =M-: (executable-find "git") RET=；失败用 =M-x magit-process-buffer RET= 查看输出。
 URL 代理不自动影响 Git / SSH；本配置不存储凭据，不修改 Git 身份、签名或提交默认参数。
 Signed-off-by、菜单参数保存和本仓库提交说明示例见
@@ -2807,6 +2959,27 @@ Winner 是 Emacs 内置的窗口布局历史，不需要安装第三方包。
 可能丢失所有未保存修改，也会结束后台会话，大小写 Q 用于与常规退出区分。
 这三个入口都不在配置生成时执行，只在你按对应键时调用。
 
+本机 Emacs 31.1 已内置 =M-x restart-emacs RET=，源码位于内置 files.el，
+无需安装参考配置中的同名第三方包。它走 save-buffers-kill-emacs 的退出检查流程，
+再使用当前 Emacs 的相同命令行参数重新启动；出现保存／退出提示时按提示确认，
+退出尚未完成时可用 C-g 取消。重启前先保存 Org 并生成 init.el，否则不会自动生成新配置。
+这不是只重新加载 init.el，也不保证恢复所有未持久化的缓冲区与窗口状态。
+命令重启整个 Emacs 进程，不是只关闭当前 emacsclient 窗口；daemon 场景需另行验证。
+此说明按本机源码核对，尚未执行重启验证；其他平台或旧版 Emacs 是否提供此命令，
+应先用 C-h f restart-emacs 查询，不为兼容未验证的旧版本自动加入同名插件。
+重启属于低频操作，暂不另绑快捷键。
+
+第三方同名 restart-emacs 包与内置命令不是同一实现：上游包提供前缀参数选择
+--debug-init、-Q 或交互输入启动参数，并提供 restart-emacs-start-new-emacs 另开实例，
+以及可选 Frame 恢复等功能。包加载后会定义同名 restart-emacs，可能覆盖内置命令；
+其参数构造不等同于内置的“沿用当前命令行参数”，不能保证自动保留本配置使用的 --init-directory。
+当前需求是普通重启，继续使用内置版本；这些扩展如有实际需要再单独评估。
+第三方行为依据上游源码核对，未安装或执行该包。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| 未另绑定 | restart-emacs | 内置重启，先执行保存与退出检查，再启动新进程 |
+
 ** 诊断与配置状态
 
 查看启动消息、错误和配置状态不属于 Org 操作，独立归到诊断分组。
@@ -2814,6 +2987,95 @@ d 表示 Diagnostics（诊断），范围比 Debug（调试）更广。
 保留 =, d m=（Messages，查看消息）和 =, d d=（Debug，切换错误回溯）。
 变量、函数、按键的帮助查询继续放在 h 分组；F9 用于修改变量值，与查询帮助不同。
 可用的帮助查询仍保留在 h（Help）分组。候选讨论与审核放在对话里，不写入配置文档。
+
+*** 启动耗时与 GC 次数
+
+启动完成后在 echo area 输出一条中文统计，并保留在 *Messages* 中；
+可用 , d m 查看。M-x liyunfeng/display-startup-time RET 再次显示同一份启动快照，
+不会因为使用 Emacs 较久就把后续 GC 累计进去。命令直接显示，无需输入参数；
+尚在输入命令名时用 C-g 取消。
+
+初始化耗时按 before-init-time 到 after-init-time 计算，不是从点击图标到窗口最终绘制完成的时间，
+也不包含之后延迟加载的插件。GC 次数与 GC 耗时取报告首次生成时的进程累计值，
+不是严格只发生在上述两个时间点之间的增量；报告 hook 排在通常启动处理之后。
+Dashboard 仍显示插件自己的耗时／包数量，本报告补充 GC 数据，二者统计边界不能混为一谈。
+这里只读取时间与计数、保存一份小列表并输出消息，不改变 GC 阈值、启动目录或窗口选择，
+不额外运行分析工具；不能把它描述为绝对零开销。
+
+#+begin_src emacs-lisp
+;;; 启动统计：只记录一次快照，不改变垃圾回收策略。
+(defvar liyunfeng/startup-statistics nil
+  "首次报告时保存的初始化秒数、进程累计 GC 次数和 GC 秒数。")
+
+(defun liyunfeng/display-startup-time ()
+  "显示初始化耗时与启动报告时的 GC 快照，不重复累加运行期数据。"
+  (interactive)
+  (unless liyunfeng/startup-statistics
+    (unless (and before-init-time after-init-time)
+      (user-error "Initialization has not finished"))
+    (setq liyunfeng/startup-statistics
+          (list (float-time (time-subtract after-init-time before-init-time))
+                gcs-done gc-elapsed)))
+  (message "初始化耗时 %.2f 秒；启动报告时累计 GC %d 次，GC 耗时 %.2f 秒。"
+           (nth 0 liyunfeng/startup-statistics)
+           (nth 1 liyunfeng/startup-statistics)
+           (nth 2 liyunfeng/startup-statistics)))
+
+;; t 表示追加到现有启动 hook 后面；只输出统计，不切换缓冲区或重新加载配置。
+(add-hook 'emacs-startup-hook #'liyunfeng/display-startup-time t)
+#+end_src
+
+*** 可选启动性能分析：ESUP
+
+ESUP 用子 Emacs 执行配置，按顶层表达式列出耗时和 GC 信息，适合查找启动瓶颈。
+本机尚未安装；配置参数按上游源码核对，安装版本与 Windows／终端表现需另行验证。
+它是手动分析工具，不是每次启动运行的模式。与上面的轻量统计不同，
+主动运行 ESUP 会再次执行所选 Lisp 配置，可能创建窗口、读写配置中的状态文件或触发安装，
+不能将“正常启动不运行 ESUP”理解成“分析时不执行配置”。
+
+下面保留可启用示例，沿用参考的未启用状态。块上的 :tangle no 表示不生成到 init.el，
+不是禁止手动执行。要启用，删除该块的 :tangle no，让它继承文档的生成位置，
+保存、生成后重启，由 use-package 安装；不要改成 :tangle yes，以免生成到另一个文件。
+启用后的 :commands 只创建 M-x 自动加载入口，不在启动时运行 esup。
+
+#+begin_src emacs-lisp :tangle no
+(use-package esup
+  :commands (esup)                    ; 调用时加载分析器；不会自动开始测量。
+  :custom
+  ;; 上游默认 user-init-file；本配置默认分析本会话实际加载的 init.el，不指向 Org。
+  (esup-user-init-file user-init-file)
+  ;; 上游默认 1：最多向 load/require 递归一层；0 更聚焦当前文件，增大会增加分析范围。
+  (esup-depth 1)
+  ;; 上游默认 nil，本配置保持：子 Emacs 使用普通模式，可能出现分析用窗口。
+  ;; t 为 batch，可不显示子窗口，但时间可能偏快，不代表真实交互启动耗时。
+  (esup-run-as-batch-p nil)
+  ;; 上游默认 0.009 秒，本配置保持：小于阈值的表达式不显示，调小可查看更细的项目。
+  (esup-insignificant-time 0.009))
+#+end_src
+
+安装并启用后，手动执行 M-x esup RET 分析实际 init.el；不把本 Org 当作 Lisp 加载。
+完成后在 *esup* 阅读耗时与百分比，用 n/p（M-x esup-next-result／esup-previous-result）
+选择条目，RET（M-x esup-visit-item）跳到对应源位置；需要修改时回到 Org，重新生成 init.el。
+关闭结果页可以用现有 , b k；关闭结果缓冲区不等于保证子进程已停止。
+如需选择其他 Lisp 文件，可在 Emacs 原始前缀参数状态下用 C-u M-x esup RET，
+或 M-x universal-argument RET M-x esup RET，按文件提示输入路径 RET，C-g 取消选择。
+分析已经开始后涉及独立子进程，不把 C-g 描述为一定会终止全部分析。
+
+ESUP 是受控子进程测量，不能完整代替真实启动：子进程的 user-emacs-directory、
+环境、early-init 和窗口条件可能与 --init-directory 指定的日常会话不同；
+若出现路径或加载错误，先读错误，不据不完整结果判断哪个插件慢，也不自动修改正常配置规避。
+ESUP 默认把所有表达式都归在顶层 use-package 的耗时内时，可结合递归深度理解，
+不能把汇总耗时简单当作某一条参数设置的成本。重复测量还会受缓存、插件安装状态影响。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| 未另绑定 | liyunfeng/display-startup-time | 再次显示本次启动统计快照 |
+| 未另绑定，需先启用示例 | esup | 手动用子 Emacs 分析配置启动耗时 |
+| n / p（ESUP 结果页） | esup-next-result / esup-previous-result | 选择下一／上一项 |
+| RET（ESUP 结果页） | esup-visit-item | 打开结果对应的 Lisp 源位置 |
+
+两者都是低频诊断，暂不新增快捷键；现有 M-x 及 *Messages* 入口足够使用。
+
 
 *** 配置源入口与临时调整
 
@@ -2868,6 +3130,8 @@ Org 中建议用 =C-c '= 进入 Lisp 代码块的编辑缓冲区后操作，完�
 只读缓冲区中 F11 无法插入结果，且表达式可能已经执行，不能靠只读状态阻止执行。
 这些键用于主动执行已理解的 Lisp，不会因保存 Org 或 tangle 自动执行。
 
+操作系统可能截获功能键；macOS 的媒体键设置可能要求 Fn，Linux 桌面快捷键和 Windows 工具也可能截获。
+这些情况先查实际按键事件，不把某个平台的可用反馈当作全部平台验证。
 F11 覆盖 Emacs 全局默认的 =toggle-frame-fullscreen=；需要全屏仍可
 =M-x toggle-frame-fullscreen RET=，再次调用恢复。F9／F12 在本机原生全局 keymap 未绑定；
 以上都是全局绑定，具体模式、Evil 或操作系统若截获功能键，以实际有效绑定为准。
@@ -3444,8 +3708,9 @@ Magit 缓冲区例外：s 保留原暂存操作，Avy 使用 =, j j=。
 | , o l | org-open-at-point | 打开光标处链接 |
 | , e y | consult-yank-pop | 选择剪贴历史文字 |
 | 未绑定 | my/load-display-theme | 选择暗色或浅色主题 |
-| 未绑定 | cnfonts-edit-profile | 编辑当前字体 profile |
-| 未绑定 | cnfonts-switch-profile | 切换字体 profile |
+| 未绑定 | liyunfeng/apply-body-fonts | 按当前内存参数重新应用正文方案 |
+| 未绑定 | describe-char | 核对光标处实际字体，非修改方案入口 |
+| 未绑定 | text-scale-adjust | 临时缩放当前缓冲区，非 main 持久设置 |
 
 只读开关适合临时阅读：, b r（M-x read-only-mode RET）再次调用可恢复编辑，
 只改变当前缓冲区状态，不更改文件系统权限；Dired 等模式可能对该命令进行模式专用重映射。
@@ -3551,7 +3816,8 @@ Org 中把光标放到标题，用 , o TAB（M-x org-cycle RET）切换局部折
 完成后用 =C-c '=（=M-x org-edit-src-exit RET=）返回；
 返回只更新 Org 中的代码文字，不会执行或生成配置。
 
-Dashboard 已提供最近文件栏目；独立最近文件快捷键仍待选择；交互替换与正则替换的额外绑定暂缓。
+Dashboard 已提供最近文件栏目；不再增加独立最近文件快捷键，保留 M-x consult-recent-file，
+C-x C-r 继续使用原生 find-file-read-only。交互替换与正则替换的额外绑定暂缓。
 已配置的搜索与导航按第三阶段菜单补全，其他未批准候选不添加。
 
 *** 后续分组规划（未绑定）
@@ -3560,7 +3826,9 @@ Dashboard 已提供最近文件栏目；独立最近文件快捷键仍待选择�
 |------+----------------------------------------------------------|
 | c    | 定义、引用、重命名、代码动作、诊断和文档；格式化暂不绑定   |
 
-项目文件与项目切换已在 , p 接入，文本搜索仍在 , s r；Dashboard 已提供最近文件栏目，独立直达键仍待选择。
+项目文件与项目切换已在 , p 接入，文本搜索仍在 , s r；Dashboard 已提供最近文件栏目，不另增直达键。
+窗口继续使用 , w w 和方向切换，不增加参考的 C-<right> 或 C-S-<right>；
+需要交换窗口内容时可调用内置 M-x window-swap-states，不另绑快捷键。
 Git 操作与修改块导航已在 , g 接入，不再列入未绑定规划。
 目前菜单中没有空分组。
 不为低频命令强行创建按键，插件默认操作仍通过模式帮助和 M-x 查询。
@@ -3623,10 +3891,10 @@ Embark 已由用户确认本机使用正常、符合需求；以下旧体验条�
 - 用 C-c , 访问同一菜单，试用文件保存、切换缓冲区和帮助查询。
 - 在 Dired、Helpful 中体验导航与退出，遇到不确定的操作使用 , h m 或 C-h m。
 - 图形 Emacs 和 emacs -nw 分别试用，特别检查 Esc、逗号、中文提示和帮助界面。
-- 图形 Emacs 检查相对行号、当前行绝对行号、状态栏行列位置、当前行提示、中文 Org 表格和 CaskaydiaMono Nerd Font 回退；
+- 图形 Emacs 检查相对行号、当前行绝对行号、状态栏行列位置、当前行提示、中文 Org 表格及 main 的 JetBrains／LXGW；
   在终端 Emacs 确认字体由终端控制且行号、主题和状态栏仍可读。
-- 用 =M-x cnfonts-edit-profile RET= 分别建立 program、org、reading profile，
-  用 =M-x cnfonts-switch-profile RET= 切换；确认 Windows 与其他平台的 profile 目录隔离。
+- 在主 Org 的 main 中修改 :size 或 :chinese-size，保存、生成并重启，确认旧缓存不覆盖新值；
+  用 describe-char 核对中英文字体，确认各平台目录隔离，不要求使用 cnfonts 多档调节命令。
 - 用 =M-x my/load-display-theme RET= 分别选择 dark 和 light，检查 doom-one 与
   doom-one-light 的正文、选区、Org、Magit、diff-hl、Vertico 和 which-key 对比度。
 - 默认体验 nyan-mode 的动画与波浪尾迹，移动到文件开头／中间／末尾检查比例，拆分窗口检查宽度；

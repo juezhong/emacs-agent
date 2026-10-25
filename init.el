@@ -268,36 +268,92 @@
                    ;; 同时关闭可能单独开启的局部高亮模式。
                    (hl-line-mode -1))))
 
-;;; 字体管理：cnfonts 只在需要时安装和加载，profile 按平台隔离。
-(defconst my/cnfonts-profiles '("program" "org" "reading")
-  "按名称共用、按平台分别保存的字体 profile 列表。")
+;;; main 是完整的正文方案：所有持久修改都在这里，不需要编辑插件运行文件。
+;; 以下是本项目的方案字段，不是 cnfonts 原生“个人候选”接口。
+(defconst my/cnfonts-main
+  '(:english-family "JetBrainsMono Nerd Font Mono"
+    :chinese-family "LXGW WenKai Mono GB"
+    :size 12.5
+    :english-size nil
+    :chinese-size nil
+    :extb-size nil
+    :symbol-size nil
+    :ornament-size nil)
+  "main 正文方案，由主 Org 唯一维护。
+:size 为统一字体大小，初始取 cnfonts 默认英文字号 12.5；各组 nil 跟随它。
+例如全部变大只改 :size 为 14；仅中文更大则设 :chinese-size 为 15，恢复跟随改回 nil。
+英文／中文家族是确定选择，不自动追加其他正文家族；目标平台必须安装这两款字体。
+后三组没有新增专用家族，沿用 cnfonts 的补充字形默认组；大小默认同样跟随 :size。
+同数值不保证中英文等宽或视觉等大，需看实际字体、DPI 和字形再校准。
+状态栏文字、nerd-icons 图标和 Org 专用 face 不在此方案单独设置。")
 
 (use-package cnfonts
-  :commands (cnfonts-mode cnfonts-edit-profile cnfonts-switch-profile
-             cnfonts-next-profile cnfonts-increase-fontsize
-             cnfonts-decrease-fontsize)
+  :demand t                           ; 启动时加载；图形 Frame 应用正文，终端字体由终端控制。
   :custom
-  ;; 默认目录位于 user-emacs-directory；这里统一放入本配置根目录的 .cache/。
-  ;; 该章节位于状态目录声明之前，因此直接使用配置根目录构造路径。
+  ;; 默认 cnfonts/；本配置使用根目录下 .cache/cnfonts/，运行产物不作为手工配置源。
   (cnfonts-directory (expand-file-name ".cache/cnfonts/" my/config-directory))
-  ;; 三个 profile 名称可改为自己的名称；切换后 cnfonts 会在该目录保存对应文件。
-  (cnfonts-profiles my/cnfonts-profiles)
-  ;; t 按 system-type 隔离同名 profile；改为 nil 可让多个平台共用同一目录。
+  ;; 插件默认三个方案；本配置唯一 main，字体与大小都以 my/cnfonts-main 为准。
+  (cnfonts-profiles '("main"))
+  ;; 插件默认 nil；本方案不使用“个人候选”接口，不把旧 profile 或后备家族混入确定的正文选型。
+  (cnfonts-personal-fontnames nil)
+  ;; 插件默认 nil；t 隔离 windows-nt／gnu-linux／darwin 的 main 产物，conf 仍共用根目录。
   (cnfonts-use-system-type t)
-  ;; 保持 nil，避免 Windows 下通过 face-font-rescale 调整字号后破坏中英文对齐。
+  ;; 插件默认 nil：分别设字号。Windows 文档警告 t 破坏对齐；Linux 多数可用但非必需。
+  ;; macOS 未获同等保证，统一保持 nil；不同 DPI／后端仍需校准，终端不受此 GUI 选项控制。
   (cnfonts-use-face-font-rescale nil)
-  ;; t 调整字号时尽量保持当前图形 Frame 大小；改为 nil 可让窗口随字号重新计算。
+  ;; 插件默认 t：尽量保持图形 Frame 大小；窗口管理器／系统缩放仍会影响结果。
   (cnfonts-keep-frame-size t)
+  ;; 默认均 nil：保留英文粗体／斜体／粗斜体，实际需要所选字体有对应样式。
+  ;; 中文字体没有独立 Italic 时不能据此保证同样的斜体效果。
+  (cnfonts-disable-bold nil)
+  (cnfonts-disable-italic nil)
+  (cnfonts-disable-bold-italic nil)
+  ;; 默认 nil：不添加状态栏、图标或 Org 字体联动，回调入口不是原生的四类字体管理器。
+  (cnfonts-set-font-finish-hook nil)
   :config
+  (defun liyunfeng/apply-body-fonts ()
+    "将主 Org 定义的 main 正文方案应用到现有图形 Frame。
+不读取 Org 文件、不生成 init.el；文件修改需保存、tangle、重启后才成为当前参数。"
+    (interactive)
+    (let* ((frames (seq-filter #'display-graphic-p (frame-list)))
+           (base (plist-get my/cnfonts-main :size))
+           (english (plist-get my/cnfonts-main :english-family))
+           (chinese (plist-get my/cnfonts-main :chinese-family))
+           (keys '(:english-size :chinese-size :extb-size :symbol-size :ornament-size))
+           (sizes (mapcar (lambda (key) (or (plist-get my/cnfonts-main key) base)) keys)))
+      ;; 在改动字体／缓存前校验；家族缺失明确报错，不静默换用其他英文／中文家族。
+      (unless frames (user-error "No graphical frame is available"))
+      (unless (and (numberp base) (<= 6 base 32)
+                   (cl-every (lambda (n) (and (numberp n) (> n 0))) sizes)
+                   (<= 6 (car sizes) 32)
+                   (stringp english) (> (length english) 0)
+                   (stringp chinese) (> (length chinese) 0))
+        (user-error "Check main: font families, positive sizes, base and English size in 6..32"))
+      (dolist (frame frames)
+        (with-selected-frame frame
+          (unless (and (find-font (font-spec :family english))
+                       (find-font (font-spec :family chinese)))
+            (user-error "main requires installed fonts: %s / %s" english chinese))))
+      ;; 集中适配本机 cnfonts 20251223.636 内部读取机制，旧 main／conf 不得覆盖主 Org。
+      ;; cnfonts 用英文大小作为索引；生成单行完整表，五组实际大小全由 main 决定。
+      ;; 不读取旧方案，也不向正文英文／中文追加插件其他家族；后三组保留默认补字机制。
+      (setq cnfonts-default-fontsize (car sizes)
+            cnfonts--custom-set-fontnames
+            (append (list (list english) (list chinese))
+                    (copy-tree (nthcdr 2 cnfonts--fontnames-fallback)))
+            cnfonts--custom-set-fontsizes (list (copy-sequence sizes))
+            cnfonts--config-info (list (cons "main" (car sizes))))
+      (cnfonts-mode 1)
+      (dolist (frame frames)
+        ;; cnfonts 自身负责设置 default/fontset 和保存运行产物，agent 不预执行它。
+        (cnfonts-set-font frame))))
+
   (defun my/cnfonts-enable-on-frame (frame)
-    "只在图形 FRAME 中启用 cnfonts。"
-    (when (display-graphic-p frame)
-      (with-selected-frame frame
-        (cnfonts-mode 1))))
-  (when (display-graphic-p)
-    (cnfonts-mode 1))
-  ;; cnfonts 加载后登记：以后创建 Frame 时传入该 Frame，图形界面才启用字体管理。
-  ;; 此行位于 :config 内；包尚未加载时不会登记，也不会仅因新建 Frame 就自动加载包。
+    "首次创建图形 FRAME 时应用 main 正文方案。"
+    (when (and (display-graphic-p frame) (not cnfonts-mode))
+      (with-selected-frame frame (liyunfeng/apply-body-fonts))))
+  (when (display-graphic-p) (liyunfeng/apply-body-fonts))
+  ;; 后续新 Frame 由 cnfonts 自带 hook 应用内存方案；daemon 首个 GUI 由此初始化。
   (add-hook 'after-make-frame-functions #'my/cnfonts-enable-on-frame))
 
 ;;; 主题：默认暗色，另提供浅色主题；名称可替换为已安装主题。
@@ -733,6 +789,17 @@
   ;; 窗口大小改变时重新排版，沿用插件提供的函数，不执行整个初始化流程。
   (add-hook 'window-size-change-functions #'dashboard-resize-on-hook))
 
+(use-package rainbow-delimiters
+  ;; :hook 创建自动加载入口；进入 prog-mode 及其派生编程模式时才加载并开启。
+  ;; Org 主模式不属于 prog-mode，编辑 Lisp 代码块时可用 C-c ' 进入对应编程模式。
+  :hook (prog-mode . rainbow-delimiters-mode)
+  :custom
+  ;; 插件默认 9，本配置保持：使用九种深度颜色，超过后循环；可调小减少颜色种类。
+  (rainbow-delimiters-max-face-count 9)
+  ;; 插件默认 0，本配置保持：不为外层保留专用颜色；须小于上面的颜色数量。
+  ;; 例如改为 1，可让最外层颜色不参与更深层的循环。
+  (rainbow-delimiters-outermost-only-face-count 0))
+
 ;;; Transient：Magit 等工具的参数菜单；本机 Emacs 已内置，Magit 的依赖检查仍照常进行。
 (use-package transient
   :ensure nil
@@ -800,6 +867,27 @@
   :demand t
   :config
   (winner-mode 1))
+
+;;; 启动统计：只记录一次快照，不改变垃圾回收策略。
+(defvar liyunfeng/startup-statistics nil
+  "首次报告时保存的初始化秒数、进程累计 GC 次数和 GC 秒数。")
+
+(defun liyunfeng/display-startup-time ()
+  "显示初始化耗时与启动报告时的 GC 快照，不重复累加运行期数据。"
+  (interactive)
+  (unless liyunfeng/startup-statistics
+    (unless (and before-init-time after-init-time)
+      (user-error "Initialization has not finished"))
+    (setq liyunfeng/startup-statistics
+          (list (float-time (time-subtract after-init-time before-init-time))
+                gcs-done gc-elapsed)))
+  (message "初始化耗时 %.2f 秒；启动报告时累计 GC %d 次，GC 耗时 %.2f 秒。"
+           (nth 0 liyunfeng/startup-statistics)
+           (nth 1 liyunfeng/startup-statistics)
+           (nth 2 liyunfeng/startup-statistics)))
+
+;; t 表示追加到现有启动 hook 后面；只输出统计，不切换缓冲区或重新加载配置。
+(add-hook 'emacs-startup-hook #'liyunfeng/display-startup-time t)
 
 ;;; 窗口布局与文件辅助命令；Org 生成和目录更新直接使用原生命令。
 ;; 窗口最大化：布局保存在当前 Frame 参数中，各 Frame 互不干扰。
