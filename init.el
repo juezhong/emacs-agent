@@ -476,6 +476,50 @@
   :init
   (vertico-mode 1))    ; 启动时启用全局候选界面；1 是启用，不是候选数量。
 
+;;; 悬浮候选窗口：仅作用于 Vertico 的显示位置，Orderless／Marginalia／Consult 照常工作。
+(use-package vertico-posframe
+  :after vertico
+  :custom
+  ;; 以下 14 项为插件 0.9.2 全部 defcustom；除标注“本配置选择”外均为插件默认值。
+  ;; 无法正常创建悬浮窗口（如终端）时回退启用的模式。默认 #'ignore：不启用任何模式，
+  ;; 直接用普通底部 minibuffer；可改为 #'ignore 以外的 minor mode 函数作为替代显示。
+  (vertico-posframe-fallback-mode #'ignore)
+  ;; 悬浮窗口字体。默认 nil：沿用当前 Frame 字体；可设字体名字符串，如 "Menlo-14"。
+  (vertico-posframe-font nil)
+  ;; 悬浮窗口宽度（字符数）。默认 nil：由 size-function 自适应；如 100 则最宽 100 列。
+  (vertico-posframe-width nil)
+  ;; 悬浮窗口高度（行数）。默认 nil：随候选数量自适应；如 15 则最高 15 行。
+  (vertico-posframe-height nil)
+  ;; 最小宽度（字符数）。默认 nil：取 Frame 宽度的 62%（见 size-function）；可设固定数字。
+  (vertico-posframe-min-width nil)
+  ;; 最小高度（行数）。默认 nil：取 vertico-count + 1；可设固定数字。
+  (vertico-posframe-min-height nil)
+  ;; 是否截断过长行。默认 t：截断不换行；nil 则自动折行显示完整内容。
+  (vertico-posframe-truncate-lines t)
+  ;; 悬浮窗口位置。默认 posframe-poshandler-frame-center（Frame 正中）；
+  ;; 可改为 posframe-poshandler-frame-top-center（顶部居中）等 posframe-poshandler-* 函数。
+  (vertico-posframe-poshandler #'posframe-poshandler-frame-center)
+  ;; 位置参考点函数（主要给 EXWM 用户）。默认 vertico-posframe-refposhandler-default；普通环境无需修改。
+  (vertico-posframe-refposhandler #'vertico-posframe-refposhandler-default)
+  ;; 计算窗口尺寸的函数。默认 vertico-posframe-get-size，它读取上面的 width／height／min-* 变量；
+  ;; 自定义函数需接收候选 buffer，返回 (:height :width :min-height :min-width) 属性列表。
+  (vertico-posframe-size-function #'vertico-posframe-get-size)
+  ;; 边框像素宽度。默认 2；0 表示不显示边框。
+  (vertico-posframe-border-width 2)
+  ;; 额外 Frame 参数 alist。插件默认 nil；本配置选择：左右 fringe 各 8 像素，让文字不贴边。
+  ;; 可再加 (alpha . 95) 等调整透明度（需系统支持）。
+  (vertico-posframe-parameters '((left-fringe . 8) (right-fringe . 8)))
+  ;; 命中规则时改回显示底部 minibuffer。默认 ("^eval-*")：命令名匹配该正则（如 eval-expression）；
+  ;; 规则可为正则字符串、函数（返回非 nil 即命中）或值为 t 的变量符号。
+  (vertico-posframe-show-minibuffer-rules (list "^eval-*"))
+  ;; 在 vertico-multiform 中切换悬浮窗口的键。默认 "M-P"；仅启用 vertico-multiform 时才会生效，
+  ;; 本配置未启用；设为 nil 表示不定义该键。
+  (vertico-posframe-vertico-multiform-key "M-P")
+  :config
+  ;; 终端 Emacs（emacs -nw）无法创建子窗口：插件会自动回退到普通底部 minibuffer，
+  ;; 回退模式默认 ignore，即什么都不额外做，因此全局启用是安全的。
+  (vertico-posframe-mode 1))
+
 ;;; 匹配规则：普通候选使用 Orderless，文件保留基础匹配和部分路径补全。
 (use-package orderless
   :demand t  ; 启动时加载匹配样式，确保第一次打开候选界面时已经可用。
