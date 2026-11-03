@@ -396,6 +396,165 @@
   ;; use-package 自动补成 org-mode-hook，并提供按需加载；无需再重复写 add-hook。
   :hook (org-mode . toc-org-mode))
 
+;;; Org 外观渲染：内置显示选项 + org-modern + org-appear。
+(use-package org
+  :ensure nil
+  :custom
+  ;; 内置默认 nil：显示 *粗体* 的星号等标记符；本配置选择 t：隐藏标记，只显示格式效果。
+  ;; 光标进入标记处时由下面的 org-appear 临时显示原文，方便修改。
+  (org-hide-emphasis-markers t)
+  ;; 内置默认 nil：不把 \alpha 之类实体显示为符号；保持默认，避免正文里的反斜杠被改写显示。
+  (org-pretty-entities nil)
+  ;; 内置默认 t：链接只显示描述文字 [[url][描述]] → 描述；改为 nil 则显示完整原文。
+  (org-link-descriptive t)
+  ;; 内置默认 nil：折叠标题后的省略号使用 "..."；可改为 " ▾" 等字符串。
+  (org-ellipsis nil)
+  ;; 内置默认 nil：打开文件时不自动显示图片；改为 t 则自动内联显示 [[file:x.png]] 图片。
+  (org-startup-with-inline-images nil))
+
+(use-package org-modern
+  ;; :hook 在每个 Org 缓冲区启用美化；agenda 视图本配置未使用，不添加 org-modern-agenda。
+  :hook (org-mode . org-modern-mode)
+  :custom
+  ;; 以下为插件 1.15 全部 defcustom；除标注“本配置选择”外均为插件默认值。
+  ;; 标签边框宽度；整数为像素，小数为字符高度的比例。默认 0.1。
+  (org-modern-label-border 0.1)
+  ;; 标题星号样式：fold（默认，用 ▶▼ 表示折叠状态）、replace（用下面的符号替换）、nil（不处理）。
+  (org-modern-star 'fold)
+  ;; 很深的标题是否循环使用符号。默认 nil：超出后重复使用最后一个。
+  (org-modern-cycle-stars nil)
+  ;; star 为 replace 时每一级使用的符号，默认 "◉○◈◇✳"；本配置未用 replace，仅供切换时使用。
+  (org-modern-replace-stars "◉○◈◇✳")
+  ;; star 为 fold 时每一级的（折叠 . 展开）符号对，默认值如下。
+  (org-modern-fold-stars
+   '(("▶" . "▼") ("▷" . "▽") ("⯈" . "⯆") ("▹" . "▿") ("▸" . "▾")))
+  ;; 隐藏前导星号：leading（默认，只保留最后一个）、t（全部隐藏）、nil（不隐藏）、字符/字符串（替换）。
+  (org-modern-hide-stars 'leading)
+  ;; 美化时间戳。默认 t；nil 关闭；也可设 (" %Y-%m-%d " . " %H:%M ") 自定义格式。
+  (org-modern-timestamp t)
+  ;; 美化表格。插件默认 t；本配置选择 nil：与 valign 同时画表格线会让分隔行错位，
+  ;; 表格线条和列对齐统一交给 valign。下面两项仅在改回 t 时才生效。
+  (org-modern-table nil)
+  ;; 表格竖线宽度（像素），默认 3；nil 隐藏竖线。
+  (org-modern-table-vertical 3)
+  ;; 表格横线粗细，默认 0.1；nil 不美化横线。
+  (org-modern-table-horizontal 0.1)
+  ;; 美化优先级 [#A]。默认 t：隐藏方括号；也可设 ((?A . "❗") (?B . "⬆") (?C . "⬇")) 自定义。
+  (org-modern-priority t)
+  ;; 无序列表符号替换，默认如下；设为 nil 不处理列表符。
+  (org-modern-list '((?+ . "◦") (?- . "–") (?* . "•")))
+  ;; 复选框符号替换，默认如下；设为 nil 不处理复选框。
+  (org-modern-checkbox
+   '((?X . "☑") (?- . #("□–" 0 2 (composition ((2))))) (?\s . "□")))
+  ;; 美化水平分隔线 -----。默认 t；nil 关闭；也可设字符串作为替换。
+  (org-modern-horizontal-rule t)
+  ;; 美化 TODO 关键字，默认 t；nil 关闭。
+  (org-modern-todo t)
+  ;; 为指定 TODO 关键字设置 face，默认 nil；例如 '(("TODO" . error))。
+  (org-modern-todo-faces nil)
+  ;; 为指定标签设置 face，默认 nil；例如 '(("work" . success))。
+  (org-modern-tag-faces nil)
+  ;; 为指定优先级设置 face，默认 nil；例如 '((?A . error))。
+  (org-modern-priority-faces nil)
+  ;; 美化标题标签 :tag1:tag2:，默认 t；nil 关闭。
+  (org-modern-tag t)
+  ;; 美化 #+begin_ / #+end_ 行。默认 t：隐藏前缀；也可设 ("‣" . "‣") 用符号替换。
+  (org-modern-block-name t)
+  ;; 代码块左侧条纹边框。默认 2：距窗口边缘 2 像素；0～16 调位置，nil 关闭。
+  ;; 启用 org-indent-mode 时自动停用。
+  (org-modern-block-fringe 2)
+  ;; 美化 #+title: 等关键字。默认 t：隐藏 #+；设字符串如 "‣" 则替换；nil 关闭。
+  (org-modern-keyword t)
+  ;; 脚注显示，默认值为 (nil . 上标样式)：定义保持原样，引用显示为上标。
+  (org-modern-footnote (cons nil (cadr org-script-display)))
+  ;; 内部链接目标 <<目标>> 的显示，默认如下；nil 关闭。
+  (org-modern-internal-target '(" ↪ " t " "))
+  ;; 广播目标 <<<目标>>> 的显示，默认如下；nil 关闭。
+  (org-modern-radio-target '(" ⛯ " t " "))
+  ;; 进度条 [1/3] 的宽度（字符数），默认 12；nil 不画进度条。
+  (org-modern-progress 12))
+
+(use-package org-appear
+  ;; :hook 在每个 Org 缓冲区启用；与 org-hide-emphasis-markers 配合才能看到效果。
+  :hook (org-mode . org-appear-mode)
+  :custom
+  ;; 以下为插件 0.3.1 全部 defcustom，均为插件默认值。
+  ;; 触发方式：always（默认，光标进入即显示）、on-change（修改缓冲区或鼠标点击时才显示）、
+  ;; manual（需手动调用 org-appear-manual-start / org-appear-manual-stop）。
+  (org-appear-trigger 'always)
+  ;; 光标进入时显示强调与 verbatim 标记符，默认 t；依赖 org-hide-emphasis-markers 为非 nil。
+  (org-appear-autoemphasis t)
+  ;; 显示上下标标记符，默认 nil；依赖 org-pretty-entities 为非 nil（当前为 nil，不生效）。
+  (org-appear-autosubmarkers nil)
+  ;; 显示 Org 实体（如 \alpha）原文，默认 nil；依赖 org-pretty-entities 为非 nil。
+  (org-appear-autoentities nil)
+  ;; 显示链接原文，默认 nil：t 为完整链接，just-brackets 只显示括号；依赖 org-link-descriptive。
+  (org-appear-autolinks nil)
+  ;; 显示被隐藏的关键字，默认 nil；依赖 org-hidden-keywords，当前未设置。
+  (org-appear-autokeywords nil)
+  ;; 是否在 LaTeX 片段与环境内也触发，默认 nil。
+  (org-appear-inside-latex nil)
+  ;; 显示前的延迟秒数，默认 0.0：立即显示。
+  (org-appear-delay 0.0)
+  ;; manual 模式停止后是否保持显示，默认 nil：停止即隐藏；t 则离开元素后才隐藏。
+  (org-appear-manual-linger nil))
+
+;;; 表格像素对齐：修正中文、图标、变宽字体造成的列错位。
+(use-package valign
+  ;; :hook 在 Org 与 Markdown 缓冲区启用；终端 Emacs 里不会生效。
+  :hook ((org-mode markdown-mode) . valign-mode)
+  :custom
+  ;; 以下为插件 3.1.1 全部 defcustom；除标注“本配置选择”外均为插件默认值。
+  ;; 模式行标识，默认 " valign"。
+  (valign-lighter " valign")
+  ;; 表格竖线显示为整行高的线。默认 nil：普通 | 字符，按像素对齐；本配置保持 nil。
+  ;; 想试整行高竖线可改为 t，若分隔行出现错位则改回；修改后需重新开关 valign-mode 才生效。
+  (valign-fancy-bar nil)
+  ;; 这些命令执行后不立即重新对齐，避免输入时闪动。默认如下；可增删命令名。
+  (valign-not-align-after-list
+   '(self-insert-command org-self-insert-command markdown-outdent-or-delete
+     org-delete-backward-char backward-kill-word delete-char kill-word))
+  ;; 超过此大小（字符数）的表格不对齐，改用 valign-table-fallback 的等宽字体。默认 4000；0 表示不限制。
+  (valign-max-table-size 4000))
+
+;;; Markdown 渲染：隐藏标记、标题放大、代码块高亮。
+(use-package markdown-mode
+  ;; :mode 将 .md／.markdown 关联到该模式；README.md 使用 GFM 方言（支持表格、任务列表）。
+  :mode (("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode)
+         ("README\\.md\\'" . gfm-mode))
+  :custom
+  ;; markdown-mode 有数百个选项；下面只列与“渲染”相关的，取值对照 2.9-alpha 源码。
+  ;; 隐藏 **粗体**、# 等标记符。默认 nil；本配置选择 t。光标所在行不会自动还原，
+  ;; 需要查看原文时 M-x markdown-toggle-markup-hiding。
+  (markdown-hide-markup t)
+  ;; 隐藏链接地址只显示文字。默认 nil；保持默认，以便查看和复制地址。
+  (markdown-hide-urls nil)
+  ;; 标题按级别放大。默认 nil；本配置选择 t，比例见下一项。
+  (markdown-header-scaling t)
+  ;; 一到六级标题的放大倍数，默认 (2.0 1.7 1.4 1.1 1.0 1.0)。
+  (markdown-header-scaling-values '(2.0 1.7 1.4 1.1 1.0 1.0))
+  ;; 无序列表符号，默认 ("●" "◎" "○" "◆" "◇" "►" "•")，按嵌套层级循环使用。
+  (markdown-list-item-bullets '("●" "◎" "○" "◆" "◇" "►" "•"))
+  ;; 用对应语言的主模式高亮围栏代码块。默认 nil；本配置选择 t，语言名写在 ``` 后面。
+  (markdown-fontify-code-blocks-natively t)
+  ;; 整行标题套用标题样式（含背景色）。默认 nil。
+  (markdown-fontify-whole-heading-line nil)
+  ;; 行内数学公式 $...$ 的高亮。默认 nil。
+  (markdown-enable-math nil)
+  ;; Wiki 链接 [[...]] 高亮。默认 nil。
+  (markdown-enable-wiki-links nil)
+  ;; 下载并显示远程图片。默认 nil：避免打开文件时自动联网。
+  (markdown-display-remote-images nil)
+  ;; 内联图片的最大宽高。默认 nil：按原尺寸；可设 (800 . 600)（像素）。
+  (markdown-max-image-size nil)
+  ;; 只读查看模式（markdown-view-mode）中也隐藏标记符。默认 t。
+  (markdown-hide-markup-in-view-modes t)
+  ;; 插入斜体时使用 _ 而非 *。默认 nil。
+  (markdown-italic-underscore nil)
+  ;; 插入 # 标题时是否只在行首加 #。默认 t（非对称，如“# 标题”）；nil 则两侧都加。
+  (markdown-asymmetric-header t))
+
 (use-package delsel
   :ensure nil                         ; 内置选区替换，不需要安装插件。
   :demand t                           ; 启动时加载并立即启用全局选区替换。

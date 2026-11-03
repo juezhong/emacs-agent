@@ -55,6 +55,7 @@
     - [[Org 内置功能][Org 内置功能]]
     - [[自动编号与目录如何配合][自动编号与目录如何配合]]
     - [[自动目录：toc-org][自动目录：toc-org]]
+    - [[Org 与 Markdown 渲染：org-modern / valign / markdown-mode][Org 与 Markdown 渲染：org-modern / valign / markdown-mode]]
     - [[标题跳转：org-goto][标题跳转：org-goto]]
     - [[标题与符号索引：Imenu][标题与符号索引：Imenu]]
   - [[编辑与文本导航][编辑与文本导航]]
@@ -308,6 +309,7 @@ Dashboard 已配置五类列表、内置横幅、导航按钮、居中布局及�
 | Org 标题导航                 | 说明示例 | 内置功能直接使用，声明块不参与生成                 |
 | Org 导航层级设置             | 说明示例 | :tangle no，仅供按文档局部设置                     |
 | toc-org 自动目录              | 已配置   | Org 缓冲区启用；仅带 TOC 标签的文档生成目录         |
+| Org／Markdown 渲染           | 已配置   | org-modern、org-appear、valign、markdown-mode；待用户验证 |
 | org-num 正文编号              | 已配置   | 本文件头部 num 元数据；无全局编号 hook             |
 | 目录章节编号扩展             | 已取消   | 保留 toc-org 原生无序目录，不增加自定义编号逻辑     |
 | 界面、字体、主题与状态栏     | 已配置   | 平台及图形／终端分支已写入；等待各平台手动验证       |
@@ -753,7 +755,8 @@ which-key 使用内置版本。Consult 等后续插件仍未声明，不会因�
    ├─ Org 文档编辑与导航
    │  ├─ Org / org-goto / Imenu：标题导航与结构索引
    │  ├─ org-num：自动章节编号
-   │  └─ toc-org：保存时重建目录链接
+   │  ├─ toc-org：保存时重建目录链接
+   │  └─ org-modern / org-appear / valign：标记与表格渲染；markdown-mode：Markdown 渲染
    ├─ 编辑与文本导航
    │  ├─ 基础编辑：选区输入替换；括号自动补全／配对提示说明示例
    │  ├─ Vim 编辑：Evil / evil-collection / evil-surround / evil-commentary
@@ -1427,6 +1430,228 @@ Org 没有用 =#+options: num:4= 设置编辑器编号深度的含义，
 生成 Lisp 配置是另一件事：在当前 Org 文件里按 =C-c C-v t=，
 或运行 =M-x org-babel-tangle RET=；不会自动加载生成结果，也不会要求固定的 Org 文件名。
 导出时的自动目录仍由 =#+options: toc:4= 独立控制，和本文内的目录用途不同。
+
+*** Org 与 Markdown 渲染：org-modern / valign / markdown-mode
+
+Org 是纯文本，没有“所见即所得”的富文本模式；这里用显示层把标记符号隐藏或替换成图形，
+文件内容本身不改变，保存、导出和 tangle 看到的仍是原文。组成如下：
+
+| 组件 | 负责内容 | 来源 |
+|------+----------+------|
+| =org-hide-emphasis-markers= | 隐藏 =*粗体*=、=/斜体/=、=~代码~= 两侧的标记符，只显示格式效果 | Org 内置 |
+| org-modern | 标题星号、列表符、复选框、表格线、代码块边框、标签、时间戳、进度条等的美化 | 插件，依赖 compat 31、Org 9.6 |
+| org-appear | 光标进入被隐藏的标记（强调、链接等）时临时显示原文，离开后重新隐藏，便于编辑 | 插件 |
+| valign | 按像素对齐 Org／Markdown 表格列，修正中文、图标造成的错位 | 插件，仅图形界面 |
+| markdown-mode | Markdown 高亮、隐藏标记符、标题放大、代码块高亮 | 插件 |
+
+org-modern 与 =org-indent-mode= 有冲突：开启缩进模式时，隐藏前导星号和代码块边框两项会自动停用。
+本配置不全局启用 =org-indent-mode=，因此保持 org-modern 完整效果。
+终端 Emacs 也能使用，但图形字体、条纹（fringe）和表格线宽度只在图形界面完全生效。
+
+#+begin_src emacs-lisp
+;;; Org 外观渲染：内置显示选项 + org-modern + org-appear。
+(use-package org
+  :ensure nil
+  :custom
+  ;; 内置默认 nil：显示 *粗体* 的星号等标记符；本配置选择 t：隐藏标记，只显示格式效果。
+  ;; 光标进入标记处时由下面的 org-appear 临时显示原文，方便修改。
+  (org-hide-emphasis-markers t)
+  ;; 内置默认 nil：不把 \alpha 之类实体显示为符号；保持默认，避免正文里的反斜杠被改写显示。
+  (org-pretty-entities nil)
+  ;; 内置默认 t：链接只显示描述文字 [[url][描述]] → 描述；改为 nil 则显示完整原文。
+  (org-link-descriptive t)
+  ;; 内置默认 nil：折叠标题后的省略号使用 "..."；可改为 " ▾" 等字符串。
+  (org-ellipsis nil)
+  ;; 内置默认 nil：打开文件时不自动显示图片；改为 t 则自动内联显示 [[file:x.png]] 图片。
+  (org-startup-with-inline-images nil))
+
+(use-package org-modern
+  ;; :hook 在每个 Org 缓冲区启用美化；agenda 视图本配置未使用，不添加 org-modern-agenda。
+  :hook (org-mode . org-modern-mode)
+  :custom
+  ;; 以下为插件 1.15 全部 defcustom；除标注“本配置选择”外均为插件默认值。
+  ;; 标签边框宽度；整数为像素，小数为字符高度的比例。默认 0.1。
+  (org-modern-label-border 0.1)
+  ;; 标题星号样式：fold（默认，用 ▶▼ 表示折叠状态）、replace（用下面的符号替换）、nil（不处理）。
+  (org-modern-star 'fold)
+  ;; 很深的标题是否循环使用符号。默认 nil：超出后重复使用最后一个。
+  (org-modern-cycle-stars nil)
+  ;; star 为 replace 时每一级使用的符号，默认 "◉○◈◇✳"；本配置未用 replace，仅供切换时使用。
+  (org-modern-replace-stars "◉○◈◇✳")
+  ;; star 为 fold 时每一级的（折叠 . 展开）符号对，默认值如下。
+  (org-modern-fold-stars
+   '(("▶" . "▼") ("▷" . "▽") ("⯈" . "⯆") ("▹" . "▿") ("▸" . "▾")))
+  ;; 隐藏前导星号：leading（默认，只保留最后一个）、t（全部隐藏）、nil（不隐藏）、字符/字符串（替换）。
+  (org-modern-hide-stars 'leading)
+  ;; 美化时间戳。默认 t；nil 关闭；也可设 (" %Y-%m-%d " . " %H:%M ") 自定义格式。
+  (org-modern-timestamp t)
+  ;; 美化表格。插件默认 t；本配置选择 nil：与 valign 同时画表格线会让分隔行错位，
+  ;; 表格线条和列对齐统一交给 valign。下面两项仅在改回 t 时才生效。
+  (org-modern-table nil)
+  ;; 表格竖线宽度（像素），默认 3；nil 隐藏竖线。
+  (org-modern-table-vertical 3)
+  ;; 表格横线粗细，默认 0.1；nil 不美化横线。
+  (org-modern-table-horizontal 0.1)
+  ;; 美化优先级 [#A]。默认 t：隐藏方括号；也可设 ((?A . "❗") (?B . "⬆") (?C . "⬇")) 自定义。
+  (org-modern-priority t)
+  ;; 无序列表符号替换，默认如下；设为 nil 不处理列表符。
+  (org-modern-list '((?+ . "◦") (?- . "–") (?* . "•")))
+  ;; 复选框符号替换，默认如下；设为 nil 不处理复选框。
+  (org-modern-checkbox
+   '((?X . "☑") (?- . #("□–" 0 2 (composition ((2))))) (?\s . "□")))
+  ;; 美化水平分隔线 -----。默认 t；nil 关闭；也可设字符串作为替换。
+  (org-modern-horizontal-rule t)
+  ;; 美化 TODO 关键字，默认 t；nil 关闭。
+  (org-modern-todo t)
+  ;; 为指定 TODO 关键字设置 face，默认 nil；例如 '(("TODO" . error))。
+  (org-modern-todo-faces nil)
+  ;; 为指定标签设置 face，默认 nil；例如 '(("work" . success))。
+  (org-modern-tag-faces nil)
+  ;; 为指定优先级设置 face，默认 nil；例如 '((?A . error))。
+  (org-modern-priority-faces nil)
+  ;; 美化标题标签 :tag1:tag2:，默认 t；nil 关闭。
+  (org-modern-tag t)
+  ;; 美化 #+begin_ / #+end_ 行。默认 t：隐藏前缀；也可设 ("‣" . "‣") 用符号替换。
+  (org-modern-block-name t)
+  ;; 代码块左侧条纹边框。默认 2：距窗口边缘 2 像素；0～16 调位置，nil 关闭。
+  ;; 启用 org-indent-mode 时自动停用。
+  (org-modern-block-fringe 2)
+  ;; 美化 #+title: 等关键字。默认 t：隐藏 #+；设字符串如 "‣" 则替换；nil 关闭。
+  (org-modern-keyword t)
+  ;; 脚注显示，默认值为 (nil . 上标样式)：定义保持原样，引用显示为上标。
+  (org-modern-footnote (cons nil (cadr org-script-display)))
+  ;; 内部链接目标 <<目标>> 的显示，默认如下；nil 关闭。
+  (org-modern-internal-target '(" ↪ " t " "))
+  ;; 广播目标 <<<目标>>> 的显示，默认如下；nil 关闭。
+  (org-modern-radio-target '(" ⛯ " t " "))
+  ;; 进度条 [1/3] 的宽度（字符数），默认 12；nil 不画进度条。
+  (org-modern-progress 12))
+
+(use-package org-appear
+  ;; :hook 在每个 Org 缓冲区启用；与 org-hide-emphasis-markers 配合才能看到效果。
+  :hook (org-mode . org-appear-mode)
+  :custom
+  ;; 以下为插件 0.3.1 全部 defcustom，均为插件默认值。
+  ;; 触发方式：always（默认，光标进入即显示）、on-change（修改缓冲区或鼠标点击时才显示）、
+  ;; manual（需手动调用 org-appear-manual-start / org-appear-manual-stop）。
+  (org-appear-trigger 'always)
+  ;; 光标进入时显示强调与 verbatim 标记符，默认 t；依赖 org-hide-emphasis-markers 为非 nil。
+  (org-appear-autoemphasis t)
+  ;; 显示上下标标记符，默认 nil；依赖 org-pretty-entities 为非 nil（当前为 nil，不生效）。
+  (org-appear-autosubmarkers nil)
+  ;; 显示 Org 实体（如 \alpha）原文，默认 nil；依赖 org-pretty-entities 为非 nil。
+  (org-appear-autoentities nil)
+  ;; 显示链接原文，默认 nil：t 为完整链接，just-brackets 只显示括号；依赖 org-link-descriptive。
+  (org-appear-autolinks nil)
+  ;; 显示被隐藏的关键字，默认 nil；依赖 org-hidden-keywords，当前未设置。
+  (org-appear-autokeywords nil)
+  ;; 是否在 LaTeX 片段与环境内也触发，默认 nil。
+  (org-appear-inside-latex nil)
+  ;; 显示前的延迟秒数，默认 0.0：立即显示。
+  (org-appear-delay 0.0)
+  ;; manual 模式停止后是否保持显示，默认 nil：停止即隐藏；t 则离开元素后才隐藏。
+  (org-appear-manual-linger nil))
+#+end_src
+
+**表格对齐：valign**。Org 表格用 =|= 和空格对齐，遇到中文（宽度是英文两倍）、
+图标或变宽字体就会错位；org-modern 只负责线条样式，不修正列宽。
+[[https://github.com/casouri/valign][valign]] 按像素重新对齐列，同时支持 Org 和 Markdown 表格，只改变显示，不改文件。
+它只在图形界面工作（终端会报 =valign-not-gui= 而不生效）。
+
+#+begin_src emacs-lisp
+;;; 表格像素对齐：修正中文、图标、变宽字体造成的列错位。
+(use-package valign
+  ;; :hook 在 Org 与 Markdown 缓冲区启用；终端 Emacs 里不会生效。
+  :hook ((org-mode markdown-mode) . valign-mode)
+  :custom
+  ;; 以下为插件 3.1.1 全部 defcustom；除标注“本配置选择”外均为插件默认值。
+  ;; 模式行标识，默认 " valign"。
+  (valign-lighter " valign")
+  ;; 表格竖线显示为整行高的线。默认 nil：普通 | 字符，按像素对齐；本配置保持 nil。
+  ;; 想试整行高竖线可改为 t，若分隔行出现错位则改回；修改后需重新开关 valign-mode 才生效。
+  (valign-fancy-bar nil)
+  ;; 这些命令执行后不立即重新对齐，避免输入时闪动。默认如下；可增删命令名。
+  (valign-not-align-after-list
+   '(self-insert-command org-self-insert-command markdown-outdent-or-delete
+     org-delete-backward-char backward-kill-word delete-char kill-word))
+  ;; 超过此大小（字符数）的表格不对齐，改用 valign-table-fallback 的等宽字体。默认 4000；0 表示不限制。
+  (valign-max-table-size 4000))
+#+end_src
+
+**Markdown 渲染：markdown-mode**。[[https://github.com/jrblevin/markdown-mode][markdown-mode]]
+为 =.md= 文件提供高亮和编辑命令。它自身可以隐藏标记符、按级别放大标题、
+以原生语言高亮代码块；表格对齐由上面的 valign 负责。导出或网页预览才需要外部转换程序。
+
+#+begin_src emacs-lisp
+;;; Markdown 渲染：隐藏标记、标题放大、代码块高亮。
+(use-package markdown-mode
+  ;; :mode 将 .md／.markdown 关联到该模式；README.md 使用 GFM 方言（支持表格、任务列表）。
+  :mode (("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode)
+         ("README\\.md\\'" . gfm-mode))
+  :custom
+  ;; markdown-mode 有数百个选项；下面只列与“渲染”相关的，取值对照 2.9-alpha 源码。
+  ;; 隐藏 **粗体**、# 等标记符。默认 nil；本配置选择 t。光标所在行不会自动还原，
+  ;; 需要查看原文时 M-x markdown-toggle-markup-hiding。
+  (markdown-hide-markup t)
+  ;; 隐藏链接地址只显示文字。默认 nil；保持默认，以便查看和复制地址。
+  (markdown-hide-urls nil)
+  ;; 标题按级别放大。默认 nil；本配置选择 t，比例见下一项。
+  (markdown-header-scaling t)
+  ;; 一到六级标题的放大倍数，默认 (2.0 1.7 1.4 1.1 1.0 1.0)。
+  (markdown-header-scaling-values '(2.0 1.7 1.4 1.1 1.0 1.0))
+  ;; 无序列表符号，默认 ("●" "◎" "○" "◆" "◇" "►" "•")，按嵌套层级循环使用。
+  (markdown-list-item-bullets '("●" "◎" "○" "◆" "◇" "►" "•"))
+  ;; 用对应语言的主模式高亮围栏代码块。默认 nil；本配置选择 t，语言名写在 ``` 后面。
+  (markdown-fontify-code-blocks-natively t)
+  ;; 整行标题套用标题样式（含背景色）。默认 nil。
+  (markdown-fontify-whole-heading-line nil)
+  ;; 行内数学公式 $...$ 的高亮。默认 nil。
+  (markdown-enable-math nil)
+  ;; Wiki 链接 [[...]] 高亮。默认 nil。
+  (markdown-enable-wiki-links nil)
+  ;; 下载并显示远程图片。默认 nil：避免打开文件时自动联网。
+  (markdown-display-remote-images nil)
+  ;; 内联图片的最大宽高。默认 nil：按原尺寸；可设 (800 . 600)（像素）。
+  (markdown-max-image-size nil)
+  ;; 只读查看模式（markdown-view-mode）中也隐藏标记符。默认 t。
+  (markdown-hide-markup-in-view-modes t)
+  ;; 插入斜体时使用 _ 而非 *。默认 nil。
+  (markdown-italic-underscore nil)
+  ;; 插入 # 标题时是否只在行首加 #。默认 t（非对称，如“# 标题”）；nil 则两侧都加。
+  (markdown-asymmetric-header t))
+#+end_src
+
+=markdown-command=（转 HTML 的外部程序，默认自动探测 markdown／pandoc 等）和
+=markdown-command-needs-filename= 与渲染无关，且依赖本机程序，因此不在这里设置。
+需要网页预览时用 =M-x markdown-preview RET=（或 =markdown-live-preview-mode=），
+需先安装转换程序，当前配置不要求。
+
+**日常使用**：无需操作。打开 Org 或 Markdown 文件即自动生效；把光标移到 =*加粗*= 上，两侧星号会短暂显示，
+移走后恢复隐藏。链接默认只显示描述文字，要编辑原文可用 =C-c C-l=（=M-x org-insert-link=）。
+Markdown 的标记符不会自动还原，要查看原文用 =M-x markdown-toggle-markup-hiding RET=，再执行一次即可恢复隐藏。
+**临时关闭**：=M-x org-modern-mode RET= 切换美化，=M-x org-appear-mode RET= 切换自动显示标记，
+=M-x org-toggle-link-display RET= 切换链接描述与原文，=M-x valign-mode RET= 切换表格对齐。
+**暂不绑定快捷键**：它们是外观开关，低频使用，通过 =M-x= 调用即可。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| 未另绑定 | org-modern-mode | 切换当前缓冲区的 org-modern 美化 |
+| 未另绑定 | org-appear-mode | 切换光标处自动显示标记 |
+| 未另绑定 | org-toggle-link-display | 切换链接描述／原文显示 |
+| 未另绑定 | valign-mode | 切换 Org／Markdown 表格像素对齐 |
+| 未另绑定 | markdown-toggle-markup-hiding | 切换 Markdown 标记符隐藏 |
+| C-c C-l | org-insert-link | 插入或编辑链接，不受隐藏标记影响 |
+
+**限制与常见疑问**：
+- 此功能只改变显示：复制文本时拿到的仍是带标记的原文。
+- 不要同时开启 org-modern 的表格美化与 valign：两者都改写 =|= 的显示，会让分隔行（=|---+---|=）的竖线错位，本配置把 =org-modern-table= 设为 nil，表格只用 valign。
+- 数学公式、图片等不属于此处；Org 图片可用 =C-c C-x C-v=（=M-x org-toggle-inline-images=）切换，
+  Markdown 图片用 =M-x markdown-toggle-inline-images=；LaTeX 公式预览需要外部程序，暂未配置。
+- 表格和块边框在终端或字体宽度不一致时可能错位，可临时关闭对应模式对比。
+- =org-modern-block-fringe= 与 =org-indent-mode= 不兼容；若以后要启用缩进，需要接受这两项自动失效。
+- valign 3.1.1 与 markdown-mode 的具体选项是对照上游最新源码核对的；本机安装版本可能略有出入，安装后以 =C-h v= 为准。
+- 状态：配置已写入；插件安装与实际显示效果待用户启动 Emacs 验证（尚未运行验证）。
 
 *** 标题跳转：org-goto
 
