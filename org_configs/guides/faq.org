@@ -20,6 +20,8 @@ Embark 默认动作见 [[file:embark-actions.org][Embark 动作参考]]。
 - [[当前模式按键为什么没有列出某个辅助功能][当前模式按键为什么没有列出某个辅助功能]]
 - [[当前模式说明、命令帮助、按键帮助分别什么时候用][当前模式说明、命令帮助、按键帮助分别什么时候用]]
 - [[命令帮助的 Key bindings 里为什么看不到 , o l][命令帮助的 Key bindings 里为什么看不到 , o l]]
+- [[C-x C-r 与 consult-recent-file 有什么区别][C-x C-r 与 consult-recent-file 有什么区别]]
+- [[状态栏能不能单独指定字体][状态栏能不能单独指定字体]]
 - [[Esc 与 C-g 是同一个操作吗][Esc 与 C-g 是同一个操作吗]]
 - [[C-u 是重复命令，还是执行用户命令][C-u 是重复命令，还是执行用户命令]]
 - [[怎样通过 M-x 找到 F9 到 F12 对应的个人命令][怎样通过 M-x 找到 F9 到 F12 对应的个人命令]]
@@ -112,6 +114,63 @@ Helpful 的 Key bindings 用 =where-is-internal= 并设置了 NOINDIRECT，会�
 | 当前缓冲区有效键位 | =, h b=（=M-x describe-bindings RET=） |
 
 此结论来自源码核对和最小键位表复现，尚未在你的完整配置中逐条重现。
+
+* C-x C-r 与 consult-recent-file 有什么区别
+
+两个命令做的事不同，所以本配置没有把 =C-x C-r= 改绑到 consult-recent-file（源码核对）：
+
+| 项目 | C-x C-r（原生 find-file-read-only） | M-x consult-recent-file |
+|------+--------------------------------------+-------------------------|
+| 候选范围 | 任意路径，输入目录和文件名 | 只有 recentf 记录过的文件 |
+| 打开方式 | 只读缓冲区，不能误改，要编辑再 =M-x read-only-mode= | 普通打开，可直接编辑 |
+| 界面 | 原生路径补全 | Vertico 候选，输入关键词筛选，带预览 |
+| 前提 | 无 | recentf-mode 已启用（本配置已启用），且记录不为空 |
+
+想要“按最近文件打开”：用 =, b b= 后输入 =f SPC= 缩小到最近文件来源，或 Dashboard 的最近文件栏目，
+或直接 =M-x consult-recent-file RET=。想要 =C-x C-r= 变成最近文件，需要在统一快捷键章节新增绑定，
+那会覆盖原生的只读打开；原操作仍可用 =M-x find-file-read-only RET= 调用。
+
+* 状态栏能不能单独指定字体
+
+本配置没有单独设置状态栏字体，也不需要：状态栏继承正文字体（源码核对：Emacs 的 mode-line 面和
+doom-one 主题都没有写 =:family=），所以状态栏英文是 cnfonts 设置的 JetBrainsMono NFM，中文是 LXGW。
+cnfonts 只设置 default 面和字体集，没有管理状态栏的选项，所以状态栏要用 Emacs 原生方法单独设置。
+
+想单独设置时这样做（以下为源码核对，尚未在图形界面验证）：
+
+1. 在主 Org 的“主题与状态栏”一节，=doom-modeline= 的 =use-package= 声明之后，新增一个 emacs-lisp 代码块
+   （不要加 =:tangle no=，要参与生成）：
+
+   #+begin_example
+   ;; 状态栏字体：仅图形界面；mode-line-active、mode-line-inactive 继承 mode-line，只设这一个即可。
+   (when (display-graphic-p)
+     (set-face-attribute 'mode-line nil :family "字体名" :height 0.9))
+   #+end_example
+
+2. =set-face-attribute= 的三个位置参数依次是 面（face）、Frame、属性对：
+   - ='mode-line=：要修改的“面”，即状态栏的外观定义；前面的单引号表示把 mode-line 当作符号本身，不当作变量求值。
+   - =nil=：作用的 Frame（Emacs 里的“窗口”，不是分割出来的窗格）。按 Emacs 内置文档：
+     =nil= 表示对所有已经存在的 Frame 生效，并作为之后新建 Frame 的默认值；
+     填某个具体 Frame 只改那一个；填 =t= 只改新建 Frame 的默认值，不动已有的。
+     这里选 =nil=，所以现在的窗口和以后用 emacsclient 新开的窗口都用同一套设置，一般不需要改。
+   - =:family "字体名" :height 0.9=：从这里起是“属性 值”成对出现，写几对改几项，没写的属性保持原样。
+3. =:family= 是字体名称，写法与 cnfonts 里一致，必须是系统已安装的字体；不写这一项就继续继承正文字体。
+4. =:height= 的小数是相对正文字号的倍数：1.0 与正文同大，0.9 小一点，1.1 大一点；写整数（如 100）则是绝对大小
+   （单位是十分之一磅）。不写这一项就跟随正文。
+5. 保存 Org、tangle、重启，按需反复调整数值。临时试看效果可以在 =*scratch*= 里把上面的
+   =set-face-attribute= 那一行放到光标前，按 F12 求值，不需要重启；重启后回到 Org 里的设置。
+6. 取消设置：删除这个代码块，重启。
+
+和状态栏外观有关的其他三个数值各管各的，互不替代：
+
+| 想调整 | 改哪里 | 当前值 |
+|--------+--------+--------|
+| 状态栏文字的字体和大小 | 上面的 =set-face-attribute= 代码块 | 未设置，继承正文 |
+| 状态栏整条的高度（像素） | =doom-modeline-height= | 24 |
+| 状态栏图标的大小 | =nerd-icons-scale-factor= | 1.3 |
+
+注意：=doom-modeline-height= 是最小高度，文字调大后状态栏可能被撑高；参考文件之所以写 =mode-line :family=，
+是因为它的正文字体（CaskaydiaMono NF）和状态栏字体不同，本配置两者相同。
 
 * Esc 与 C-g 是同一个操作吗
 

@@ -309,7 +309,12 @@
 
 ;;; 状态栏：成熟的 mode-line 布局，固定使用 Nerd Icons。
 (use-package nerd-icons
-  :demand t)                          ; 图标包；字体另需系统安装 Symbols Nerd Font Mono。
+  :demand t                           ; 图标包；字体另需系统安装 Symbols Nerd Font Mono。
+  :custom
+  ;; 插件默认 1.0；本配置选择 1.3。所有 Nerd 图标的统一缩放倍数，同时作用于状态栏左侧的
+  ;; Vim 状态图标、文件类型图标、Dashboard 图标，以及这些图标的垂直微调量。
+  ;; 想更大改成 1.5；想回到原大小改成 1.0。数值过大时图标可能撑高状态栏或与文字错位。
+  (nerd-icons-scale-factor 1.3))
 
 (use-package doom-modeline
   :demand t
@@ -556,6 +561,8 @@
   :custom
   (recentf-save-file (expand-file-name "recentf.eld" my/state-directory))
   (recentf-max-saved-items 25)         ; 本机默认 25：退出后保留的最近文件上限，可增大。
+  (recentf-max-menu-items 50)          ; 默认 10：recentf 菜单（File → Open Recent）里显示的条数，本配置选择 50。
+                                       ; 它只管菜单；Dashboard 的最近文件条数另在 dashboard-items 里设置。
   (recentf-auto-cleanup 'mode)         ; 默认 mode：启用时清理失效项；never 为不自动清理。
   :config
   (recentf-mode 1))                   ; 记录最近文件；不意味着自动重新打开它们。
@@ -644,6 +651,20 @@
       (expand-file-name "auto-save-list/.saves-" my/state-directory))
 
 ;;; Dashboard：复用已有历史与项目数据；不安装额外的项目管理插件。
+;; 横幅图片目录：把图片放进来，每次启动随机选一张；改成别的目录就换图库。
+(defvar my/dashboard-banner-directory (expand-file-name "assets/dashboard/" my/config-directory)
+  "存放 Dashboard 横幅图片的目录；启动时随机选一张，没有图片则使用插件自带横幅。")
+(make-directory my/dashboard-banner-directory t)
+
+;; 启动时抽签一次：插件自带的“列表随机”每次重绘都重新抽，窗口大小变化会让横幅突然换图。
+(defvar my/dashboard-banner
+  (let ((case-fold-search t))           ; 扩展名不区分大小写
+    (let ((files (seq-filter
+                  (lambda (file) (string-match-p "\\.\\(png\\|jpe?g\\|gif\\|webp\\|svg\\|xbm\\)\\'" file))
+                  (directory-files my/dashboard-banner-directory t))))
+      (if files (seq-random-elt files) 'official)))
+  "本次启动选中的横幅：目录里的某张图片，或回退的 official。")
+
 (defun liyunfeng/dashboard-on-startup ()
   "无文件的普通启动完成后打开 Dashboard，不抢占已打开的文件。"
   (unless (or (daemonp)
@@ -659,8 +680,10 @@
   (dashboard-buffer-name "*my dashboard*")
   ;; 上游默认 Welcome to Emacs!；本配置沿用参考标题，可改为自己的短句。
   (dashboard-banner-logo-title "Have a nice day!")
-  ;; 插件默认 official，本配置保持；也可使用 ascii 或配置目录内的图片绝对路径。
-  (dashboard-startup-banner 'official)
+  ;; 插件默认 official；本配置使用上面启动时随机选出的图片，目录为空时就是 official。
+  (dashboard-startup-banner my/dashboard-banner)
+  ;; 插件默认 0（不限制）；横幅图片最高 250 像素，大图等比缩小。官方横幅 250×215，不受影响。
+  (dashboard-image-banner-max-height 250)
   ;; 两项默认均 nil；本配置沿用参考开启水平和垂直居中。
   (dashboard-center-content t)
   (dashboard-vertically-center-content t)
@@ -682,10 +705,18 @@
   ;; 两项默认 nil；本配置选择 t，显示栏目图标与文件图标。
   (dashboard-set-heading-icons t)
   (dashboard-set-file-icons t)
-  ;; 上游默认 display-graphic-p，本配置保持：图标只在图形界面显示。
-  (dashboard-display-icons-p #'display-graphic-p)
+  ;; 上游默认 #'display-graphic-p（只在图形界面显示）；本配置选择 t：图形和终端都显示。
+  ;; 终端里能否显示取决于终端字体；出现方框就改回 #'display-graphic-p。
+  (dashboard-display-icons-p t)
   ;; 插件默认 all-the-icons；本配置使用 nerd-icons。
   (dashboard-icon-type 'nerd-icons)
+  ;; nerd-icons-scale-factor 会再乘一遍下面的高度，图标比字符格子还大，右侧和下侧就会被裁掉。
+  ;; 所以这里除以同一个倍数抵消：最终大小 = 倍数 × (1 ÷ 倍数) × 插件默认高度，即回到插件原本的大小。
+  ;; 想让 Dashboard 的图标比原来大一点，把除法前的 1.0 / 1.2 改大，例如 1.1；出现裁切就改回去。
+  ;; 插件默认：最近文件等条目图标高度 1.0、栏目标题图标高度 1.2；垂直微调 -0.05 / 0.0。
+  ;;;(dashboard-icon-file-height (/ 1.0 nerd-icons-scale-factor))
+  ;;;(dashboard-icon-file-v-adjust (/ -0.05 nerd-icons-scale-factor))
+  ;;;(dashboard-heading-icon-height (/ 1.2 nerd-icons-scale-factor))
   ;; 保持插件默认的统计函数：显示启动耗时与包数量，不等于独立性能分析。
   (dashboard-init-info #'dashboard-init--info)
   ;; 上游默认布局没有 navigator；本配置显式插入，保留启动统计与页脚。
