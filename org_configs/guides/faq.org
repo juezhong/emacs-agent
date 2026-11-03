@@ -19,6 +19,7 @@ Embark 默认动作见 [[file:embark-actions.org][Embark 动作参考]]。
 - [[为什么说当前缓冲区，而不是当前窗口][为什么说当前缓冲区，而不是当前窗口]]
 - [[当前模式按键为什么没有列出某个辅助功能][当前模式按键为什么没有列出某个辅助功能]]
 - [[当前模式说明、命令帮助、按键帮助分别什么时候用][当前模式说明、命令帮助、按键帮助分别什么时候用]]
+- [[命令帮助的 Key bindings 里为什么看不到 , o l][命令帮助的 Key bindings 里为什么看不到 , o l]]
 - [[Esc 与 C-g 是同一个操作吗][Esc 与 C-g 是同一个操作吗]]
 - [[C-u 是重复命令，还是执行用户命令][C-u 是重复命令，还是执行用户命令]]
 - [[怎样通过 M-x 找到 F9 到 F12 对应的个人命令][怎样通过 M-x 找到 F9 到 F12 对应的个人命令]]
@@ -52,7 +53,9 @@ Embark 默认动作见 [[file:embark-actions.org][Embark 动作参考]]。
 * h 是所有插件通用的帮助键吗
 
 不是。Magit 中 h 可打开操作总菜单，但其他页面的 h 可能是 Evil 向左移动、
-其他局部操作或没有绑定。统一使用 =, h l= 查看当前模式按键，不靠猜测单键 h。
+其他局部操作或没有绑定。Magit 的 h 是 Magit 自己的原生键（magit-dispatch），
+evil-collection 在默认设置下不改它；Dired 则不同，本配置把普通状态的 h 绑为返回上级目录，
+Dired 的模式说明在 =g?=（evil-collection 绑定的 describe-mode）或 =, h m=。统一使用 =, h l= 查看当前模式按键，不靠猜测单键 h。
 Magit 总菜单另有 =, g g=（=M-x magit-dispatch RET=），使用教程见 Magit 子文档。
 
 * 为什么 C-h b 太多，而当前模式按键比较集中
@@ -87,6 +90,28 @@ Magit 总菜单另有 =, g g=（=M-x magit-dispatch RET=），使用教程见 Ma
 看到不认识的键用 =, h k= 后输入该键，例如先 C-h k 再 s，只显示帮助，不暂存或跳转。
 知道命令名时用 =, h x=（helpful-command）阅读说明，或 =, h w=（where-is）查绑定。
 要系统学习一个插件，还需阅读它的操作教程；按键清单不能解释完整流程、对象范围及操作结果。
+
+* 命令帮助的 Key bindings 里为什么看不到 , o l
+
+现象：=, h k= 后输入 =, o l= 能正确识别为 =org-open-at-point=，
+但在 =, h x= 或 =, h f= 打开的命令帮助页里，Key bindings 一栏只有 =C-c C-o=，没有 =, o l=。
+
+原因（用最小键位表在 Emacs 里复现，helpful 20250408.334 源码核对）：
+本配置的菜单项写成 =("打开链接" . 命令)= 的形式，让 which-key 显示中文说明；
+Helpful 的 Key bindings 用 =where-is-internal= 并设置了 NOINDIRECT，会跳过这种带说明字符串的绑定，
+而且它按单个 keymap 逐个列出，也不会把 =, o l= 拼成完整序列。键位本身是生效的，只是该栏不显示。
+不修改第三方插件，也不为此放弃中文说明。
+
+查完整按键的可靠方法：
+
+| 想知道 | 用法 |
+|--------+------|
+| 某个按键调用什么 | =, h k= 后输入按键（Helpful 键位说明，显示命令） |
+| 某个命令的按键 | =, h w=（=M-x where-is RET=）输入命令名，会列出 =, o l= 这样的完整序列 |
+| 自定义键位总览 | =, h g=（=M-x general-describe-keybindings RET=） |
+| 当前缓冲区有效键位 | =, h b=（=M-x describe-bindings RET=） |
+
+此结论来自源码核对和最小键位表复现，尚未在你的完整配置中逐条重现。
 
 * Esc 与 C-g 是同一个操作吗
 
@@ -184,8 +209,8 @@ Org 代码块中整块缩进还可能涉及 Org 的代码块缩进规则；不�
 
 * 后续常见问题怎样记录
 
-正文字体的持久设置集中在主 Org，不另行修改 cnfonts 的 main 或状态文件；
-完整参数、字号与跨平台示例见 [[file:cnfonts-guide.org][cnfonts 正文字体配置手册]]。
+正文字体使用 cnfonts 原生配置：字体名和初始字号在主 Org，当前字号与字号表由 cnfonts 存在 .cache/cnfonts/；
+完整说明见 [[file:cnfonts-guide.org][cnfonts 正文字体配置手册]]。
 
 跨插件的按键发现、帮助范围和界面概念记录在本页；插件专属操作写入其教程，
 在本页按需增加链接。新增答案保留实际命令名、进入与取消步骤、适用条件和已知限制，

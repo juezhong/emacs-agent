@@ -268,139 +268,61 @@
                    ;; 同时关闭可能单独开启的局部高亮模式。
                    (hl-line-mode -1))))
 
-;;; main 是完整的正文方案：所有持久修改都在这里，不需要编辑插件运行文件。
-;; 以下是本项目的方案字段，不是 cnfonts 原生“个人候选”接口。
-(defconst my/cnfonts-main
-  '(:english-family "JetBrainsMono Nerd Font Mono"
-    :chinese-family "LXGW WenKai Mono GB"
-    :size 12.5
-    :english-size nil
-    :chinese-size nil
-    :extb-size nil
-    :symbol-size nil
-    :ornament-size nil)
-  "main 正文方案，由主 Org 唯一维护。
-:size 为统一字体大小，初始取 cnfonts 默认英文字号 12.5；各组 nil 跟随它。
-例如全部变大只改 :size 为 14；仅中文更大则设 :chinese-size 为 15，恢复跟随改回 nil。
-英文／中文家族是确定选择，不自动追加其他正文家族；目标平台必须安装这两款字体。
-后三组没有新增专用家族，沿用 cnfonts 的补充字形默认组；大小默认同样跟随 :size。
-同数值不保证中英文等宽或视觉等大，需看实际字体、DPI 和字形再校准。
-状态栏文字、nerd-icons 图标和 Org 专用 face 不在此方案单独设置。")
-
 (use-package cnfonts
   :demand t                           ; 启动时加载；图形 Frame 应用正文，终端字体由终端控制。
   :custom
-  ;; 默认 cnfonts/；本配置使用根目录下 .cache/cnfonts/，运行产物不作为手工配置源。
+  ;; 插件默认 (locate-user-emacs-file "cnfonts/")；本配置放到 .cache/cnfonts/，该目录已被 Git 忽略。
   (cnfonts-directory (expand-file-name ".cache/cnfonts/" my/config-directory))
-  ;; 插件默认三个方案；本配置唯一 main，字体与大小都以 my/cnfonts-main 为准。
+  ;; 插件默认 '("profile1" "profile2" "profile3")；本配置只用一个存档 "main"。
+  ;; 存档名决定输出文件名 .cache/cnfonts/v4/main.el，以及 cnfonts.conf 里的记录名。
   (cnfonts-profiles '("main"))
-  ;; 插件默认 nil；本方案不使用“个人候选”接口，不把旧 profile 或后备家族混入确定的正文选型。
-  (cnfonts-personal-fontnames nil)
-  ;; 插件默认 nil；t 隔离 windows-nt／gnu-linux／darwin 的 main 产物，conf 仍共用根目录。
-  (cnfonts-use-system-type t)
-  ;; 插件默认 nil：分别设字号。Windows 文档警告 t 破坏对齐；Linux 多数可用但非必需。
-  ;; macOS 未获同等保证，统一保持 nil；不同 DPI／后端仍需校准，终端不受此 GUI 选项控制。
-  (cnfonts-use-face-font-rescale nil)
-  ;; 插件默认 t：尽量保持图形 Frame 大小；窗口管理器／系统缩放仍会影响结果。
-  (cnfonts-keep-frame-size t)
-  ;; 默认均 nil：保留英文粗体／斜体／粗斜体，实际需要所选字体有对应样式。
-  ;; 中文字体没有独立 Italic 时不能据此保证同样的斜体效果。
-  (cnfonts-disable-bold nil)
-  (cnfonts-disable-italic nil)
-  (cnfonts-disable-bold-italic nil)
-  ;; 默认 nil：不添加状态栏、图标或 Org 字体联动，回调入口不是原生的四类字体管理器。
-  (cnfonts-set-font-finish-hook nil)
+  ;; 插件默认 12.5；本配置选择 10。它是“英文字号”，中文等组的字号由字号表按英文字号配套（10 对应中文 12）。
+  ;; 注意它只是初始值：.cache/cnfonts/cnfonts.conf 已有 main 的记录时以记录为准，见下文“数值存放在哪里”。
+  (cnfonts-default-fontsize 10)
+  ;; 插件默认 nil。五组字体，依次是 英文、中文、EXT-B（生僻汉字）、符号、装饰字符；本配置只写前两组。
+  ;; 同一组内越靠前越优先，cnfonts 取“系统里已安装的第一款”，所以备选字体写在同一组后面，例如：
+  ;;   英文 '("JetBrainsMono NFM" "备选英文字体B" "备选英文字体C")
+  ;;   中文 '("LXGW WenKai Mono GB" "备选中文字体B" "备选中文字体C")
+  ;; cnfonts 会在你的列表之后自动追加它的内置候选（Monaco、微软雅黑等），这一点不能关闭。
+  ;; 修改后必须同时处理 main.el，见下文“更换字体或增加备选”。
+  (cnfonts-personal-fontnames
+   '(("JetBrainsMono NFM")              ; 英文
+     ("LXGW WenKai Mono GB")))          ; 中文
   :config
-  (defun liyunfeng/apply-body-fonts ()
-    "将主 Org 定义的 main 正文方案应用到现有图形 Frame。
-不读取 Org 文件、不生成 init.el；文件修改需保存、tangle、重启后才成为当前参数。"
-    (interactive)
-    (let* ((frames (seq-filter #'display-graphic-p (frame-list)))
-           (base (plist-get my/cnfonts-main :size))
-           (english (plist-get my/cnfonts-main :english-family))
-           (chinese (plist-get my/cnfonts-main :chinese-family))
-           (keys '(:english-size :chinese-size :extb-size :symbol-size :ornament-size))
-           (sizes (mapcar (lambda (key) (or (plist-get my/cnfonts-main key) base)) keys)))
-      ;; 在改动字体／缓存前校验；家族缺失明确报错，不静默换用其他英文／中文家族。
-      (unless frames (user-error "No graphical frame is available"))
-      (unless (and (numberp base) (<= 6 base 32)
-                   (cl-every (lambda (n) (and (numberp n) (> n 0))) sizes)
-                   (<= 6 (car sizes) 32)
-                   (stringp english) (> (length english) 0)
-                   (stringp chinese) (> (length chinese) 0))
-        (user-error "Check main: font families, positive sizes, base and English size in 6..32"))
-      (dolist (frame frames)
-        (with-selected-frame frame
-          (unless (and (find-font (font-spec :family english))
-                       (find-font (font-spec :family chinese)))
-            (user-error "main requires installed fonts: %s / %s" english chinese))))
-      ;; 集中适配本机 cnfonts 20251223.636 内部读取机制，旧 main／conf 不得覆盖主 Org。
-      ;; cnfonts 用英文大小作为索引；生成单行完整表，五组实际大小全由 main 决定。
-      ;; 不读取旧方案，也不向正文英文／中文追加插件其他家族；后三组保留默认补字机制。
-      (setq cnfonts-default-fontsize (car sizes)
-            cnfonts--custom-set-fontnames
-            (append (list (list english) (list chinese))
-                    (copy-tree (nthcdr 2 cnfonts--fontnames-fallback)))
-            cnfonts--custom-set-fontsizes (list (copy-sequence sizes))
-            cnfonts--config-info (list (cons "main" (car sizes))))
-      (cnfonts-mode 1)
-      (dolist (frame frames)
-        ;; cnfonts 自身负责设置 default/fontset 和保存运行产物，agent 不预执行它。
-        (cnfonts-set-font frame))))
+  ;; cnfonts 保存字号时不会创建目录；.cache/ 在新环境里还不存在，先建好，否则初始化报错。
+  (make-directory cnfonts-directory t)
+  ;; 插件原生：之后在每个新建的图形 Frame 和窗口准备完成时自动应用字体。
+  (cnfonts-mode 1)
+  ;; 提前应用一次。cnfonts-mode 默认在 window-setup-hook 才应用字体，晚于 Dashboard 的创建；
+  ;; Dashboard 插入图标时用 char-displayable-p 检查默认字体，当时字体还没换成带图标字形的
+  ;; JetBrainsMono NFM，图标会被丢弃。终端 Frame 不适用，跳过。
+  (when (display-graphic-p)
+    (cnfonts-set-font))
+  )
 
-  (defun my/cnfonts-enable-on-frame (frame)
-    "首次创建图形 FRAME 时应用 main 正文方案。"
-    (when (and (display-graphic-p frame) (not cnfonts-mode))
-      (with-selected-frame frame (liyunfeng/apply-body-fonts))))
-  (when (display-graphic-p) (liyunfeng/apply-body-fonts))
-  ;; 后续新 Frame 由 cnfonts 自带 hook 应用内存方案；daemon 首个 GUI 由此初始化。
-  (add-hook 'after-make-frame-functions #'my/cnfonts-enable-on-frame))
-
-;;; 主题：默认暗色，另提供浅色主题；名称可替换为已安装主题。
-(defcustom my/theme-dark 'doom-one
-  "暗色模式由 `my/load-display-theme' 加载的主题。"
-  :type 'symbol)
-;; 修改这里的符号即可替换暗色主题；主题必须已安装或由对应 use-package 提供。
-(defcustom my/theme-light 'doom-one-light
-  "浅色模式由 `my/load-display-theme' 加载的主题。"
-  :type 'symbol)
-;; 修改这里的符号即可替换浅色主题；它不会自动从暗色主题生成配色。
-(defvar my/current-theme-mode 'dark
-  "当前主题模式，只能是 `dark' 或 `light'。")
-
-(defun my/load-display-theme (mode)
-  "加载 MODE 指定的暗色或浅色主题。"
-  (interactive (list (intern (completing-read "Theme mode: " '("dark" "light")
-                                               nil t))))
-  (mapc #'disable-theme custom-enabled-themes)
-  (setq my/current-theme-mode mode)
-  (load-theme (if (eq mode 'light) my/theme-light my/theme-dark) t))
-
+;;; 主题：直接加载暗色 doom-one；换主题改下面的符号，临时试用见正文说明。
 (use-package doom-themes
   :demand t
   :config
-  (my/load-display-theme my/current-theme-mode))
+  ;; 第二个参数 t 表示不再询问是否信任主题代码；浅色可换成 'doom-one-light。
+  (load-theme 'doom-one t))
 
-;;; 状态栏：成熟的 mode-line 布局；图标依赖单独受开关控制。
-;; 本配置选择 t：开启状态栏与 Dashboard 图标；改为 nil 可恢复文字布局。
-(defcustom my/enable-nerd-icons t
-  "是否安装并在 doom-modeline 与 Dashboard 中使用 Nerd Icons。"
-  :type 'boolean)
+;;; 状态栏：成熟的 mode-line 布局，固定使用 Nerd Icons。
+(use-package nerd-icons
+  :demand t)                          ; 图标包；字体另需系统安装 Symbols Nerd Font Mono。
 
 (use-package doom-modeline
   :demand t
   :custom
   ;; 高度选择 24 像素；只影响图形界面，终端由字符高度决定，可按显示器调整。
   (doom-modeline-height 24)
-  ;; 跟随 my/enable-nerd-icons；nil 使用文字布局，t 需要 Nerd Icons 字体和包。
-  (doom-modeline-icon my/enable-nerd-icons)
-  ;; 跟随同一开关；关闭后不显示主模式图标，但不影响主模式名称。
-  (doom-modeline-major-mode-icon my/enable-nerd-icons)
+  ;; 插件默认在图形界面为 t；这里显式写出。nil 使用文字布局。
+  (doom-modeline-icon t)
+  ;; 显示主模式图标；nil 只隐藏图标，不影响主模式名称。
+  (doom-modeline-major-mode-icon t)
   ;; 文件名过长时使用省略号截断；改为 nil 可尝试显示完整路径，但会占用更多宽度。
   (doom-modeline-buffer-file-name-style 'truncate-ellipsis)
   :config
-  (when my/enable-nerd-icons
-    (use-package nerd-icons :demand t))
   (doom-modeline-mode 1))
 
 ;;; 可选 mode-line 装饰：默认只有彩虹小猫开启，其余包不会自动安装。
@@ -757,11 +679,13 @@
   (dashboard-week-agenda t)
   ;; 默认 nil：保留上游栏目标题；下方导航按钮另使用中文。
   (dashboard-item-names nil)
-  ;; 两项默认 nil；本配置跟随既有图标开关，避免增加第二套启用状态。
-  (dashboard-set-heading-icons my/enable-nerd-icons)
-  (dashboard-set-file-icons my/enable-nerd-icons)
-  ;; 上游默认 display-graphic-p；本配置关闭开关时完全禁用，打开后仍限于图形界面。
-  (dashboard-display-icons-p (and my/enable-nerd-icons #'display-graphic-p))
+  ;; 两项默认 nil；本配置选择 t，显示栏目图标与文件图标。
+  (dashboard-set-heading-icons t)
+  (dashboard-set-file-icons t)
+  ;; 上游默认 display-graphic-p，本配置保持：图标只在图形界面显示。
+  (dashboard-display-icons-p #'display-graphic-p)
+  ;; 插件默认 all-the-icons；本配置使用 nerd-icons。
+  (dashboard-icon-type 'nerd-icons)
   ;; 保持插件默认的统计函数：显示启动耗时与包数量，不等于独立性能分析。
   (dashboard-init-info #'dashboard-init--info)
   ;; 上游默认布局没有 navigator；本配置显式插入，保留启动统计与页脚。
@@ -780,10 +704,6 @@
       ("" "个人配置" "从 org_configs 选择配置源文件"
        (lambda (&rest _) (call-interactively #'liyunfeng/find-config-source))))))
   :config
-  ;; icon-type 的 setter 会检查包是否可加载，先处理依赖，再指定 nerd-icons。
-  (when my/enable-nerd-icons
-    (use-package nerd-icons :demand t)
-    (setq dashboard-icon-type 'nerd-icons))
   ;; 不使用 dashboard-setup-startup-hook：它会跳过带 --init-directory 等参数的启动。
   (add-hook 'emacs-startup-hook #'liyunfeng/dashboard-on-startup)
   ;; 窗口大小改变时重新排版，沿用插件提供的函数，不执行整个初始化流程。
@@ -1190,6 +1110,14 @@
           (projects . "p")             ; Projects，项目
           (agenda . "a")               ; Agenda，日程
           (registers . "e"))))          ; Registers，寄存器
+
+;;; Dired 的 Vim 式目录导航；等 Dired 加载后绑定，保证晚于 evil-collection 的适配。
+(with-eval-after-load 'dired
+  (general-define-key
+   :states 'normal
+   :keymaps 'dired-mode-map
+   "h" #'dired-up-directory   ; Up，返回上级目录
+   "l" #'dired-find-file))    ; Open，打开文件或进入目录
 
 ;;; 可选 Evil 初始状态：以下全为注释，normal/emacs 是示例选择，不是插件默认值。
 ;; 文本与配置编辑：普通状态示例，按 i 开始输入。
