@@ -441,6 +441,15 @@
   :config
   (global-evil-surround-mode 1))
 
+;;; 快速注释：gc 加动作注释／取消注释，gcc 注释当前行，可视状态选中后按 gc。详见 Org 中的操作说明。
+(use-package evil-commentary
+  ;; :after 等待 Evil 先加载；它是 Evil 操作符，没有 Evil 就没有意义。
+  :after evil
+  :demand t                           ; 启动时启用全局模式，gc／gy 才会立即可用。
+  :config
+  ;; 全局模式，只需启用一次；键位 gc、gy 由插件定义，没有写入统一快捷键章节（见下文说明）。
+  (evil-commentary-mode 1))
+
 ;;; 屏幕内定位：按命令加载，不在启动时扫描缓冲区。
 (use-package avy
   ;; 为菜单使用的命令建立自动加载入口；首次调用才加载 Avy，不是在这里设置快捷键。
@@ -664,6 +673,71 @@
                   (directory-files my/dashboard-banner-directory t))))
       (if files (seq-random-elt files) 'official)))
   "本次启动选中的横幅：目录里的某张图片，或回退的 official。")
+
+;; 图片优化：把大图缩成横幅用的小 jpg，需要 ImageMagick 的 magick 命令。
+;; 不使用 convert：Windows 自带的 convert.exe 是磁盘格式转换工具，不是 ImageMagick。
+(defvar my/dashboard-banner-height 300
+  "优化后横幅图片的高度（像素）；略大于显示用的 250，缩放后不容易糊。")
+(defvar my/dashboard-banner-quality 85
+  "优化后 jpg 的压缩质量，1 到 100；越大越清晰，文件也越大。")
+(defvar my/image-magick-program nil
+  "magick 可执行文件的完整路径；nil 表示自动查找，找不到时在这里写完整路径。")
+
+(defun my/find-magick ()
+  "返回 magick 的路径：先用设置的变量，再查 PATH，最后找 Emacs 自己所在的目录。"
+  (or my/image-magick-program
+      (executable-find "magick")
+      ;; MSYS2 版 Emacs 和 ImageMagick 常装在同一个 bin 目录；从资源管理器启动时 PATH 里可能没有它。
+      (let ((exec-path (cons invocation-directory exec-path)))
+        (executable-find "magick"))
+      (user-error "找不到 ImageMagick 的 magick 命令：先安装 ImageMagick；已安装就在主 Org 的 Dashboard 一节把 my/image-magick-program 设为 magick.exe 的完整路径（保存、tangle、重启），临时可 M-x set-variable RET my/image-magick-program RET")))
+
+(defun liyunfeng/optimize-dashboard-banners ()
+  "把横幅目录里的大图缩成小 jpg（名称加 .opt），成功后直接删除原图。只处理横幅目录，不能指定别的目录；执行前确认一次，y 开始，n 或 C-g 取消；需要 ImageMagick。"
+  (interactive)
+  (let* ((magick (my/find-magick))
+         (case-fold-search t)           ; 扩展名不区分大小写
+         (dir (file-name-as-directory (expand-file-name my/dashboard-banner-directory)))
+         (todo nil) (done 0) (skipped 0) (failed 0))
+    ;; 先只统计，不改动任何文件。
+    (dolist (file (directory-files dir t))
+      (when (and (file-regular-p file)
+                 (string-match-p "\\.\\(png\\|jpe?g\\|webp\\)\\'" file))
+        (let ((name (file-name-sans-extension (file-name-nondirectory file))))
+          (if (or (string-match-p "\\.opt\\'" name)
+                  (file-exists-p (expand-file-name (concat name ".opt.jpg") dir)))
+              (setq skipped (1+ skipped)) ; 已是优化结果，或同名结果已存在
+            (push file todo)))))
+    (cond
+     ((null todo)
+      (message "没有需要优化的图片：已跳过 %d 张（已优化或同名结果已存在）" skipped))
+     ((not (y-or-n-p (format "优化 %d 张图片并直接删除原图（不可恢复），继续吗？" (length todo))))
+      (message "已取消，没有改动任何文件"))
+     (t
+      (dolist (file (nreverse todo))
+        (let ((out (expand-file-name
+                    (concat (file-name-sans-extension (file-name-nondirectory file)) ".opt.jpg") dir)))
+          (if (file-exists-p out)
+              ;; 同名不同扩展（如 a.jpg 与 a.png）会得到同一个结果名：第二张保留原图，不覆盖。
+              (setq skipped (1+ skipped))
+            (with-temp-buffer
+              (if (and (zerop (call-process
+                               magick nil t nil
+                               (concat (convert-standard-filename file) "[0]") ; [0] 只取第一帧
+                               "-auto-orient"
+                               "-background" "white" "-alpha" "remove" "-alpha" "off" ; 透明部分铺白，jpg 不支持透明
+                               "-resize" (format "x%d>" my/dashboard-banner-height)   ; 只缩小，不放大
+                               "-strip" "-quality" (number-to-string my/dashboard-banner-quality)
+                               (convert-standard-filename out)))
+                       (> (or (file-attribute-size (file-attributes out)) 0) 0))
+                  (progn
+                    (delete-file file)  ; 结果确认生成后才删除原图
+                    (setq done (1+ done)))
+                (setq failed (1+ failed))
+                (when (file-exists-p out) (delete-file out))
+                (message "优化失败（原图保留）%s：%s" file (string-trim (buffer-string))))))))
+      (message "横幅图片优化完成：处理 %d 张，跳过 %d 张，失败 %d 张%s"
+               done skipped failed (if (> done 0) "；下次启动生效" ""))))))
 
 (defun liyunfeng/dashboard-on-startup ()
   "无文件的普通启动完成后打开 Dashboard，不抢占已打开的文件。"
@@ -1101,14 +1175,20 @@
    :keymaps 'override
    "," my/leader-map)
 
-  ;; 仅普通模式的 s 改为 Avy；原替换字符操作可用 cl，其他状态不改。
-  ;; Magit 的 s 用于暂存：返回 nil 让高优先级绑定退让，保留局部 keymap 的原命令。
-  ;; 使用 General 已有的条件分派，不另写暂存包装函数；Avy 仍可通过 , j j 调用。
+  ;; 普通状态的 s 只在“文本编辑”类缓冲区里改为 Avy；原替换字符操作可用 cl，其他状态不改。
+  ;; 文本编辑 = text-mode、prog-mode、conf-mode 及其派生（Org、Markdown、Lisp、C、.gitignore 等），
+  ;; 以及没有专门模式的纯文本文件（fundamental-mode）。
+  ;; 其他模式（Dired、ibuffer、Magit、帮助页等）条件不成立，条件分派返回 nil，
+  ;; 这一层不给出命令，按键继续往下找，各模式自己的 s 照常生效（Magit 暂存、ibuffer 筛选前缀……）。
+  ;; general-predicate-dispatch 的第一个参数是默认值（nil：不绑定），后面是“条件 命令”成对出现。
+  ;; Avy 仍可在任何界面用 , j j 调用。
   (general-define-key
    :states 'normal
    :keymaps 'override
-   "s" (general-predicate-dispatch #'avy-goto-char-timer
-         (derived-mode-p 'magit-mode) nil))  ; Jump，字符标签跳转；Magit 保留局部暂存键
+   "s" (general-predicate-dispatch nil
+         (or (derived-mode-p 'text-mode 'prog-mode 'conf-mode)
+             (eq major-mode 'fundamental-mode))
+         #'avy-goto-char-timer))  ; Jump，字符标签跳转；仅文本编辑模式
 
   ;; 此前未自定义全局 Esc；这里只绑定独立事件，不覆盖 ESC / Meta 前缀。
   ;; Evil 的插入／可视状态仍优先使用原来的 Esc，C-g 继续保留取消／中断用途。

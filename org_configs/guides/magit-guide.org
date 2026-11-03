@@ -1091,21 +1091,22 @@ Init：M-x magit-init RET 选择新目录，按提示创建 Git 仓库；
 * 为什么 Magit 的 s 没有被 Avy 占用
 
 Avy 可以在普通文本、Org、代码，也可以在 Magit 中定位当前窗口的可见文字；
-是否启用 s 入口由主模式和 Evil 状态共同决定。缓冲区并不专指磁盘文件。
-本配置的主模式判断是 =(derived-mode-p 'magit-mode)=，不是检查文件是否放在 Git 仓库里。
-所以 Git 项目中的 notes.txt 仍然是文本缓冲区，s 仍然可以是 Avy；
-Magit 状态页、日志页和差异页属于 magit-mode 家族，s 则留给原局部键位。
+但普通状态的 =s= 只在“文本编辑”类模式里才是 Avy：text-mode、prog-mode、conf-mode 及其派生，
+以及没有专门模式的纯文本文件。缓冲区并不专指磁盘文件，判断的是主模式，不是文件是否放在 Git 仓库里。
+所以 Git 项目中的 notes.txt 仍然是文本缓冲区，s 是 Avy；
+Magit 状态页、日志页和差异页不是文本编辑模式，这一层不给出命令，s 留给 Magit 自己的局部键位
+（状态页里是暂存）。Dired、ibuffer 等其他模式同理，各用各的 s。
 
 只有普通状态新增了 s 的 Avy 绑定。插入状态的 s 是输入字符；
 motion 或 Emacs 状态中的 s 沿用该状态和模式的原绑定，不能一概称为 Avy。
-提交说明缓冲区的主要用途是编辑文本，git-commit-mode 是辅助模式，
-它不因为正在写 Git 提交说明就自动成为 magit-mode 的派生模式。
+提交说明缓冲区的主要用途是编辑文本：它的模式 git-commit-mode 是辅助模式，真正的主模式一般是
+text-mode 的派生模式，所以那里的普通状态 s 是 Avy，没有在本机实测，需要时用 =, h k= 再按 =s= 确认。
 
-退让通过 General 的条件键位过滤实现，不是关闭 Avy，也不是进入／退出 Magit 时反复改全局绑定。
-查键时命中 Magit 条件，这一层返回 nil，让 Emacs 继续查优先级较低的局部键位；
-在 Magit 状态页中通常就找到 s → magit-stage。其他普通状态缓冲区未命中条件，
-这一层返回 avy-goto-char-timer，执行标签跳转。
-源代码和逐项解释见 [[file:../self_config.org::*普通模式 s：Avy 与 Magit 的条件分派][主配置的条件分派说明]]。
+“退让”通过 General 的条件键位过滤实现，不是关闭 Avy，也不是进入／退出 Magit 时反复改全局绑定。
+查键时条件不成立，这一层返回 nil，让 Emacs 继续查优先级较低的局部键位；
+在 Magit 状态页中就找到 s → magit-stage-files（本机批处理加载统一快捷键后查询确认）。
+条件成立的文本编辑模式里，这一层返回 avy-goto-char-timer，执行标签跳转。
+源代码和逐项解释见 [[file:../self_config.org::*普通模式 s：只在文本编辑里用 Avy][主配置的条件分派说明]]。
 
 在 Magit 中想用 Avy，按 =, j j=（=M-x avy-goto-char-timer RET=），
 输入可见目标字符，等待标签后选标签；C-g 取消。这个入口没有被上述规则移除。

@@ -67,7 +67,9 @@
       - [[Evil 基本操作][Evil 基本操作]]
       - [[evil-collection 的工具界面][evil-collection 的工具界面]]
       - [[Dired 手动体验与帮助][Dired 手动体验与帮助]]
+      - [[ibuffer 缓冲区列表：操作与帮助][ibuffer 缓冲区列表：操作与帮助]]
       - [[evil-surround 的包围符操作][evil-surround 的包围符操作]]
+      - [[evil-commentary 的注释操作][evil-commentary 的注释操作]]
     - [[搜索、定位与候选界面][搜索、定位与候选界面]]
       - [[屏幕内定位：Avy][屏幕内定位：Avy]]
       - [[搜索与选择：Vertico / Orderless / Marginalia / Consult][搜索与选择：Vertico / Orderless / Marginalia / Consult]]
@@ -85,6 +87,7 @@
       - [[崩溃恢复副本、会话记录与备份][崩溃恢复副本、会话记录与备份]]
   - [[启动与导航：Dashboard][启动与导航：Dashboard]]
     - [[启动、重新打开与布局][启动、重新打开与布局]]
+      - [[横幅图片优化：M-x liyunfeng/optimize-dashboard-banners][横幅图片优化：M-x liyunfeng/optimize-dashboard-banners]]
     - [[五类列表的数据与操作][五类列表的数据与操作]]
     - [[页面导航、确认与限制][页面导航、确认与限制]]
   - [[开发支持][开发支持]]
@@ -112,7 +115,7 @@
       - [[Dashboard 栏目快捷键][Dashboard 栏目快捷键]]
       - [[Dired 目录导航：h / l][Dired 目录导航：h / l]]
       - [[Evil 初始状态的可选清单][Evil 初始状态的可选清单]]
-      - [[普通模式 s：Avy 与 Magit 的条件分派][普通模式 s：Avy 与 Magit 的条件分派]]
+      - [[普通模式 s：只在文本编辑里用 Avy][普通模式 s：只在文本编辑里用 Avy]]
       - [[General 怎么修改：对照示例][General 怎么修改：对照示例]]
     - [[Leader 与键位取舍][Leader 与键位取舍]]
     - [[快捷键速查表][快捷键速查表]]
@@ -271,7 +274,7 @@ emacs -nw --init-directory . --user ""
 正文 cnfonts 使用插件原生方式：确定方案为英文 JetBrainsMono NFM 10、中文 LXGW 12；字体名和初始字号在 Org，当前字号与字号表由 cnfonts 存在 .cache/cnfonts/；完整教程见 [[file:guides/cnfonts-guide.org][cnfonts 正文字体配置手册]]。
 
 基础环境包含代理、软件源和 =use-package=，参考仓库中的
-=example_Emacs_Windows.org=。第一阶段已写入 Evil、evil-collection、evil-surround、
+=example_Emacs_Windows.org=。第一阶段已写入 Evil、evil-collection、evil-surround、evil-commentary、
 Helpful、General 和内置 which-key 的配置；toc-org 继续提供自动目录。
 第二阶段已写入 Avy、Vertico、Orderless、Marginalia 和 Consult，提供跳转、候选选择与搜索。
 第三阶段已写入项目、状态记忆、保存恢复与外部刷新，并补齐中文功能菜单。
@@ -309,7 +312,8 @@ Dashboard 已配置五类列表、内置横幅、导航按钮、居中布局及�
 | 目录章节编号扩展             | 已取消   | 保留 toc-org 原生无序目录，不增加自定义编号逻辑     |
 | 界面、字体、主题与状态栏     | 已配置   | 平台及图形／终端分支已写入；等待各平台手动验证       |
 | Evil、evil-collection、surround | 已配置 | Vim 编辑；等待手动启动安装和验证                   |
-| Avy、搜索与候选界面         | 已配置   | 第二阶段；普通模式 s 跳转，等待手动安装和验证       |
+| evil-commentary 快速注释     | 已配置   | gc／gcc／gy；待你安装后验证，Org 里的细节见正文    |
+| Avy、搜索与候选界面         | 已配置   | 第二阶段；文本编辑里普通模式 s 跳转，等待手动安装和验证 |
 | Embark 候选与上下文操作     | 已配置   | C-. 英文动作菜单；用户已确认本机使用正常、符合需求 |
 | 文件、项目、保存与刷新       | 已配置   | 本地文本延迟保存；保留冲突检查，等待手动验证        |
 | 开发支持                    | 部分配置 | 括号着色已写入；补全、语言服务与诊断仍待配置       |
@@ -709,7 +713,7 @@ Emacs 29 及以上版本内置 =use-package=，本机 Emacs 31.1 可以直接加
 
 在仓库根目录运行前面的启动命令。首次交互启动会下载软件源的索引，
 这是插件目录信息；use-package 随后安装本阶段已声明但尚未安装的插件。
-当前包括 toc-org、Evil、evil-collection、evil-surround、Helpful 和 General 及其依赖，
+当前包括 toc-org、Evil、evil-collection、evil-surround、evil-commentary、Helpful 和 General 及其依赖，
 which-key 使用内置版本。Consult 等后续插件仍未声明，不会因此安装。
 三个源的索引都存在后，后续启动使用缓存；某个源缺失时会重新尝试刷新。
 需要更新目录时运行 =M-x package-refresh-contents=。
@@ -752,7 +756,7 @@ which-key 使用内置版本。Consult 等后续插件仍未声明，不会因�
    │  └─ toc-org：保存时重建目录链接
    ├─ 编辑与文本导航
    │  ├─ 基础编辑：选区输入替换；括号自动补全／配对提示说明示例
-   │  ├─ Vim 编辑：Evil / evil-collection / evil-surround
+   │  ├─ Vim 编辑：Evil / evil-collection / evil-surround / evil-commentary
    │  ├─ 屏幕定位：Avy
    │  ├─ 搜索选择：Vertico / Orderless / Marginalia / Consult
    │  ├─ 候选与上下文操作：Embark / embark-consult
@@ -1530,7 +1534,7 @@ Evil 可视状态仍使用自身的操作，例如 =c= 修改所选文本；不�
 *** 编辑行为与 Vim 模式
 
 状态：已配置，等待手动启动安装和验证。
-使用 [[https://github.com/emacs-evil/evil][Evil]]、[[https://github.com/emacs-evil/evil-collection][evil-collection]] 和 [[https://github.com/emacs-evil/evil-surround][evil-surround]]。
+使用 [[https://github.com/emacs-evil/evil][Evil]]、[[https://github.com/emacs-evil/evil-collection][evil-collection]]、[[https://github.com/emacs-evil/evil-surround][evil-surround]] 和 [[https://github.com/linktohack/evil-commentary][evil-commentary]]。
 保留 Vim 普通／插入／可视模式、操作符、文本对象、宏和点号重复。
 Evil 的 =evil-want-keybinding= 等加载前选项放在其 =use-package :init= 中；
 实际自定义键位放到最后统一定义。
@@ -1573,6 +1577,15 @@ Evil 的 =evil-want-keybinding= 等加载前选项放在其 =use-package :init= 
   :demand t
   :config
   (global-evil-surround-mode 1))
+
+;;; 快速注释：gc 加动作注释／取消注释，gcc 注释当前行，可视状态选中后按 gc。详见 Org 中的操作说明。
+(use-package evil-commentary
+  ;; :after 等待 Evil 先加载；它是 Evil 操作符，没有 Evil 就没有意义。
+  :after evil
+  :demand t                           ; 启动时启用全局模式，gc／gy 才会立即可用。
+  :config
+  ;; 全局模式，只需启用一次；键位 gc、gy 由插件定义，没有写入统一快捷键章节（见下文说明）。
+  (evil-commentary-mode 1))
 #+end_src
 
 **** Evil 可选行为与初始状态
@@ -1657,6 +1670,107 @@ Dired 是 Emacs 内置的目录列表，像文件管理器一样打开文件和�
 
 以上步骤正常，说明目录显示、Vim 导航、打开文件、切换缓冲区和帮助入口已能协同使用。
 这里不验证复制、重命名、标记删除等写操作；后续需要时先查模式帮助。
+
+**** ibuffer 缓冲区列表：操作与帮助
+
+=, b i=（=M-x ibuffer RET=）打开 ibuffer：一个列出所有缓冲区的管理界面，可以批量标记、保存、关闭缓冲区，
+也可以按名称、模式、是否修改等条件筛选和排序。它和 =, b b=（=consult-buffer=，选择并切换）不同：
+=, b b= 用来快速切换，ibuffer 用来整理和清理。
+
+***** 为什么按 h 没有帮助
+
+本机核对（Emacs 31.1、evil-collection 3.0.3，在 ibuffer 的普通状态里查询键位）：
+- ibuffer 自己没有给 =h= 或 =?= 绑定帮助命令；evil-collection 也没有给 ibuffer 绑 =h=。
+  所以 =h= 是 Evil 默认的“光标向左移动”，=?= 是 Evil 的向后搜索。
+- Magit 不同：=h= 是 Magit 自己的原生键，对应 =magit-dispatch=，会在 minibuffer 区域弹出完整的操作菜单。
+  ibuffer 没有这样的总菜单，不是配置遗漏。
+- 在 ibuffer 里要帮助，用下面几个入口，它们都不依赖 =h=：
+
+| 快捷键 | 交互命令 | 作用 |
+|--------+----------+------|
+| , h m | describe-mode | 完整的 ibuffer 模式说明，包括所有键和命令 |
+| , h l | which-key-show-major-mode | 弹出当前主模式的键位清单，结合当前 Evil 状态 |
+| , h k 后按某个键 | helpful-key | 查询某一个键调用什么命令 |
+| 按 s、o、%、* 后稍等 | which-key 自动弹出 | 这四个键在 ibuffer 里是“前缀”，按下后等一会儿，which-key 会列出后续可按的键 |
+
+***** 在 ibuffer 里怎么操作
+
+ibuffer 使用 evil-collection 的 Vim 风格键位（普通状态），下面按本机源码核对。
+列表里每一行是一个缓冲区；先“标记”，再对所有标记的缓冲区一次性执行操作；没标记任何缓冲区时，
+多数操作只作用于光标所在行。
+
+| 目的 | 按键 | 命令 | 说明 |
+|------+------+------+------|
+| 上下移动 | j / k | ibuffer-forward-line / backward-line | 同 Vim；=gg= 到顶、=G= 到底 |
+| 打开缓冲区 | RET | ibuffer-visit-buffer | 在当前窗口打开光标所在行 |
+| 在另一窗口打开 | go | ibuffer-visit-buffer-other-window | 在另一个窗口打开并切过去；=gO= 打开但不切换，光标留在 ibuffer |
+| 标记 | m | ibuffer-mark-forward | 标记当前行并下移一行，前面出现 =>= |
+| 取消标记 | u | ibuffer-unmark-forward | 取消当前行标记 |
+| 取消所有标记 | U（大写） | ibuffer-unmark-all-marks | 清除全部标记 |
+| 反选标记 | t | ibuffer-toggle-marks | 已标记的取消，未标记的标记 |
+| 标记待关闭 | d | ibuffer-mark-for-delete | 标上 =D=，还没有真正关闭 |
+| 执行待关闭 | x | ibuffer-do-kill-on-deletion-marks | 关闭所有标了 =D= 的缓冲区；有未保存修改时会询问 |
+| 直接关闭 | D（大写） | ibuffer-do-delete | 关闭已标记的缓冲区，或没有标记时关闭当前行，会询问 |
+| 从列表隐藏 | K | ibuffer-do-kill-lines | 只把已标记的行从列表里隐藏，不关闭缓冲区 |
+| 保存 | S | ibuffer-do-save | 保存已标记的缓冲区 |
+| 重新读取 | V | ibuffer-do-revert | 从磁盘重新读取已标记的缓冲区 |
+| 刷新列表 | gr | ibuffer-update | 重新生成缓冲区列表 |
+| 退出 | q 或 ZZ | quit-window | 关闭 ibuffer 窗口，不关闭其中的缓冲区 |
+| 跳到某个缓冲区 | J | ibuffer-jump-to-buffer | 输入缓冲区名，光标跳到那一行 |
+
+=D= 和 =d= 是两个不同的键：=d= 只做记号，要按 =x= 才会执行；=D= 直接执行并询问。
+关闭缓冲区不删除磁盘上的文件；有未保存修改时 Emacs 会询问，不要不看提示就连续确认。
+
+按标记范围批量标记（先按前缀键 =*= 或 =%=）：
+
+| 按键 | 命令 | 标记哪些缓冲区 |
+|------+------+----------------|
+| * m | ibuffer-mark-modified-buffers | 所有已修改的 |
+| * u | ibuffer-mark-unsaved-buffers | 已修改且有文件的（尚未保存的） |
+| * s | ibuffer-mark-special-buffers | 名称以 =*= 开头结尾的特殊缓冲区，如 =*Messages*= |
+| * / | ibuffer-mark-dired-buffers | 所有 Dired 缓冲区 |
+| * h | ibuffer-mark-help-buffers | 帮助类缓冲区 |
+| % n | ibuffer-mark-by-name-regexp | 名称匹配输入的正则表达式 |
+| % m | ibuffer-mark-by-mode-regexp | 主模式名匹配输入的正则表达式 |
+| . | ibuffer-mark-old-buffers | 很久没有看过的缓冲区 |
+
+筛选（前缀键 =s=）只改变列表显示，不关闭缓冲区。=s= 在 ibuffer 里是筛选前缀：
+统一快捷键里的 Avy 只用于文本编辑模式，不再盖住它（见 [[*普通模式 s：只在文本编辑里用 Avy][普通模式 s]]）。
+这一点本机批处理加载你的统一快捷键后查询确认：ibuffer 里 =s n=、=s m=、=s /= 分别对应下表的命令；
+=s=、=o=、=%=、=*= 四个前缀下全部 58 个子键见 [[file:guides/keys-by-mode.org::*ibuffer][按模式查按键手册的 ibuffer 一节]]。
+
+| 按键 | 命令 | 作用 |
+|------+------+------|
+| s n | ibuffer-filter-by-name | 只显示名称匹配输入的 |
+| s m | ibuffer-filter-by-used-mode | 只显示主模式是某个模式的 |
+| s f | ibuffer-filter-by-filename | 只显示文件名匹配输入的 |
+| s i | ibuffer-filter-by-modified | 只显示已修改的 |
+| s p | ibuffer-pop-filter | 撤销最近一个筛选 |
+| s / | ibuffer-filter-disable | 取消所有筛选 |
+
+在列表里搜索一个缓冲区名（只移动光标，不改变列表）：
+
+| 快捷键 | 命令 | 作用 |
+|--------+------+------|
+| / | evil-search-forward | Evil 的向前搜索，输入文字 RET，n 下一个，N 上一个 |
+| C-s | isearch-forward | Emacs 的增量搜索，边输入边跳 |
+| , s s | consult-line | 候选列表筛选当前缓冲区的行，RET 跳过去 |
+| J | ibuffer-jump-to-buffer | 输入缓冲区名直接跳到那一行 |
+
+本机批处理查询确认这四个键在 ibuffer 里都有绑定；其中 =, s s= 对 ibuffer 这种列表缓冲区是否表现良好，
+没有实际试过，需要你手动确认。注意你提到的 =, f s= 在本配置里是 =save-buffer=（保存当前文件），
+不是搜索；ibuffer 没有对应文件，不要在那里用它。
+
+排序（前缀键 =o=）：=o a= 按名称、=o v= 按最近使用、=o s= 按大小、=o m= 按主模式、=o i= 反向；
+（ibuffer 自己的 =,= 排序切换键被逗号 leader 盖住了，排序用 =o= 前缀。）其余前缀键 =o=、=%=、=* = 下还有更多命令，按键后等待，which-key 会列出来。
+
+一个完整的小例子：想清理所有没改动的 Dired 缓冲区——=, b i= 打开 ibuffer，=* /= 标记所有 Dired 缓冲区，
+再 =D= 关闭，在提示里确认，=q= 退出。想先看清楚再关：先 =s m= 筛选出主模式，核对列表，再标记和关闭。
+误操作的缓冲区关闭后可以用 =, b b= 再次打开对应文件（文件在磁盘上没有受影响）。
+
+注意：evil-collection 把 =o= 改成了排序前缀键，所以“在另一个窗口打开缓冲区”不是 =o=，而是 =go=。
+以上键位来自 evil-collection 源码和本机在 ibuffer 普通状态中的键位查询（逐键查询绑定的命令，没有真的按过键）；
+遇到不一致，以 =, h m= 和 =, h l= 显示的实际键位为准。
 
 **** evil-surround 的包围符操作
 
@@ -1766,6 +1880,113 @@ evil-surround 模仿 Vim 的 surround.vim，核心是“添加／删除／替换
 文本对象还包括 =i(=（括号内部）、=a(=（含括号）、=i"=（引号内部）、=ip=（段落内部）。
 可用 =, h f= 查询 =evil-inner-word=、=evil-a-word= 等函数说明，
 或者 =, h k= 查询当前操作键。不要把 =ys=、=ds=、=cs= 和 leader 菜单混在一起记。
+
+**** evil-commentary 的注释操作
+
+[[https://github.com/linktohack/evil-commentary][evil-commentary]] 是 Vim 的 vim-commentary（以及 Neovim 的 Comment.nvim）在 Evil 里的对应插件：
+=gc= 是一个“操作符”，和 =d=（删除）、=y=（复制）一样，后面接一个“动作”，对动作经过的范围注释或取消注释。
+它不依赖语言服务，使用当前主模式自己定义的注释符号（Lisp 是 =;;=，C 是 =/* */= 或 =//=，Org 是 =# =）。
+再对已注释的内容执行一次，就是取消注释（切换）。本机尚未安装，以下按插件 2.3.0 源码和 README 核对；
+在你的完整配置里的实际表现，需要你安装后手动确认。
+
+***** “gc + 动作”是什么意思
+
+“动作”就是 Vim 里让光标移动的那些命令，例如 =j=（下移一行）、=k=（上移一行）、=ap=（一个段落）、=G=（到文件末尾）。
+操作符先问“从哪里到哪里”，动作回答这个问题：光标从当前位置出发，移动经过的范围就是要注释的范围。
+所以 =gc= 本身什么也不做，要等你再按一个动作才执行；=d= 的用法完全一样：=dj= 删除当前行和下一行，=gcj= 就是注释它们。
+
+下面用一段 Lisp 举例，光标放在第 2 行（=(message "a")= 那一行）：
+
+#+begin_example
+1  (defun hello ()
+2    (message "a")        <- 光标在这里
+3    (message "b")
+4    (message "c"))
+5
+6  (defun bye ()
+7    (message "d"))
+#+end_example
+
+| 按键 | 动作的含义 | 结果 |
+|------+------------+------|
+| =gcc= | 当前这一行（=cc= 是“整行”的约定，和 =dd=、=yy= 同理） | 只注释第 2 行 |
+| =2gcc= | 从当前行起算 2 行 | 注释第 2、3 行 |
+| =gcj= | =j= 下移一行，范围是当前行和下一行 | 注释第 2、3 行 |
+| =gc2j= | =2j= 下移两行，范围包含当前行 | 注释第 2、3、4 行 |
+| =gck= | =k= 上移一行，范围是当前行和上一行 | 注释第 1、2 行 |
+| =gcip= | =ip= 当前段落（空行分隔），不含下面的空行 | 注释第 1 到 4 行 |
+| =gcap= | =ap= 当前段落并带上紧接的空行 | 注释第 1 到 5 行 |
+| =gcG= | =G= 到文件末尾 | 注释第 2 到 7 行 |
+| =gcgg= | =gg= 到文件开头 | 注释第 1、2 行 |
+
+“向上”或“向下”的动作，范围都包含光标所在行，这是 Vim 对按行动作的规则。想取消注释，把光标放在已注释的行上，
+重复同一个按键；误操作可以用 =u= 撤销，点号 =.= 重复上一次注释。
+可视状态也一样：先用 =V= 选中几行，再按 =gc=，选中的就是范围，不需要再输入动作。
+上表是按 Vim 的动作规则推演的，没有在本机逐行实测；动作选得不合适时，=u= 撤销再换一个即可。
+
+| 快捷键 | 命令 | 作用 |
+|--------+------+------|
+| gcc | evil-commentary（整行） | 注释／取消注释当前行；带数字，=3gcc= 处理三行 |
+| gc + 动作 | evil-commentary | 对动作范围切换注释，例子见上表 |
+| 可视状态按 gc | evil-commentary | 先 =v= 或 =V= 选中，再按 =gc= |
+| gy + 动作 | evil-commentary-yank | 复制原文再注释，原文留在剪贴板；=gyyp= 注释当前行并在下方粘贴一份可修改的原文 |
+| s-/ | evil-commentary-line | 注释／取消注释当前行，效果同 =gcc=，见下文 |
+| 未另绑定 | evil-commentary-yank-line | 对整行的 gy，没有默认键位，用 =M-x evil-commentary-yank-line RET= 调用 |
+
+=gc= 是普通状态和可视状态的键位；插入状态下不能用 =gc=，先按 =Esc= 回到普通状态。
+命令行也可用：=:g/TODO/evil-commentary= 对所有含 TODO 的行切换注释（README 的示例，未在本机试过）。
+
+***** s-/ 是什么
+
+=s-/= 是 =evil-commentary-line= 的键位，作用就是注释／取消注释当前行，效果和普通状态的 =gcc= 一样。
+区别只是：=gcc= 只能在普通状态使用，=s-/= 在 Evil 的普通、插入、Emacs 状态都能用，所以写代码时不用先 =Esc=。
+=s-= 是 Emacs 对 Super 键的写法：macOS 上是 Command 键（相当于 Cmd+/，很多编辑器都用这个键注释），
+Windows 上是 Win 键，而 Win+/ 通常被系统拦截，Emacs 可能收不到，所以 Windows 上把它当成不可用，用 =gcc= 即可。
+没有给它另绑别的键：你已有 =gcc=，不需要第二个入口。
+
+***** 本配置里的键位说明
+
+- =gc=、=gy= 是插件自己定义的默认键位，本配置没有新增或覆盖自定义绑定，所以没有写进统一快捷键章节；
+  那里没有它们的条目，用 =, h k= 后按 =gc= 查看实际绑定。
+- 已核对：安装 Evil 与 evil-collection 后，=gc= 和 =gy= 在这两者的普通状态键位里都没有占用；
+  evil-commentary 的 =gc= 同时在普通和可视状态生效，=gy= 在普通状态生效（用插件加载后的键位查询核对）。
+- Dired、Magit 等列表／工具界面本来就不编辑文本，用不到注释，所以不处理它们的键位。
+  这些界面里 =g= 开头的键各有各的用途（例如 Dired 里 =gy= 显示文件类型），以各界面自己的帮助为准。
+- 普通状态的 =s= 已改为 Avy，与 =gc= 无关；逗号 leader 也不冲突。
+
+***** 在 Org 里怎么用
+
+evil-commentary 对 Org 有专门处理（源码 =evil-commentary-comment-function-for-mode-alist= 默认包含 org-mode）：
+
+| 光标位置 | 效果 |
+|----------+------|
+| 代码块内（#+begin_src 与 #+end_src 之间） | 在后台打开对应语言的编辑缓冲区，用该语言的注释符处理，不需要先按 =C-c '= |
+| 标题行（没有选区时） | 切换标题的 =COMMENT= 关键字（=org-toggle-comment=），不是加一个 =#= 符号 |
+| 其他正文 | 用 Org 的 =# = 注释行 |
+
+重点提醒：在标题行上按 =gcc= 会给标题加 =COMMENT=，这是 Org 的“该子树不参与导出”标记，
+不是普通注释；它对生成 init.el 的影响没有核对过，不要在本配置 Org 的标题行上随手 =gcc=。
+想注释的是代码块里的 Lisp，就把光标放进代码块内再按键。
+更早我写过“Org 里要先 =C-c '= 才行”，这个说法不对，已按源码更正。
+
+***** 可调整的选项
+
+| 选项 | 插件默认 | 作用 |
+|------+----------+------|
+| evil-commentary-comment-function-for-mode-alist | org-mode、f90-mode、web-mode 各有专用函数 | 指定某个主模式使用的注释函数；该函数接收区域起止位置两个参数。没有登记的模式用 Emacs 内置的 =comment-or-uncomment-region= |
+
+本配置没有改这个选项，保持插件默认。以后某个模式注释不对（例如 Windows 配置文件缺少注释符号），
+用 =C-h v evil-commentary-comment-function-for-mode-alist RET= 查看，再加一项即可；
+注释符号本身由各主模式的 =comment-start= 决定，可用 =C-h v comment-start RET= 查看当前缓冲区的值。
+
+***** 不装插件也能用的原生注释
+
+| 快捷键 | 命令 | 作用 |
+|--------+------+------|
+| M-; | comment-dwim | 有选区时注释／取消选区；没有选区时在行尾插入注释 |
+| C-x C-; | comment-line | 注释当前行，带数字参数 |
+
+这两个是 Emacs 自带的，不受 Evil 状态影响；=gc= 是操作符，更适合对动作范围一次完成。
 
 *** 搜索、定位与候选界面
 
@@ -2655,6 +2876,14 @@ daemon 不主动显示页面，emacsclient 创建窗口后可手动调用；不�
 不想提交就在 .gitignore 里忽略 =assets/dashboard/=。
 原参考文件里的 emacslog.png 路径在本机已不存在，所以没有写入；把它放进上面的目录即可恢复。
 
+图片很大会拖慢启动，办法见本节代码块之后的“横幅图片优化”。
+
+启动速度：随机选图只读目录里的文件名，不会读图片内容；列目录再按扩展名过滤、随机取一个，开销很小
+（我只在批处理里计过一次，那次 Emacs 列出的文件数为 0，所以只能说明调用本身极快，
+不能代表目录里图片很多时的耗时，没有对大目录实测）。真正会慢的是被选中的那一张：
+Emacs 要把它整个解码出来再缩到 250 像素高，你的壁纸一张就有 1 到 6 MB，没有在你的图形界面里计时，
+这是最可能的瓶颈，不是测出来的结论。办法是只放预先缩小过的图：这一步做一次就够，不在每次启动时处理。
+
 页面水平／垂直居中；内容超过窗口高度时仍需滚动，不意味着所有列表都能同时完整显示。
 图标固定使用 Nerd Icons，需 Nerd Icons 包及对应字体。
 Dashboard 插入图标时会检查默认字体能否显示该字符，不能显示就丢弃图标；
@@ -2685,6 +2914,71 @@ Dashboard 的图标大小：nerd-icons 把状态栏用的缩放倍数（=nerd-ic
                   (directory-files my/dashboard-banner-directory t))))
       (if files (seq-random-elt files) 'official)))
   "本次启动选中的横幅：目录里的某张图片，或回退的 official。")
+
+;; 图片优化：把大图缩成横幅用的小 jpg，需要 ImageMagick 的 magick 命令。
+;; 不使用 convert：Windows 自带的 convert.exe 是磁盘格式转换工具，不是 ImageMagick。
+(defvar my/dashboard-banner-height 300
+  "优化后横幅图片的高度（像素）；略大于显示用的 250，缩放后不容易糊。")
+(defvar my/dashboard-banner-quality 85
+  "优化后 jpg 的压缩质量，1 到 100；越大越清晰，文件也越大。")
+(defvar my/image-magick-program nil
+  "magick 可执行文件的完整路径；nil 表示自动查找，找不到时在这里写完整路径。")
+
+(defun my/find-magick ()
+  "返回 magick 的路径：先用设置的变量，再查 PATH，最后找 Emacs 自己所在的目录。"
+  (or my/image-magick-program
+      (executable-find "magick")
+      ;; MSYS2 版 Emacs 和 ImageMagick 常装在同一个 bin 目录；从资源管理器启动时 PATH 里可能没有它。
+      (let ((exec-path (cons invocation-directory exec-path)))
+        (executable-find "magick"))
+      (user-error "找不到 ImageMagick 的 magick 命令：先安装 ImageMagick；已安装就在主 Org 的 Dashboard 一节把 my/image-magick-program 设为 magick.exe 的完整路径（保存、tangle、重启），临时可 M-x set-variable RET my/image-magick-program RET")))
+
+(defun liyunfeng/optimize-dashboard-banners ()
+  "把横幅目录里的大图缩成小 jpg（名称加 .opt），成功后直接删除原图。只处理横幅目录，不能指定别的目录；执行前确认一次，y 开始，n 或 C-g 取消；需要 ImageMagick。"
+  (interactive)
+  (let* ((magick (my/find-magick))
+         (case-fold-search t)           ; 扩展名不区分大小写
+         (dir (file-name-as-directory (expand-file-name my/dashboard-banner-directory)))
+         (todo nil) (done 0) (skipped 0) (failed 0))
+    ;; 先只统计，不改动任何文件。
+    (dolist (file (directory-files dir t))
+      (when (and (file-regular-p file)
+                 (string-match-p "\\.\\(png\\|jpe?g\\|webp\\)\\'" file))
+        (let ((name (file-name-sans-extension (file-name-nondirectory file))))
+          (if (or (string-match-p "\\.opt\\'" name)
+                  (file-exists-p (expand-file-name (concat name ".opt.jpg") dir)))
+              (setq skipped (1+ skipped)) ; 已是优化结果，或同名结果已存在
+            (push file todo)))))
+    (cond
+     ((null todo)
+      (message "没有需要优化的图片：已跳过 %d 张（已优化或同名结果已存在）" skipped))
+     ((not (y-or-n-p (format "优化 %d 张图片并直接删除原图（不可恢复），继续吗？" (length todo))))
+      (message "已取消，没有改动任何文件"))
+     (t
+      (dolist (file (nreverse todo))
+        (let ((out (expand-file-name
+                    (concat (file-name-sans-extension (file-name-nondirectory file)) ".opt.jpg") dir)))
+          (if (file-exists-p out)
+              ;; 同名不同扩展（如 a.jpg 与 a.png）会得到同一个结果名：第二张保留原图，不覆盖。
+              (setq skipped (1+ skipped))
+            (with-temp-buffer
+              (if (and (zerop (call-process
+                               magick nil t nil
+                               (concat (convert-standard-filename file) "[0]") ; [0] 只取第一帧
+                               "-auto-orient"
+                               "-background" "white" "-alpha" "remove" "-alpha" "off" ; 透明部分铺白，jpg 不支持透明
+                               "-resize" (format "x%d>" my/dashboard-banner-height)   ; 只缩小，不放大
+                               "-strip" "-quality" (number-to-string my/dashboard-banner-quality)
+                               (convert-standard-filename out)))
+                       (> (or (file-attribute-size (file-attributes out)) 0) 0))
+                  (progn
+                    (delete-file file)  ; 结果确认生成后才删除原图
+                    (setq done (1+ done)))
+                (setq failed (1+ failed))
+                (when (file-exists-p out) (delete-file out))
+                (message "优化失败（原图保留）%s：%s" file (string-trim (buffer-string))))))))
+      (message "横幅图片优化完成：处理 %d 张，跳过 %d 张，失败 %d 张%s"
+               done skipped failed (if (> done 0) "；下次启动生效" ""))))))
 
 (defun liyunfeng/dashboard-on-startup ()
   "无文件的普通启动完成后打开 Dashboard，不抢占已打开的文件。"
@@ -2762,6 +3056,49 @@ Dashboard 的图标大小：nerd-icons 把状态栏用的缩放倍数（=nerd-ic
   (add-hook 'window-size-change-functions #'dashboard-resize-on-hook))
 #+end_src
 
+**** 横幅图片优化：M-x liyunfeng/optimize-dashboard-banners
+
+把横幅目录里的大图缩成高度 300 像素的小 jpg（体积通常降到几十 KB），文件名加 =.opt= 标记，
+成功后直接删除原图，以后每次启动直接用，不再重复处理。
+命令只处理横幅目录 =my/dashboard-banner-directory=（默认 =assets/dashboard/=），不能指定别的目录，没有任何参数；
+想优化别处的图，先把图片复制或移动进横幅目录。命令没有绑定快捷键：新增壁纸后才用一次，用 =M-x= 调用即可。
+
+使用步骤：
+
+1. 把壁纸放进 =assets/dashboard/=。注意：这是要被删除的原图，需要保留的先另外备份。
+2. =M-x liyunfeng/optimize-dashboard-banners RET=。
+3. 底部提示“优化 N 张图片并直接删除原图（不可恢复），继续吗？”：按 =y= 开始，按 =n= 或 =C-g= 取消，取消时不改动任何文件。
+   这一次确认是我在“直接删除”的基础上加的保险，因为删除不可恢复；N 是实际会被处理的张数。
+4. 完成后回显区显示“处理几张、跳过几张、失败几张”，失败原因在 =*Messages*=（=, d m=）。
+5. 下次启动生效；当前这一次的页面还是启动时选好的那张。
+
+规则和限制（来自函数源码和下面的实测）：
+
+- 处理 png、jpg、jpeg、webp；gif（可能是动图）、svg、xbm 不处理，原样留在目录里。
+- 原图只在新图确认生成（命令成功且文件不为空）之后才删除；失败的图原图保留。
+  损坏的图每次执行都会重新尝试并失败，需要你自己处理掉。
+- 名称里已带 =.opt= 的图会跳过；同名结果已存在也会跳过并保留原图，所以重复执行是安全的。
+  例如目录里同时有 =a.jpg= 和 =a.png=，都会得到 =a.opt.jpg=，第二张保留原图，不覆盖，改名后再执行。
+- 只缩小不放大（高度不足 300 的图保持原尺寸），透明背景铺成白色，自动按拍摄方向旋转，去掉元数据。
+- 高度 =my/dashboard-banner-height=（300）、jpg 质量 =my/dashboard-banner-quality=（85）可在代码块里改，
+  改大更清晰但解码更慢；只对以后优化的图生效。已经优化过的图因为原图已删除，无法重做，
+  想用不同参数就需要重新放入原图，所以参数确定之后再批量处理。
+- 同步执行：处理几张大图时 Emacs 会暂时没有响应，几秒到几十秒，属于正常现象，等回显区出现结果即可。
+
+找不到 ImageMagick（命令 =magick=）怎么办：
+
+- 命令会先用变量 =my/image-magick-program=，再查 PATH，最后找 Emacs 自己所在的目录。本机的 magick 和 Emacs
+  在同一个 Msys2 目录里，通常能自动找到。
+- 找不到时会报错并提示去哪里设置：在本 Org 的 Dashboard 一节，把代码块里 =(defvar my/image-magick-program nil ...)= 的
+  =nil= 改成 magick 的完整路径字符串，例如 ="D:/Software/Msys2/ucrt64/bin/magick.exe"=，
+  保存、tangle、重启。想先试用，可以 =M-x set-variable RET my/image-magick-program RET= 输入路径字符串（带双引号）。
+- 不要用 =convert=：Windows 自带的 convert.exe 是磁盘格式转换工具，不是 ImageMagick。
+- 新增图片在 Git 里是未跟踪文件，不想提交就把 =assets/dashboard/= 加进 =.gitignore=（这次没有改动它）。
+
+实测（临时目录里的壁纸副本，没有在你的图形界面里验证）：6.3 MB 的 jpg 变成 60 KB，4.5 MB 的 png（文件名含中文和空格）
+变成 46 KB，三张共用约 1.6 秒；取消确认后文件不变；损坏的图保留原图并报失败；同名的 a.jpg 与 a.png 只处理第一张；
+再次执行时已优化的图跳过；“找不到命令”的提示和变量优先都已核对。
+
 *** 五类列表的数据与操作
 
 | 栏目 | 数量 | 数据来自哪里、怎样准备 |
@@ -2807,6 +3144,7 @@ Dashboard 内的 r/m/p/a/e 会占用该页面上这些字母原有的 Evil 操�
 |--------+---------------------+------|
 | 未另绑定 | dashboard-open | 打开／刷新 Dashboard |
 | 未另绑定 | dashboard-refresh-buffer | 同上，插件提供的别名 |
+| 未另绑定 | liyunfeng/optimize-dashboard-banners | 把大图缩成横幅用的 .opt.jpg，需要 ImageMagick |
 | r / m / p / a / e（页面内） | 插件生成的栏目跳转命令 | 定位五类栏目，RET 另行打开条目 |
 | TAB / S-TAB（页面内） | widget-forward / widget-backward | 在按钮间前后移动，以有效键位为准 |
 | RET（页面内） | dashboard-return／Evil 的 RET 适配 | 激活条目或按钮 |
@@ -2970,6 +3308,9 @@ Helpful 增强按键、函数和变量帮助，=describe-mode= 查看当前模�
 Consult 主要负责搜索和选择，不是帮助文档增强包。
 帮助入口覆盖：按键解释、命令／函数说明、变量说明、光标处符号帮助、
 当前模式帮助、当前有效键位列表、根据命令查找按键、Emacs 手册和本 Org 配置。
+同一个按键在不同界面触发的是各自提供的功能，=s=、=o=、=%=、=*= 就是这样：概念见
+[[file:guides/faq.org::*同一个按键在不同界面会触发什么][常见问题：同一个按键在不同界面会触发什么]]，
+各界面的完整对照表（含前缀键后面的子键）见 [[file:guides/keys-by-mode.org][按模式查按键手册]]。
 
 #+begin_src emacs-lisp
 ;;; 帮助增强：调用时加载 Helpful，安装由 use-package 处理。
@@ -3518,14 +3859,20 @@ General 不会自动启用 which-key，也不代替插件本身。
    :keymaps 'override
    "," my/leader-map)
 
-  ;; 仅普通模式的 s 改为 Avy；原替换字符操作可用 cl，其他状态不改。
-  ;; Magit 的 s 用于暂存：返回 nil 让高优先级绑定退让，保留局部 keymap 的原命令。
-  ;; 使用 General 已有的条件分派，不另写暂存包装函数；Avy 仍可通过 , j j 调用。
+  ;; 普通状态的 s 只在“文本编辑”类缓冲区里改为 Avy；原替换字符操作可用 cl，其他状态不改。
+  ;; 文本编辑 = text-mode、prog-mode、conf-mode 及其派生（Org、Markdown、Lisp、C、.gitignore 等），
+  ;; 以及没有专门模式的纯文本文件（fundamental-mode）。
+  ;; 其他模式（Dired、ibuffer、Magit、帮助页等）条件不成立，条件分派返回 nil，
+  ;; 这一层不给出命令，按键继续往下找，各模式自己的 s 照常生效（Magit 暂存、ibuffer 筛选前缀……）。
+  ;; general-predicate-dispatch 的第一个参数是默认值（nil：不绑定），后面是“条件 命令”成对出现。
+  ;; Avy 仍可在任何界面用 , j j 调用。
   (general-define-key
    :states 'normal
    :keymaps 'override
-   "s" (general-predicate-dispatch #'avy-goto-char-timer
-         (derived-mode-p 'magit-mode) nil))  ; Jump，字符标签跳转；Magit 保留局部暂存键
+   "s" (general-predicate-dispatch nil
+         (or (derived-mode-p 'text-mode 'prog-mode 'conf-mode)
+             (eq major-mode 'fundamental-mode))
+         #'avy-goto-char-timer))  ; Jump，字符标签跳转；仅文本编辑模式
 
   ;; 此前未自定义全局 Esc；这里只绑定独立事件，不覆盖 ESC / Meta 前缀。
   ;; Evil 的插入／可视状态仍优先使用原来的 Esc，C-g 继续保留取消／中断用途。
@@ -3676,37 +4023,38 @@ evil-collection 的 Dired 适配不绑定 =h= 和 =l=，它们保留 Evil 的字
 
 #+end_src
 
-**** 普通模式 s：Avy 与 Magit 的条件分派
+**** 普通模式 s：只在文本编辑里用 Avy
 
-这里同时判断两件事：Evil 是否处于 normal（普通）状态，以及当前缓冲区的主模式是什么。
-“缓冲区”包括普通文件、Org、代码、Magit 状态页和帮助页，不只是普通文本文件。
-“当前文件属于 Git 仓库”不等于“当前缓冲区是 Magit 模式”。
+普通状态的 =s= 只在“文本编辑”类缓冲区里才是 Avy 字符跳转（=avy-goto-char-timer=）；
+其他模式一律让位给该模式自己的 =s=。文本编辑类指：text-mode、prog-mode、conf-mode 及其派生
+（Org、Markdown、Lisp、C、Python、.gitignore 等），以及没有专门模式的纯文本文件（fundamental-mode）。
 
-| 场景 | s 的行为 | Avy 的其他入口 |
-|------+----------+----------------|
-| 文本、Org、代码等非 Magit 缓冲区，Evil 普通状态 | 执行 avy-goto-char-timer | , j j 或 M-x avy-goto-char-timer |
-| Magit 状态、日志、差异等缓冲区，Evil 普通状态 | 让位于局部键位；状态页中为 magit-stage 暂存 | , j j 或 M-x avy-goto-char-timer |
-| Evil 插入状态 | 不受该规则影响，普通文件中输入字符 s | C-c , j j 或 M-x avy-goto-char-timer |
-| Evil motion / Emacs 状态 | 不新增 s 的 Avy 绑定，沿用原状态和模式的绑定 | C-c , j j 或 M-x avy-goto-char-timer |
+以下是本机批处理加载你的统一快捷键后，在普通状态逐个模式查询到的结果（只查询绑定的命令，没有真的按键）：
 
-=general-predicate-dispatch= 生成的是一个带过滤条件的键位，查找按键时选择本次实际定义：
+| 模式 | s 的行为 |
+|------+----------|
+| Org、Lisp、Python、C、文本、配置文件、纯文本 | Avy 字符跳转 |
+| Dired | dired-do-kill-lines：把标记的行（没标记就是当前行）从列表里隐藏，不删除文件；=gr= 刷新恢复 |
+| ibuffer | 前缀键，后接 n、m、f、i、p、/ 等做筛选，见 ibuffer 一节 |
+| Magit 状态页 | magit-stage-files 暂存 |
+| 帮助页 | help-view-source |
+| Info | Info-search |
+| Shell、Eshell | Evil 默认的 evil-substitute（删除光标处字符并进入插入状态） |
+| *Messages* 等只读特殊缓冲区 | 无作用 |
 
-1. 外层 =:states 'normal= 表示规则只挂在 Evil 普通状态的 s 上；
-   =:keymaps 'override= 表示这一层优先级较高，所以需要显式处理 Magit 例外。
-2. =(derived-mode-p 'magit-mode)= 判断当前主模式是否为 magit-mode 或派生模式，
-   例如 magit-status-mode、magit-log-mode、magit-diff-mode；不看缓冲区名称或文件路径。
-3. 命中 Magit 条件时返回 nil，表示这一层不给出命令，Emacs 继续查找下面的有效 keymap。
-   因而保留 Magit / evil-collection 提供的局部 s，而不是在这里另写一个暂存命令。
-4. 没有命中条件时使用首个参数中的 avy-goto-char-timer，普通状态下 s 继续用于 Avy。
+Avy 在任何界面都可以用 =, j j=（=M-x avy-goto-char-timer RET=）调用，所以其他模式里没有损失。
 
-这就是“退让”：一次按键查找中的优先级让位，不是关闭 Avy、卸载插件或删除所有 s 绑定。
-离开 Magit 回到文本缓冲区时，条件自然变为不匹配，无需另写恢复 hook。
-若其他工具模式以后出现同类冲突，需要按实际需求另行处理；当前只为 Magit 添加了例外。
+实现方法：外层 =:states 'normal= 表示规则只挂在 Evil 普通状态的 s 上；=:keymaps 'override= 表示这一层优先级很高，
+会盖住各模式自己的 s，所以必须用条件分派让它在非文本模式里“退让”。
+=general-predicate-dispatch= 的第一个参数是默认值，这里是 =nil=（不绑定）；后面“条件 命令”成对出现：
+条件是 =(or (derived-mode-p 'text-mode 'prog-mode 'conf-mode) (eq major-mode 'fundamental-mode))=，
+成立时用 Avy。条件不成立时这一层不给出命令，按键继续往下找，各模式自己的 s 就生效了；
+不看缓冲区名称或文件路径。“当前文件属于 Git 仓库”不等于“当前缓冲区是 Magit 模式”。
+离开某个模式回到文本缓冲区时条件自然改变，无需另写恢复 hook。
 
-Avy 在这里用于当前窗口可见文字的定位，并不要求缓冲区一定是可编辑的普通文件。
-在 Magit 中也能用 =, j j=（=M-x avy-goto-char-timer RET=），输入目标字符并按标签跳转，
-C-g 取消；跳转只移动光标，不执行暂存。模式或 minibuffer 的临时键位可能另有优先级，
-以当前状态为准，不把所有界面里的单键 s 都描述为 Avy。
+想让某个别的模式也用 Avy 的 s：把它的父模式加进 =derived-mode-p= 的参数里，保存、tangle、重启。
+Evil 插入状态不受影响，输入的仍是字母 s；原来的“替换字符”操作在文本模式里用 =cl=。
+
 
 **** General 怎么修改：对照示例
 
@@ -3754,7 +4102,7 @@ j（Jump，跳转）、s（Search，搜索）、p（Project，项目）、e（Ed
 原生 =C-h= 帮助入口保留；插入状态或 Emacs 状态使用 =C-c ,= 备用入口。
 Help、Dired 等模式可能有更高优先级局部键位，先尝试备用前缀；手动启动后确认冲突。
 第二阶段将普通模式 =s= 用于 Avy，原来的替换字符操作可用 =cl=；
-Magit 缓冲区例外：s 保留原暂存操作，Avy 使用 =, j j=。
+Magit、Dired、ibuffer 等非文本编辑模式：s 保留各自的原操作，Avy 使用 =, j j=。
 可视与插入状态不新增 s 的 Avy 绑定。
 不采用参考文件把点号 =.= 改成跳转的绑定，以保留 Vim 重复编辑功能。
 
@@ -3823,6 +4171,7 @@ Magit 缓冲区例外：s 保留原暂存操作，Avy 使用 =, j j=。
 | , o l | org-open-at-point | 打开光标处链接 |
 | , e y | consult-yank-pop | 选择剪贴历史文字 |
 | 未绑定 | load-theme | 临时选择并加载主题 |
+| 未绑定 | liyunfeng/optimize-dashboard-banners | 把大图缩成 Dashboard 横幅用的 .opt.jpg |
 | 未绑定 | cnfonts-increase-fontsize / cnfonts-decrease-fontsize | 调整正文字号 |
 | 未绑定 | describe-char | 核对光标处实际字体，非修改方案入口 |
 | 未绑定 | text-scale-adjust | 临时缩放当前缓冲区，非 main 持久设置 |
@@ -3865,7 +4214,7 @@ Org 中把光标放到标题，用 , o TAB（M-x org-cycle RET）切换局部折
 | , f p | my/copy-file-path | 复制当前文件完整路径 |
 | , b b | consult-buffer | 切换并预览缓冲区 |
 | C-. | embark-act | 当前候选或光标目标动作；菜单内 C-h 查找动作 |
-| s（仅普通模式） / , j j | avy-goto-char-timer | 当前窗口输入字符后按标签跳转 |
+| s（仅文本编辑模式的普通状态） / , j j | avy-goto-char-timer | 当前窗口输入字符后按标签跳转；, j j 在任何界面可用 |
 | , j l | avy-goto-line | 当前窗口可见行跳转 |
 | , s s | consult-line | 当前缓冲区全文行搜索与预览 |
 | , s r | consult-ripgrep | 项目或目录文本搜索，需要 rg |
@@ -4005,6 +4354,7 @@ Embark 已由用户确认本机使用正常、符合需求；以下旧体验条�
 - 试用 ysiw"、ds"、cs"'，确认 surround 行为。
 - 普通状态按逗号，确认半秒后出现菜单；插入状态输入逗号仍应是普通文字。
 - 用 C-c , 访问同一菜单，试用文件保存、切换缓冲区和帮助查询。
+- 安装 evil-commentary 后，在 Lisp 缓冲区试 =gcc=、=3gcc=、=gcap=、可视状态 =gc=，再 =gyyp=；在 Org 代码块内试 =gcc=。
 - 在 Dired 中试 h（上级目录）和 l（打开／进入）；在 Dired、Helpful 中体验导航与退出，遇到不确定的操作使用 , h m 或 C-h m。
 - 图形 Emacs 和 emacs -nw 分别试用，特别检查 Esc、逗号、中文提示和帮助界面。
 - 图形 Emacs 检查相对行号、当前行绝对行号、状态栏行列位置、当前行提示、中文 Org 表格及 main 的 JetBrains／LXGW；

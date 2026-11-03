@@ -1,0 +1,324 @@
+#+title: 按模式查按键：s、o、%、* 在各界面分别是什么
+#+property: header-args :tangle no
+#+startup: overview num
+#+options: toc:3 num:3
+
+同一个按键在不同的界面（模式）里触发的是该界面自己提供的功能：文本里 =s= 是 Avy 跳转，Dired 里是隐藏行，
+Magit 里是暂存，ibuffer 里又是筛选前缀。本页按界面列清楚每个键的含义，以及前缀键后面还能接什么。
+概念性的解释（为什么同一个键会不一样、哪一层优先）见 [[file:faq.org::*同一个按键在不同界面会触发什么][常见问题：同一个按键在不同界面会触发什么]]。
+
+* 目录 :TOC_3_org:
+:PROPERTIES:
+:UNNUMBERED: t
+:END:
+
+- [[怎样读这份手册][怎样读这份手册]]
+- [[总览][总览]]
+- [[代码、文本和 Org][代码、文本和 Org]]
+- [[Dired][Dired]]
+- [[ibuffer][ibuffer]]
+- [[Magit][Magit]]
+- [[帮助、Info 和其他只读列表][帮助、Info 和其他只读列表]]
+- [[标记、删除和批量操作键：d x m u t U 与 D R C S P X][标记、删除和批量操作键：d x m u t U 与 D R C S P X]]
+  - [[小写：标记和执行][小写：标记和执行]]
+  - [[大写：批量操作或取消全部标记][大写：批量操作或取消全部标记]]
+  - [[一些容易误会的地方][一些容易误会的地方]]
+  - [[在陌生的列表界面里按之前][在陌生的列表界面里按之前]]
+- [[自己怎么查][自己怎么查]]
+- [[跨界面的约定][跨界面的约定]]
+
+* 怎样读这份手册
+
+所有结果都是在本机批处理 Emacs（31.1）里加载了你的统一快捷键之后，逐个模式在 Evil 普通状态下查询得到的，
+只查询“这个键绑定到了什么”，没有真的按过键，也没有在你的图形界面里验证。
+查询时每个模式放在一个临时缓冲区里：普通的列表和只读界面没有问题；
+Dashboard、Customize、Shell、Eshell 这类打开时才会建立自己局部键位的界面没有可靠结果，所以不在下表里，
+遇到时用后面“自己怎么查”里的方法。
+
+键有三种形态：
+
+| 形态 | 含义 | 例子 |
+|------+------+------|
+| 单个命令 | 按一次就执行 | Dired 里的 =s=、=o= |
+| 前缀键 | 按一次只是开始，要再按一个键才执行；按下后等一会儿 which-key 会列出后续可按的键 | ibuffer 里的 =s=、=o=、=%=、=*=，Dired 里的 =%=、=*= |
+| 无作用 | 绑定到了 =ignore=，按了什么都不发生；这是列表类界面用来防止误输入的常见做法 | *Messages*、Helpful 里的 =s=、=o= |
+
+用户自己的绑定（本配置）见主 Org 的统一快捷键章节：逗号 =,= 在所有界面都是 leader 菜单；
+=s= 只在文本编辑类模式里是 Avy（见 [[file:../self_config.org::*普通模式 s：只在文本编辑里用 Avy][普通模式 s]]）；
+Dired 里 =h=、=l= 是返回上级目录、打开。
+
+* 总览
+
+下表每一格是该界面里这个键的实际命令，前缀键只写“前缀”，展开见后面各节。
+
+| 界面 | s | o | % | * |
+|------+---+---+---+---|
+| 代码、文本、Org | Avy 字符跳转 | 在下方新开一行并插入 | 跳到配对括号 | 向前搜索光标处的单词 |
+| Dired | 把行从列表隐藏（不删文件） | 切换排序 | 前缀：按正则 | 前缀：标记 |
+| ibuffer | 前缀：筛选 | 前缀：排序 | 前缀：按正则标记 | 前缀：标记 |
+| Magit（状态页、日志、差异） | 暂存（光标在变更上暂存该处，否则选文件） | 快速重置 | 工作树菜单 | 向前搜索光标处的单词 |
+| 帮助页 | 查看源码 | 无作用 | 跳到配对括号 | 向前搜索光标处的单词 |
+| Helpful | 无作用 | 无作用 | 跳到配对括号 | 向前搜索光标处的单词 |
+| Info | 搜索文字 | 无作用 | 跳到配对括号 | 向前搜索光标处的单词 |
+| *Messages* | 无作用 | 无作用 | 跳到配对括号 | 向前搜索光标处的单词 |
+| 包列表 | 无作用 | 无作用 | 跳到配对括号 | 向前搜索光标处的单词 |
+| Buffer-menu（=M-x list-buffers=） | 标记待保存 | 按光标所在列排序 | 切换只读 | 向前搜索光标处的单词 |
+| 书签列表 | 增量搜索书签 | 打开当前书签 | 跳到配对括号 | 向前搜索光标处的单词 |
+| 编译输出 | 无作用 | 无作用 | 跳到配对括号 | 向前搜索光标处的单词 |
+
+对应的命令名（M-x）：Avy =avy-goto-char-timer=（Evil 包装名 =evil-avy-goto-char-timer=）、=evil-open-below=、
+=evil-jump-item=、=evil-search-word-forward=；Dired 的 =dired-do-kill-lines=、=dired-sort-toggle-or-edit=；
+Magit 的 =magit-stage=、=magit-stage-files=、=magit-reset-quickly=、=magit-worktree=；帮助页 =help-view-source=；
+Info =Info-search=；Buffer-menu =Buffer-menu-save=、=tabulated-list-sort=、=Buffer-menu-toggle-read-only=；
+书签 =bookmark-bmenu-search=、=bookmark-bmenu-select=。
+
+表里“跳到配对括号”“向前搜索单词”“在下方新开一行”都是 Evil 的默认含义：这些界面没有给这个键另外绑定，
+所以保持 Evil 原样。
+
+* 代码、文本和 Org
+
+这里的键就是 Evil 的默认含义，本配置只改了 =s=。
+
+| 快捷键 | 命令（M-x 名称） | 作用 |
+|--------+------------------+------|
+| s | avy-goto-char-timer | 输入几个字符，按标签跳到屏幕上的目标；本配置绑定，只在文本编辑模式里 |
+| o | evil-open-below | 在下方新开一行并进入插入状态；大写 =O= 是在上方 |
+| % | evil-jump-item | 光标在括号上时跳到配对的括号；也用于 =if/else= 等成对结构 |
+| * | evil-search-word-forward | 搜索光标处的单词，=n= 下一个、=N= 上一个；=#= 是向后搜索 |
+
+原来的“替换字符”（Vim 的 =s=）改用 =cl=。
+
+* Dired
+
+打开：=, f d= 或 =M-x dired RET=。
+
+| 快捷键 | 命令（M-x 名称） | 作用 |
+|--------+------------------+------|
+| s | dired-do-kill-lines | 把已标记的行（没标记就是当前行或接下来的 N 行）从列表里隐藏；文件不会被删除，=gr= 刷新恢复 |
+| o | dired-sort-toggle-or-edit | 在按名称和按日期排序之间切换并刷新；带前缀参数可编辑 ls 参数 |
+| % | 前缀 | 按正则表达式批量操作，见下表 |
+| * | 前缀 | 标记文件，见下表 |
+
+=%= 之后可按的键（本机查询到 11 个）：
+
+| 快捷键 | 命令（M-x 名称） | 作用 |
+|--------+------------------+------|
+| % m | dired-mark-files-regexp | 标记名称匹配正则的文件 |
+| % g | dired-mark-files-containing-regexp | 标记内容匹配正则的文件 |
+| % d | dired-flag-files-regexp | 把名称匹配正则的文件标成待删除 |
+| % & | dired-flag-garbage-files | 把“垃圾文件”（备份文件等，由变量 =dired-garbage-files-regexp= 定义）标成待删除 |
+| % r、% R | dired-do-rename-regexp | 把匹配正则的文件改名 |
+| % C | dired-do-copy-regexp | 把匹配正则的文件复制并改名 |
+| % H | dired-do-hardlink-regexp | 建立硬链接并改名 |
+| % S | dired-do-symlink-regexp | 建立符号链接并改名 |
+| % u | dired-upcase | 把标记的文件名改成大写 |
+| % l | dired-downcase | 把标记的文件名改成小写 |
+
+=*= 之后可按的键（本机查询到 14 个）：
+
+| 快捷键 | 命令（M-x 名称） | 作用 |
+|--------+------------------+------|
+| * m | dired-mark | 标记当前文件（单键 =m= 同样） |
+| * u | dired-unmark | 取消当前文件的标记（单键 =u=） |
+| * !、* ? | dired-unmark-all-marks、dired-unmark-all-files | 取消全部标记 |
+| * t | dired-toggle-marks | 反选：标记的取消、没标记的标记 |
+| * * | dired-mark-executables | 标记所有可执行文件 |
+| * / | dired-mark-directories | 标记所有目录 |
+| * @ | dired-mark-symlinks | 标记所有符号链接 |
+| * % | dired-mark-files-regexp | 按名称正则标记（同 =% m=） |
+| * s | dired-mark-subdir-files | 标记当前子目录里除 =.=、=..= 外的所有文件 |
+| * c | dired-change-marks | 把某种标记换成另一种（例如把 =*= 换成 =D=） |
+| * C-n、* C-p | dired-next-marked-file、dired-prev-marked-file | 在已标记的文件之间移动 |
+| * DEL | dired-unmark-backward | 取消上一行标记并上移 |
+
+Dired 的操作文档见主 Org 的“Dired：目录与批量文件操作”。复制、移动、删除会修改磁盘，先看清标记再执行。
+
+* ibuffer
+
+打开：=, b i= 或 =M-x ibuffer RET=。四个键在这里全都是前缀键，下面按本机查询结果完整列出（共 58 个子键）。
+ibuffer 的整体操作教程见主 Org 的“ibuffer 缓冲区列表：操作与帮助”。
+
+=s= 筛选（只改变列表显示，不关闭缓冲区）：
+
+| 快捷键 | 命令（M-x 名称） | 作用 |
+|--------+------------------+------|
+| s n | ibuffer-filter-by-name | 按名称筛选 |
+| s m | ibuffer-filter-by-used-mode | 按“正在使用的主模式”筛选 |
+| s M | ibuffer-filter-by-derived-mode | 按主模式及其派生模式筛选 |
+| s RET | ibuffer-filter-by-mode | 按主模式名筛选 |
+| s f | ibuffer-filter-by-filename | 按文件名（完整路径）筛选 |
+| s b | ibuffer-filter-by-basename | 按文件名（不含目录）筛选 |
+| s . | ibuffer-filter-by-file-extension | 按文件扩展名筛选 |
+| s i | ibuffer-filter-by-modified | 只显示已修改的 |
+| s v | ibuffer-filter-by-visiting-file | 只显示有对应文件的 |
+| s * | ibuffer-filter-by-starred-name | 只显示名称带 =*= 的特殊缓冲区 |
+| s <、s > | ibuffer-filter-by-size-lt、ibuffer-filter-by-size-gt | 按大小小于／大于给定值筛选 |
+| s c | ibuffer-filter-by-content | 按缓冲区内容筛选 |
+| s e | ibuffer-filter-by-predicate | 用一段 Lisp 条件筛选 |
+| s p、s <up> | ibuffer-pop-filter | 撤销最近一个筛选 |
+| s / | ibuffer-filter-disable | 取消所有筛选 |
+| s ! | ibuffer-negate-filter | 把最上面的筛选取反 |
+| s &、s o、s 竖线 | ibuffer-and-filter、ibuffer-or-filter | 把最上面两个筛选合并为“且”／“或” |
+| s t、s TAB | ibuffer-exchange-filters | 交换最上面两个筛选 |
+| s d | ibuffer-decompose-filter | 把组合筛选拆开 |
+| s s、s a、s r、s x | ibuffer-save-filters、ibuffer-add-saved-filters、ibuffer-switch-to-saved-filters、ibuffer-delete-saved-filters | 保存、追加、切换到、删除命名筛选 |
+| s g | ibuffer-filters-to-filter-group | 把当前筛选变成一个“分组” |
+| s P、s S-<up> | ibuffer-pop-filter-group | 撤销最近一个分组 |
+| s D | ibuffer-decompose-filter-group | 把分组拆回筛选 |
+| s 反斜杠 | ibuffer-clear-filter-groups | 清除所有分组 |
+| s S、s R、s X | ibuffer-save-filter-groups、ibuffer-switch-to-saved-filter-groups、ibuffer-delete-saved-filter-groups | 保存、切换到、删除命名分组 |
+
+=o= 排序：
+
+| 快捷键 | 命令（M-x 名称） | 作用 |
+|--------+------------------+------|
+| o a | ibuffer-do-sort-by-alphabetic | 按名称 |
+| o v | ibuffer-do-sort-by-recency | 按最近使用 |
+| o s | ibuffer-do-sort-by-size | 按大小 |
+| o f | ibuffer-do-sort-by-filename/process | 按文件名或进程 |
+| o m | ibuffer-do-sort-by-major-mode | 按主模式 |
+| o i | ibuffer-invert-sorting | 反向 |
+
+=%= 按正则标记：
+
+| 快捷键 | 命令（M-x 名称） | 作用 |
+|--------+------------------+------|
+| % n | ibuffer-mark-by-name-regexp | 标记名称匹配的缓冲区 |
+| % m | ibuffer-mark-by-mode-regexp | 标记主模式名匹配的缓冲区 |
+| % f | ibuffer-mark-by-file-name-regexp | 标记文件名匹配的缓冲区 |
+| % g | ibuffer-mark-by-content-regexp | 标记内容匹配的缓冲区 |
+| % L | ibuffer-mark-by-locked | 标记被锁定的缓冲区 |
+
+=*= 标记一类缓冲区：
+
+| 快捷键 | 命令（M-x 名称） | 作用 |
+|--------+------------------+------|
+| * m | ibuffer-mark-modified-buffers | 所有已修改的 |
+| * u | ibuffer-mark-unsaved-buffers | 已修改且有对应文件的（尚未保存） |
+| * s、* * | ibuffer-mark-special-buffers | 名称以 =*= 开头结尾的特殊缓冲区 |
+| * / | ibuffer-mark-dired-buffers | 所有 Dired 缓冲区 |
+| * h | ibuffer-mark-help-buffers | 帮助类缓冲区 |
+| * r | ibuffer-mark-read-only-buffers | 只读的缓冲区 |
+| * e | ibuffer-mark-dissociated-buffers | 对应文件已不存在的缓冲区 |
+| * z | ibuffer-mark-compressed-file-buffers | 对应压缩文件的缓冲区 |
+| * M | ibuffer-mark-by-mode | 标记主模式等于输入值的缓冲区 |
+| * c | ibuffer-change-marks | 把某种标记换成另一种 |
+
+关闭缓冲区的单键（=d= 标记、=x= 执行、=D= 直接关闭）不在这四个前缀里，见 ibuffer 教程。
+在 ibuffer 里 =s= 是筛选前缀，不是 Avy：统一快捷键只在文本编辑模式里把 =s= 绑成 Avy。
+
+* Magit
+
+打开：=, g s=（=M-x magit-status RET=）。状态页、日志页、差异页的这四个键相同（本机分别查询）。
+
+| 快捷键 | 命令（M-x 名称） | 作用 |
+|--------+------------------+------|
+| s | magit-stage-files、magit-stage | 暂存。光标在未暂存或未跟踪的文件、区块上时是 =magit-stage=，暂存光标处的变更；在其他位置时是 =magit-stage-files=，让你选择要暂存的文件 |
+| o | magit-reset-quickly | 快速重置：把 HEAD 和暂存区重置到某个提交，可能连工作区一起改，注意确认提示 |
+| % | magit-worktree | 工作树（同一仓库的多个工作目录）菜单 |
+
+关于 =s= 的说明：本机批处理查询只能看到 Magit 模式键表里的绑定，那里 =s= 是 =magit-stage-files=。
+光标落在状态页的文件、区块上时，Magit 的区段键表会把它重映射成 =magit-stage=（Magit 4.7.1 源码
+=magit-status.el=、=magit-diff.el= 里的 =<remap> <magit-stage-files>=）。这一点来自源码，没有在真实仓库里按键验证。
+| * | evil-search-word-forward | Magit 没有改，仍是向前搜索单词 |
+
+Magit 里的 =h= 或 =?= 是 =magit-dispatch=，会弹出完整的操作菜单。Magit 的详细操作见 [[file:magit-guide.org][Magit 操作手册]]。
+
+* 帮助、Info 和其他只读列表
+
+这些界面大多不需要这四个键，所以绑成无作用，或保持 Evil 的默认含义。
+
+| 界面 | 键 | 命令（M-x 名称） | 作用 |
+|------+----+------------------+------|
+| 帮助页 | s | help-view-source | 查看当前帮助项的源码 |
+| Info | s | Info-search | 搜索文字，跳到出现处所在的节点 |
+| Buffer-menu | s | Buffer-menu-save | 标记当前行的缓冲区待保存（之后按 =x= 执行） |
+| Buffer-menu | o | tabulated-list-sort | 按光标所在列排序 |
+| Buffer-menu | % | Buffer-menu-toggle-read-only | 切换当前行缓冲区的只读状态 |
+| 书签列表 | s | bookmark-bmenu-search | 增量搜索书签，边输入边隐藏不匹配的 |
+| 书签列表 | o | bookmark-bmenu-select | 打开当前书签（同时显示用 =>= 标记的） |
+| Helpful、*Messages*、包列表、编译输出 | s、o | ignore | 无作用 |
+
+=*= 和 =%= 在没有单独列出的这些界面里保持 Evil 默认：向前搜索单词、跳到配对括号。
+
+* 标记、删除和批量操作键：d x m u t U 与 D R C S P X
+
+这些字母在代码里是 Evil 的编辑命令（删除、撤销、粘贴……），在 Dired、ibuffer、包列表这类“列表界面”里却被改成
+“标记、执行、批量操作”。同样查询自本配置，只查绑定，没有真的按过键。Magit 里这些字母是 git 命令菜单，不在这里列。
+
+通用的思路是两步：先“标记”要操作的项，再对所有标记项“执行”。没有标记时，大部分批量命令作用于光标所在行。
+
+** 小写：标记和执行
+
+| 键 | 代码里（Evil） | Dired | ibuffer | 包列表 | Buffer-menu | 书签列表 |
+|----+----------------+-------+---------+--------+-------------+----------|
+| m | 设置书签标记 | 标记当前文件（dired-mark） | 标记当前缓冲区（ibuffer-mark-forward） | 无标记含义，仍是 Evil 的设置标记 | 标记，供之后一并显示（Buffer-menu-mark；显示的命令是 Buffer-menu-select，键位本机未查） | 标记，之后按 =o= 一并显示（bookmark-bmenu-mark；=o= 是 bookmark-bmenu-select，本机查询确认） |
+| u | 撤销 | 取消标记（dired-unmark） | 取消标记（ibuffer-unmark-forward） | 取消标记（package-menu-mark-unmark） | 取消标记（Buffer-menu-unmark） | 取消标记（bookmark-bmenu-unmark） |
+| t | 向前找到字符之前 | 反选所有标记（dired-toggle-marks） | 反选所有标记（ibuffer-toggle-marks） | 无标记含义，仍是 Evil 的找字符 | 访问该缓冲区的 tags 表（Buffer-menu-visit-tags-table） | 切换是否显示文件名（bookmark-bmenu-toggle-filenames） |
+| d | 删除（操作符） | 标记待删除（dired-flag-file-deletion） | 标记待关闭（ibuffer-mark-for-delete） | 标记待删除（package-menu-mark-delete） | 标记待关闭（Buffer-menu-delete） | 标记待删除（bookmark-bmenu-delete） |
+| x | 删除光标处字符 | 执行待删除（dired-do-flagged-delete） | 执行待关闭（ibuffer-do-kill-on-deletion-marks） | 执行标记的操作（package-menu-execute） | 执行标记的保存或关闭（Buffer-menu-execute） | 执行待删除（bookmark-bmenu-execute-deletions） |
+
+** 大写：批量操作或取消全部标记
+
+| 键 | 代码里（Evil） | Dired | ibuffer | 包列表 | Buffer-menu | 书签列表 |
+|----+----------------+-------+---------+--------+-------------+----------|
+| U | 无绑定 | 取消全部标记（dired-unmark-all-marks） | 取消全部标记（ibuffer-unmark-all-marks） | 标记所有可升级的包（package-menu-mark-upgrades） | 取消全部标记（Buffer-menu-unmark-all） | 取消全部标记（bookmark-bmenu-unmark-all） |
+| D | 删到行尾 | 删除标记的文件（dired-do-delete） | 关闭标记的缓冲区（ibuffer-do-delete） | 无作用 | 无作用 | 标记待删除并上移一行（bookmark-bmenu-delete-backwards），不立即删除 |
+| R | 进入替换状态 | 改名或移动（dired-do-rename） | 重命名缓冲区使其唯一（ibuffer-do-rename-uniquely） | 无作用 | 无作用 | 重命名当前书签（bookmark-bmenu-rename） |
+| C | 改到行尾 | 复制（dired-do-copy） | 无作用 | 无作用 | 无作用 | 无作用 |
+| S | 改整行 | 建符号链接（dired-do-symlink） | 保存标记的缓冲区（ibuffer-do-save） | 按光标所在列排序（tabulated-list-sort） | 按光标所在列排序 | 按光标所在列排序 |
+| P | 在光标前粘贴 | 打印（dired-do-print） | 打印（ibuffer-do-print） | 无作用 | 无作用 | 无作用 |
+| X | 删前一个字符 | 对标记文件执行 shell 命令（dired-do-shell-command） | 埋掉缓冲区，放到列表最后（ibuffer-bury-buffer） | 无作用 | 埋掉缓冲区（Buffer-menu-bury） | 无作用 |
+
+** 一些容易误会的地方
+
+- 小写 =d= 只是“做记号”，要按 =x= 才真正执行；大写 =D= 在 Dired 和 ibuffer 里直接作用于标记项（没标记就是当前行），
+  会修改磁盘文件或关闭缓冲区。两者别混：Dired 的 =D= 删除的是磁盘上的文件。
+  Emacs 的这些批量命令通常会提示确认，但我没有在本机逐个按键验证，所以不要不看提示就连续确认。
+- 书签列表的 =D= 和 =d= 一样只是标记待删除（=D= 是标记后上移一行），也要按 =x= 才真正删除。
+- 包列表里 =m= 和 =t= 没有标记含义，仍是 Evil 的“设置标记”和“找字符”；包列表标记安装用 =i=（package-menu-mark-install，
+  本机查询确认），标记删除用 =d=，取消用 =u=，升级所有可升级的包用 =U= 标记后再 =x= 执行。
+- Buffer-menu（=M-x list-buffers= 的列表）里 =S= 不是保存，而是排序；它标记保存的键是小写 =s=（见前面各界面表）。
+- ibuffer 里的 =t= 是反选，Dired 里的 =t= 也是；而 Buffer-menu 里的 =t= 却是访问 tags 表，书签列表里是显示或隐藏文件名，
+  不要把它们当成同一个键。
+- 同一个键在不同界面的“执行”也不同：Dired 的 =x= 只会删掉被标记 =D= 的文件，不执行别的标记。
+
+** 在陌生的列表界面里按之前
+
+不要按字母试，先看当前界面的键位：=, h l=（which-key-show-major-mode）弹出键位清单，=, h m=（describe-mode）看模式说明。
+这些列表界面基本上都遵循“先标记、再执行”的两步，只是具体字母各有不同，见上面的表。
+
+* 自己怎么查
+
+不要靠记忆，用 Emacs 当场查，答案总是当前界面的实际绑定：
+
+| 想知道 | 怎么做 |
+|--------+--------|
+| 当前界面的所有键 | =, h l=（=M-x which-key-show-major-mode RET=）弹出键位清单；=, h m=（=M-x describe-mode RET=）看模式说明和键位 |
+| 某个键调用什么 | =, h k= 然后按那个键，Helpful 显示命令和说明 |
+| 前缀键后面能按什么 | 按下前缀键（如 =*=）后等一会儿，which-key 自动列出；=C-g= 取消 |
+| 某个命令的键 | =, h w=（=M-x where-is RET=）输入命令名 |
+| 本配置自己的绑定 | =, h g=（=M-x general-describe-keybindings RET=） |
+
+注意：Helpful 的命令帮助页对本配置的 leader 菜单（如 =, o l=）不显示 leader 序列，原因见 FAQ「命令帮助的 Key bindings 里为什么看不到 , o l」。
+
+* 跨界面的约定
+
+evil-collection 让不同界面尽量用同一个键做同一件事，这样学会一次到处能用。它们只是约定：每个界面只在自己支持这个动作时才绑定，
+没有的界面按键就是 Evil 的默认含义。来源是 evil-collection 3.0.3 的 =evil-collection-binding-defaults=，没有逐个界面核对：
+
+| 键 | 约定的含义 |
+|----+------------|
+| q | 关闭当前窗口（退出） |
+| ZZ、ZQ | 关闭窗口（保存或放弃，各界面含义不同） |
+| gr、gR | 刷新当前界面／刷新全部 |
+| RET | 对光标处执行主要动作（打开、进入） |
+| go、gO | 在另一个窗口打开／打开但不切换过去 |
+| m、u、U | 标记／取消标记／取消全部标记 |
+| t | 反选标记 |
+| d、x | 标记待删除／执行待删除 |
+| J | 跳到某一项 |
+| TAB、S-TAB | 在按钮或段落之间移动，或展开折叠 |
+| gj、gk | 下一项／上一项 |
+| ]]、[[ | 下一段／上一段 |
+| g? | 约定是显示模式说明，但并非所有界面都绑定：Dired 里是 =dired-summary=（回显区一行提示），文本和 ibuffer 里是 Evil 的 rot13 操作符，不要依赖它 |
