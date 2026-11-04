@@ -27,6 +27,7 @@ Embark 默认动作见 [[file:embark-actions.org][Embark 动作参考]]。
 - [[C-u 是重复命令，还是执行用户命令][C-u 是重复命令，还是执行用户命令]]
 - [[怎样通过 M-x 找到 F9 到 F12 对应的个人命令][怎样通过 M-x 找到 F9 到 F12 对应的个人命令]]
 - [[怎样只在当前缓冲区关闭 Evil 的 o／O 自动缩进][怎样只在当前缓冲区关闭 Evil 的 o／O 自动缩进]]
+- [[候选界面里 C-n／C-p 不再移动候选，变成补全或粘贴切换][候选界面里 C-n／C-p 不再移动候选，变成补全或粘贴切换]]
 - [[后续常见问题怎样记录][后续常见问题怎样记录]]
 
 * 进入一个陌生页面，不知道可以按什么键
@@ -294,6 +295,29 @@ Org 代码块中整块缩进还可能涉及 Org 的代码块缩进规则；不�
 使用 C-c '（M-x org-edit-special RET）进入的代码块编辑界面是另一个缓冲区，
 不会自动继承原 Org 缓冲区的局部设置；如有需要，在编辑缓冲区再设置一次。
 完成代码编辑用 C-c '（M-x org-edit-src-exit RET）返回 Org，不等于执行或 tangle 代码。
+
+* 候选界面里 C-n／C-p 不再移动候选，变成补全或粘贴切换
+
+*这是一个需要注意的已知问题。* 适用于 =M-x=、=, f f= 等 Vertico 候选界面（启用 vertico-posframe 悬浮窗时）。
+现象：=C-n= 不再选择下一个候选，=C-p= 也不再选择上一个；方向键仍可能正常。
+
+在出问题的候选界面里不要先退出，依次检查：
+
+1. 按 =C-h k=，再按 =C-n=。若显示它绑定在 =evil-normal-state-map= 或 =evil-insert-state-map=
+   （命令如 =evil-paste-pop-next=、=evil-complete-next=），说明 Evil 在 minibuffer 里生效了；
+   正常应显示 =vertico-next=。
+2. 按 =C-h m=，看“Local minor mode”里是否有 =evil-local-mode=。正常的 minibuffer 里不应有它。
+3. 退出用 =C-g=。检查过程只读，不改配置。
+
+可能的原因（读 Evil 1.15.0、vertico-posframe 0.9.2、posframe 1.5.4 源码，加一次对照实验，不是完全证实的结论）：
+悬浮窗通过 =set-window-buffer= 显示 minibuffer，Evil 对该函数的 advice 会替尚未启用的缓冲区启用 =evil-local-mode=，
+而这条路径没有排除 minibuffer。posframe 只在悬浮子窗口新建或重建时调用它，所以不是每次输入都出现。
+对照：关闭 =M-x vertico-posframe-mode RET= 后，minibuffer 里没有 =evil-local-mode=。
+
+本配置的处理：在 Evil 配置里用 =evil-buffer-regexps= 追加 =("^ \\*Minibuf-[0-9]+\\*" . nil)=，
+让 Evil 在 minibuffer 缓冲区里禁用。用户已反馈加入后 =C-n= / =C-p= 恢复移动，
+但原因里的两点仍未确认：Evil 被带进去后是否会留在复用的缓冲区里，以及最初“突然出现”那一刻的具体触发。
+若以后再次出现，先做上面的检查，再回到 [[file:../self_config.org][主 Org 的 Evil 基本操作]] 查看该设置是否还在。
 
 * 后续常见问题怎样记录
 

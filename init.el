@@ -580,6 +580,14 @@
              (string= evil-version "1.15.0")
              (not (boundp 'evil-mode-buffers)))
     (set-default 'evil-mode-buffers nil))
+  ;; 在 minibuffer 里禁用 Evil，避免它盖住 Vertico 的 C-n / C-p（候选上下移动）。
+  ;; evil-buffer-regexps 的每一项是 (缓冲区名正则 . 状态)：缓冲区名匹配正则时按该状态初始化，
+  ;; 状态写 nil 表示在该缓冲区禁用 Evil。插件默认只有 ("^ \\*load\\*" . nil)；
+  ;; 这里追加一项是本配置的选择，不是插件默认值。
+  ;; 正则含义：活动 minibuffer 的缓冲区名形如 " *Minibuf-1*"（开头有一个空格，数字随嵌套层级变化），
+  ;; 所以写成 "^ \\*Minibuf-[0-9]+\\*"；\\* 表示字面星号，[0-9]+ 匹配一位或多位数字。
+  ;; 想让 minibuffer 里也用 Vim 键位：删除下一行即可（但 C-n / C-p 可能再次变成补全或粘贴切换）。
+  (add-to-list 'evil-buffer-regexps '("^ \\*Minibuf-[0-9]+\\*" . nil))
   (evil-mode 1))
 
 ;;; 工具界面的 Vim 风格键位。
