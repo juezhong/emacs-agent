@@ -2397,9 +2397,11 @@ minibuffer 是 Emacs 底部读取命令和参数的输入区域，不是新的�
   (vertico-posframe-min-height nil)
   ;; 是否截断过长行。默认 t：截断不换行；nil 则自动折行显示完整内容。
   (vertico-posframe-truncate-lines t)
-  ;; 悬浮窗口位置。默认 posframe-poshandler-frame-center（Frame 正中）；
+  ;; 悬浮窗口位置。插件默认 posframe-poshandler-frame-center（Frame 正中）；
+  ;; 本配置选择 posframe-poshandler-frame-bottom-center（底部居中）。这是所有命令的默认位置，
+  ;; 下面 vertico-multiform-commands 里写了条目的命令会覆盖它。
   ;; 可改为 posframe-poshandler-frame-top-center（顶部居中）等 posframe-poshandler-* 函数。
-  (vertico-posframe-poshandler #'posframe-poshandler-frame-center)
+  (vertico-posframe-poshandler #'posframe-poshandler-frame-bottom-center)
   ;; 位置参考点函数（主要给 EXWM 用户）。默认 vertico-posframe-refposhandler-default；普通环境无需修改。
   (vertico-posframe-refposhandler #'vertico-posframe-refposhandler-default)
   ;; 计算窗口尺寸的函数。默认 vertico-posframe-get-size，它读取上面的 width／height／min-* 变量；
@@ -2413,14 +2415,116 @@ minibuffer 是 Emacs 底部读取命令和参数的输入区域，不是新的�
   ;; 命中规则时改回显示底部 minibuffer。默认 ("^eval-*")：命令名匹配该正则（如 eval-expression）；
   ;; 规则可为正则字符串、函数（返回非 nil 即命中）或值为 t 的变量符号。
   (vertico-posframe-show-minibuffer-rules (list "^eval-*"))
-  ;; 在 vertico-multiform 中切换悬浮窗口的键。默认 "M-P"；仅启用 vertico-multiform 时才会生效，
-  ;; 本配置未启用；设为 nil 表示不定义该键。
+  ;; 在 vertico-multiform 中切换悬浮窗口的键。默认 "M-P"；本配置已在下方启用 vertico-multiform，
+  ;; 因此在候选界面里按 M-P 可临时在悬浮窗和普通底部列表之间切换；设为 nil 表示不定义该键。
   (vertico-posframe-vertico-multiform-key "M-P")
   :config
   ;; 终端 Emacs（emacs -nw）无法创建子窗口：插件会自动回退到普通底部 minibuffer，
   ;; 回退模式默认 ignore，即什么都不额外做，因此全局启用是安全的。
   (vertico-posframe-mode 1))
 #+end_src
+
+**按命令选择悬浮位置：vertico-multiform**。Vertico 自带的 =vertico-multiform= 扩展可以按命令名
+（或补全类别）单独设置变量。悬浮窗会盖住背景；而 =consult-line=、
+=consult-ripgrep= 这类命令会在后面的缓冲区里实时预览命中位置，正中悬浮窗正好挡住预览。
+所以可以给“需要看背景”的命令单独指定位置，其余命令沿用全局位置（当前为底部居中）。
+
+#+begin_src emacs-lisp
+;;; 按命令设置悬浮位置：预览类命令放在底部，避免挡住缓冲区里的预览。
+(use-package vertico-multiform
+  ;; vertico-multiform.el 随 vertico 包一起安装，不是独立插件；
+  ;; :ensure nil 防止 use-package-always-ensure 去下载同名包而失败。
+  :ensure nil
+  :after vertico
+  :custom
+  ;; ── 怎么读这个列表 ────────────────────────────────────────────────────────
+  ;; 每个条目长这样（三部分）：
+  ;;   ("^命令名$"                                         ← ① 匹配哪个命令（见下方“命令对照”）
+  ;;    (vertico-posframe-poshandler . 位置函数)            ← ② 这个命令用什么位置
+  ;;    (vertico-posframe-width . 120))                    ← ③ 可选：再加别的设置，可以写多行
+  ;; ① 是正则，^ 表示开头、$ 表示结尾，合起来就是“名字必须完全等于它”；
+  ;;    要一次匹配多个命令，写成 "^\\(命令甲\\|命令乙\\)$"，其中 \\| 读作“或”。
+  ;; ② 常用位置函数：posframe-poshandler-frame-center（正中）、frame-top-center（顶部居中）、
+  ;;    frame-bottom-center（底部居中）、window-bottom-center（当前窗口底部），
+  ;;    前缀都是 posframe-poshandler-。
+  ;; 生效规则：从上到下找第一个匹配的条目，不叠加，所以特殊的写前面、宽泛的写后面。
+  ;; 没有条目的命令使用上面 vertico-posframe-poshandler 的全局值（当前为底部居中）。
+  ;; 条目里的设置只在这一次输入期间生效，输入结束后自动恢复。
+  ;; 若加 (t ...) 作为兜底项，必须放最后，否则它会匹配所有命令并遮蔽后面的条目。
+  ;;
+  ;; ── 命令对照（你在界面上做的事 ↔ 条目里写的命令名）─────────────────────────
+  ;;   按 M-x 输入命令             ↔ execute-extended-command
+  ;;   打开文件                    ↔ find-file
+  ;;   在项目里找文件／目录         ↔ project-find-file／project-find-dir
+  ;;   切换项目／切换项目内缓冲区   ↔ project-switch-project／project-switch-to-buffer
+  ;;   在当前缓冲区里按行搜索       ↔ consult-line
+  ;;   在项目里全文搜索（ripgrep）  ↔ consult-ripgrep
+  ;;   切换缓冲区（带预览）         ↔ consult-buffer
+  ;;   跳到标题／符号／行号         ↔ consult-outline／consult-imenu／consult-goto-line
+  ;;   不确定某个操作的命令名时：先执行一次，再按 C-h l 查看最近按键与实际执行的命令。
+  ;; 插件默认 nil：不对任何命令做特殊设置；以下为本配置选择，可照样式增删改。
+  (vertico-multiform-commands
+   '(;; ═══ 例 1（已启用）：ripgrep 项目内全文搜索 ═══
+     ;; 只匹配 consult-ripgrep 这一个命令，并同时设两项：位置放在底部居中，宽度设为 120 列
+     ;; （搜索结果行较长）。它必须写在例 2 之前，否则会先被例 2 匹配，宽度设置就不生效。
+     ("^consult-ripgrep$"
+      (vertico-posframe-poshandler . posframe-poshandler-frame-bottom-center)
+      (vertico-posframe-width . 120))
+     ;; ═══ 例 2（已启用）：会在背景里实时预览的一组命令 ═══
+     ;; 一次匹配多个命令：行搜索、大纲、符号、标记、跳转行号、切换缓冲区。
+     ;; 这些命令选中候选时，背景缓冲区会跳到对应位置预览，所以悬浮窗放到底部，留出上方。
+     ;; 想靠上就把位置改成 posframe-poshandler-frame-top-center；
+     ;; 想只贴着当前窗口底部（分屏时不盖住其他窗口）用 posframe-poshandler-window-bottom-center。
+     ("^consult-\\(line\\|line-multi\\|outline\\|imenu\\|imenu-multi\\|mark\\|global-mark\\|goto-line\\|buffer\\)$"
+      (vertico-posframe-poshandler . posframe-poshandler-frame-bottom-center))
+     ;; ═══ 例 3（模板，未启用）：让“M-x 输入命令”单独换位置 ═══
+     ;; execute-extended-command 就是 M-x 调用的命令。启用方法：删掉下面两行开头的 ";; "。
+     ;; 例子里的位置是正中；想要别的位置，改最后一行的位置函数。
+     ;; 没有这一条时，M-x 使用全局位置（当前为底部居中）。
+     ;; ("^execute-extended-command$"
+     ;;  (vertico-posframe-poshandler . posframe-poshandler-frame-center))
+     ;; ═══ 例 4（模板，未启用）：让“打开文件／项目内找文件、切换项目”靠上 ═══
+     ;; 括号里是五个命令：find-file（打开文件）、project-find-file（项目内找文件）、
+     ;; project-find-dir（项目内找目录）、project-switch-project（切换项目）、
+     ;; project-switch-to-buffer（项目内切换缓冲区）。想增减命令，改括号里的名字，
+     ;; 用 \\| 隔开，例如再加 \\|project-dired。启用方法：删掉下面两行开头的 ";; "。
+     ;; ("^\\(find-file\\|project-find-file\\|project-find-dir\\|project-switch-project\\|project-switch-to-buffer\\)$"
+     ;;  (vertico-posframe-poshandler . posframe-poshandler-frame-top-center))
+     ))
+  ;; 按补全类别设置，优先级低于上面的按命令设置。插件默认 nil；本配置不按类别区分。
+  ;; 例如 ((file (vertico-posframe-poshandler . posframe-poshandler-frame-top-center))) 可让所有文件选择靠上显示。
+  (vertico-multiform-categories nil)
+  :config
+  ;; 全局启用；它只在命令命中上面的列表时才改变设置，不命中时不产生影响。
+  (vertico-multiform-mode 1))
+#+end_src
+
+匹配只看命令名，因此无论通过快捷键还是 =M-x consult-line RET= 调用，只要最终执行的是
+=consult-line=，就会使用底部位置。不知道某个操作对应的命令名时，先执行它，
+再用 =C-h l=（=M-x view-lossage=）或 =C-h k= 加对应按键查看。
+
+**如何修改**：
+1. 换位置：找到该命令所在的条目，把 =posframe-poshandler-frame-bottom-center= 改成别的位置函数。
+2. 让某个命令换组：从原条目的括号里删掉命令名，再加到另一个条目的括号里（用 =\\|= 分隔）。
+3. 单独给一个命令设置：新增一个条目，放在更宽泛条目的前面，例如让项目内文件查找靠上：
+
+#+begin_example
+("^project-find-file$"
+ (vertico-posframe-poshandler . posframe-poshandler-frame-top-center))
+#+end_example
+
+改完保存 Org、重新 tangle、重启 Emacs 生效；括号不配对会导致启动报错，
+可用 =M-x check-parens RET= 检查生成后的 =init.el= 对应片段。
+
+条目里可以覆盖任何 =vertico-posframe-*= 参数，如 =(vertico-posframe-width . 80)=
+设宽度，或 =(vertico-count . 8)= 减少候选行数，让悬浮窗更矮、遮挡更少。
+可用位置函数（posframe 1.5.4 源码）包括：=frame-center=、=frame-top-center=、
+=frame-top-left-corner=、=frame-top-right-corner=、=frame-bottom-left-corner=、
+=frame-bottom-right-corner=、=frame-bottom-center=（均以 =posframe-poshandler-= 开头，相对整个 Frame），
+以及 =window-center=、=window-top-center=、=window-bottom-center= 等（相对当前窗口），
+=point-bottom-left-corner= 则跟随光标位置。
+=vertico-multiform= 启用后，候选界面里另有切换键：=M-P= 悬浮窗，=M-B= 缓冲区式列表，
+=M-F= 单行，=M-G= 网格，=M-R= 反向，=M-U= 简洁，=M-V= 纵向，都只对本次输入有效。
 
 =vertico-posframe-mode= 是全局开关：=M-x vertico-posframe-mode RET= 即可随时关闭或重新开启，
 关闭后回到底部纵向列表。已有的 =vertico-count=、=vertico-resize= 仍决定候选行数与高度。
