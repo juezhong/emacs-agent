@@ -114,6 +114,7 @@
   - [[统一快捷键配置（最后配置）][统一快捷键配置（最后配置）]]
     - [[管理方式：General][管理方式：General]]
       - [[Dashboard 栏目快捷键][Dashboard 栏目快捷键]]
+      - [[候选界面快捷键：vertico-quick][候选界面快捷键：vertico-quick]]
       - [[Dired 目录导航：h / l][Dired 目录导航：h / l]]
       - [[Evil 初始状态的可选清单][Evil 初始状态的可选清单]]
       - [[普通模式 s：只在文本编辑里用 Avy][普通模式 s：只在文本编辑里用 Avy]]
@@ -2522,9 +2523,14 @@ minibuffer 是 Emacs 底部读取命令和参数的输入区域，不是新的�
      ;; ("^\\(find-file\\|project-find-file\\|project-find-dir\\|project-switch-project\\|project-switch-to-buffer\\)$"
      ;;  (vertico-posframe-poshandler . posframe-poshandler-frame-top-center))
      ))
-  ;; 按补全类别设置，优先级低于上面的按命令设置。插件默认 nil；本配置不按类别区分。
-  ;; 例如 ((file (vertico-posframe-poshandler . posframe-poshandler-frame-top-center))) 可让所有文件选择靠上显示。
-  (vertico-multiform-categories nil)
+  ;; 按补全类别设置，优先级低于上面的按命令设置（命令命中了就不再看类别）。
+  ;; 写法与按命令相同，键是类别名而不是命令名，如 file（文件路径）、buffer、imenu。
+  ;; 插件默认 nil；本配置选择：文件类别启用 vertico-directory-map（RET／DEL／M-DEL 的目录版本），
+  ;; 详见下文 vertico-directory 小节。可再加设置，例如
+  ;; (file (:keymap . vertico-directory-map) (vertico-posframe-poshandler . posframe-poshandler-frame-top-center))
+  ;; 让所有文件路径输入靠上显示。
+  (vertico-multiform-categories
+   '((file (:keymap . vertico-directory-map))))
   :config
   ;; 全局启用；它只在命令命中上面的列表时才改变设置，不命中时不产生影响。
   (vertico-multiform-mode 1))
@@ -2589,6 +2595,95 @@ minibuffer 是 Emacs 底部读取命令和参数的输入区域，不是新的�
 也可上移到输入提示行后 RET。创建文件缓冲区后仍需显式保存才会写入磁盘。
 M-RET 不是绕过命令自身的校验：必须从候选选择的命令仍可能拒绝不存在的对象。
 minibuffer 中沿用 Emacs 输入键；不要把普通模式 hjkl 当作候选移动键。
+
+***** vertico-quick：用字母标签直接选候选
+
+=vertico-quick= 是 Vertico 自带的扩展（文件随 vertico 包安装，不是独立插件）。
+按下触发键后，每个候选前面会出现一个字母标签，再按那个字母就能选中对应候选，
+不必用 =C-n= / =C-p= 逐行移动。适合候选很多、想一步到位的场景。
+它与 Avy 的“按标签跳转”思路相同，只是作用在候选列表上。
+
+#+begin_src emacs-lisp
+;;; 候选快速选择：只加载并设置标签字母；触发键在统一快捷键章节绑定。
+(use-package vertico-quick
+  ;; :ensure nil：它随 vertico 包一起安装，不要让 use-package 去下载同名包。
+  ;; :after vertico：等 Vertico 加载后再加载本扩展。
+  :ensure nil
+  :after vertico
+  :custom
+  ;; 插件默认 "asdfgh"；本配置选择 "aoeuhts"：当前屏幕上前 7 个候选的单字母标签，按顺序一一对应。
+  (vertico-quick1 "aoeuhts")
+  ;; 插件默认 "jkluionm"；本配置选择 "idnrlcgf"：第 8 个起使用两个字母的标签，
+  ;; 第一个字母取自这里，第二个字母取自 quick1。两串字母必须没有重复，否则按下的字母
+  ;; 可能既是单字母标签又是两字母标签的开头而选错（这是读源码的推断）；默认值本身也互不重复。
+  (vertico-quick2 "idnrlcgf"))
+#+end_src
+
+标签颜色是 face：=vertico-quick1= 和 =vertico-quick2=，分别用于标签的第一、第二个字母，
+可用 =M-x customize-face RET= 调整。标签按“当前屏幕上显示的候选”从上到下分配，
+滚动后会重新分配，所以以屏幕上显示的字母为准。
+
+| 快捷键 | 交互命令（M-x 名称） | 作用 |
+|--------+---------------------+------|
+| M-q | vertico-quick-insert | 显示标签，按字母后把该候选填入输入区，不确认，可继续修改 |
+| 未另绑定 | vertico-quick-exit | 显示标签，按字母后选中并立即确认，相当于“跳到它再按 RET” |
+| 未另绑定 | vertico-quick-jump | 显示标签，按字母后只把高亮移到该候选，不填入也不确认；之后可继续 C-n／C-p 或按 RET |
+
+使用步骤：
+1. 触发任意候选界面，如 =M-x= 或 =, f f=。
+2. 按 =M-q=，候选前出现字母标签。
+3. 按候选前的字母，该候选被填入输入区；两个字母的标签依次按这两个字母。
+4. 填入后按 =RET= 确认，或继续编辑；中途不想选了按 =C-g= 取消。
+
+=M-q= 在候选界面里覆盖了原来的 =fill-paragraph=（对 minibuffer 的单行输入基本无用），
+只在 Vertico 候选界面生效，普通缓冲区里的 =M-q= 不变。
+三个命令的关系（读源码）：=vertico-quick-jump= 是基础，只移动高亮；
+=vertico-quick-insert= 是 jump 之后再 =vertico-insert=（填入输入区）；
+=vertico-quick-exit= 是 jump 之后再 =vertico-exit=（直接确认）。
+**不绑定 exit 和 jump 完全可以**，只用 =M-q= 也能完成选择：按字母填入后，需要时再按 =RET= 确认。
+exit 只是省掉最后那一下 =RET=；jump 单独用得很少。
+没绑键就几乎无法调用：=M-x= 在候选界面里再执行命令需要允许 minibuffer 嵌套，
+本配置没有设置 =enable-recursive-minibuffers=。以后想要 exit，可以另选一个键绑上，
+例如 =M-Q=；本配置暂不绑 =C-q=，因为它是 minibuffer 中的 =quoted-insert=。
+状态：配置已写入；尚未运行验证。
+
+***** vertico-directory：选文件路径时按目录删除与进入
+
+=vertico-directory= 是 Vertico 自带的扩展，只改善**文件路径**输入（打开文件、另存为、选目录等）。
+源码里的几个命令在执行前都会检查当前补全类别是否为 =file=，不是则退化为普通行为，
+所以 =M-x= 等非文件输入不受影响。
+
+| 键 | 命令 | 在文件路径里的作用 | 其他输入里 |
+|----+------+--------------------+------------|
+| RET | vertico-directory-enter | 当前高亮是目录就进入该目录，是文件才确认打开 | 等同普通确认 |
+| DEL | vertico-directory-delete-char | 光标前是 =/= 时一次删掉整段目录名 | 删一个字符 |
+| M-DEL | vertico-directory-delete-word | 光标前是 =/= 时一次删掉整段目录名，否则按词删除 | 按词删除 |
+
+另外 =vertico-directory-tidy= 在路径中途输入 =~/= 或 =//= 时，自动丢掉前面被覆盖的部分，
+默认开启，下面显式写出。
+
+#+begin_src emacs-lisp
+;;; 文件路径输入：按目录删除与进入，以及覆盖路径的自动清理。
+(use-package vertico-directory
+  ;; :ensure nil：随 vertico 包安装，不要去下载同名包。
+  :ensure nil
+  :after vertico
+  :custom
+  ;; 插件默认 t：输入 ~/ 或 // 时清理被覆盖的路径前缀；nil 则只灰显，不删除。
+  (vertico-directory-tidy t))
+#+end_src
+
+按键不是全局绑定，而是通过上面 =vertico-multiform-categories= 只对“文件类别”启用
+=vertico-directory-map=（它只含上表三个键），因此 =M-x= 里的 =RET=、=DEL=、=M-DEL= 保持原样。
+注意：=vertico-multiform= 先查“按命令”，命中就不再查“按类别”；若以后启用了某个
+匹配文件命令（如 =find-file=）的按命令条目，该命令就不会再使用 =vertico-directory-map=，
+需要在那个条目里也加上 =(:keymap . vertico-directory-map)=。
+覆盖说明：在文件路径里，=RET= 选中目录时变为“进入目录”，原先的确认动作需要用 =C-u RET=
+（按源码说明，带前缀参数时以当前输入内容确认，而不是采用高亮候选）；
+=M-DEL= 在文件路径里变为“删除”，不再写入 kill ring。
+项目内找文件（=project-find-file=）的补全类别通常是 =project-file= 而非 =file=，
+按源码的类别检查不会触发这里的目录操作；实际是否如此以运行为准。
+状态：配置已写入；尚未运行验证。
 
 ***** Orderless：多关键词如何匹配
 
@@ -4353,6 +4448,20 @@ evil-collection 对接，不把它们绑定为全局按键。此设置在首次�
           (registers . "e"))))          ; Registers，寄存器
 #+end_src
 
+**** 候选界面快捷键：vertico-quick
+
+下面的绑定只写进 Vertico 的候选界面 keymap =vertico-map=，不影响普通缓冲区。
+=with-eval-after-load= 让它等 =vertico-quick= 加载后才执行，避免 keymap 尚不存在。
+说明与使用步骤见 [[*vertico-quick：用字母标签直接选候选][vertico-quick]]。
+
+#+begin_src emacs-lisp
+;;; 候选界面键位：M-q 显示字母标签并把所选候选填入输入区。
+(with-eval-after-load 'vertico-quick
+  (general-define-key
+   :keymaps 'vertico-map
+   "M-q" #'vertico-quick-insert))  ; Quick insert，按标签字母选候选并填入输入区
+#+end_src
+
 **** Dired 目录导航：h / l
 
 evil-collection 的 Dired 适配不绑定 =h= 和 =l=，它们保留 Evil 的字符左右移动。
@@ -4643,6 +4752,7 @@ Org 中把光标放到标题，用 , o TAB（M-x org-cycle RET）切换局部折
 | , f p | my/copy-file-path | 复制当前文件完整路径 |
 | , b b | consult-buffer | 切换并预览缓冲区 |
 | C-. | embark-act | 当前候选或光标目标动作；菜单内 C-h 查找动作 |
+| M-q（仅候选界面） | vertico-quick-insert | 显示字母标签，按字母把候选填入输入区；覆盖候选界面里的 fill-paragraph |
 | s（仅文本编辑模式的普通状态） / , j j | avy-goto-char-timer | 当前窗口输入字符后按标签跳转；, j j 在任何界面可用 |
 | , j l | avy-goto-line | 当前窗口可见行跳转 |
 | , s s | consult-line | 当前缓冲区全文行搜索与预览 |

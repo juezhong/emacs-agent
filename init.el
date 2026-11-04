@@ -750,12 +750,40 @@
      ;; ("^\\(find-file\\|project-find-file\\|project-find-dir\\|project-switch-project\\|project-switch-to-buffer\\)$"
      ;;  (vertico-posframe-poshandler . posframe-poshandler-frame-top-center))
      ))
-  ;; 按补全类别设置，优先级低于上面的按命令设置。插件默认 nil；本配置不按类别区分。
-  ;; 例如 ((file (vertico-posframe-poshandler . posframe-poshandler-frame-top-center))) 可让所有文件选择靠上显示。
-  (vertico-multiform-categories nil)
+  ;; 按补全类别设置，优先级低于上面的按命令设置（命令命中了就不再看类别）。
+  ;; 写法与按命令相同，键是类别名而不是命令名，如 file（文件路径）、buffer、imenu。
+  ;; 插件默认 nil；本配置选择：文件类别启用 vertico-directory-map（RET／DEL／M-DEL 的目录版本），
+  ;; 详见下文 vertico-directory 小节。可再加设置，例如
+  ;; (file (:keymap . vertico-directory-map) (vertico-posframe-poshandler . posframe-poshandler-frame-top-center))
+  ;; 让所有文件路径输入靠上显示。
+  (vertico-multiform-categories
+   '((file (:keymap . vertico-directory-map))))
   :config
   ;; 全局启用；它只在命令命中上面的列表时才改变设置，不命中时不产生影响。
   (vertico-multiform-mode 1))
+
+;;; 候选快速选择：只加载并设置标签字母；触发键在统一快捷键章节绑定。
+(use-package vertico-quick
+  ;; :ensure nil：它随 vertico 包一起安装，不要让 use-package 去下载同名包。
+  ;; :after vertico：等 Vertico 加载后再加载本扩展。
+  :ensure nil
+  :after vertico
+  :custom
+  ;; 插件默认 "asdfgh"；本配置选择 "aoeuhts"：当前屏幕上前 7 个候选的单字母标签，按顺序一一对应。
+  (vertico-quick1 "aoeuhts")
+  ;; 插件默认 "jkluionm"；本配置选择 "idnrlcgf"：第 8 个起使用两个字母的标签，
+  ;; 第一个字母取自这里，第二个字母取自 quick1。两串字母必须没有重复，否则按下的字母
+  ;; 可能既是单字母标签又是两字母标签的开头而选错（这是读源码的推断）；默认值本身也互不重复。
+  (vertico-quick2 "idnrlcgf"))
+
+;;; 文件路径输入：按目录删除与进入，以及覆盖路径的自动清理。
+(use-package vertico-directory
+  ;; :ensure nil：随 vertico 包安装，不要去下载同名包。
+  :ensure nil
+  :after vertico
+  :custom
+  ;; 插件默认 t：输入 ~/ 或 // 时清理被覆盖的路径前缀；nil 则只灰显，不删除。
+  (vertico-directory-tidy t))
 
 ;;; 匹配规则：普通候选使用 Orderless，文件保留基础匹配和部分路径补全。
 (use-package orderless
@@ -1502,6 +1530,12 @@
           (projects . "p")             ; Projects，项目
           (agenda . "a")               ; Agenda，日程
           (registers . "e"))))          ; Registers，寄存器
+
+;;; 候选界面键位：M-q 显示字母标签并把所选候选填入输入区。
+(with-eval-after-load 'vertico-quick
+  (general-define-key
+   :keymaps 'vertico-map
+   "M-q" #'vertico-quick-insert))  ; Quick insert，按标签字母选候选并填入输入区
 
 ;;; Dired 的 Vim 式目录导航；等 Dired 加载后绑定，保证晚于 evil-collection 的适配。
 (with-eval-after-load 'dired
