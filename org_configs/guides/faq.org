@@ -28,6 +28,7 @@ Embark 默认动作见 [[file:embark-actions.org][Embark 动作参考]]。
 - [[怎样通过 M-x 找到 F9 到 F12 对应的个人命令][怎样通过 M-x 找到 F9 到 F12 对应的个人命令]]
 - [[怎样只在当前缓冲区关闭 Evil 的 o／O 自动缩进][怎样只在当前缓冲区关闭 Evil 的 o／O 自动缩进]]
 - [[候选界面里 C-n／C-p 不再移动候选，变成补全或粘贴切换][候选界面里 C-n／C-p 不再移动候选，变成补全或粘贴切换]]
+- [[M-x 和 , f f 调用的是哪个命令，Consult 替换它们了吗][M-x 和 , f f 调用的是哪个命令，Consult 替换它们了吗]]
 - [[后续常见问题怎样记录][后续常见问题怎样记录]]
 
 * 进入一个陌生页面，不知道可以按什么键
@@ -318,6 +319,19 @@ Org 代码块中整块缩进还可能涉及 Org 的代码块缩进规则；不�
 让 Evil 在 minibuffer 缓冲区里禁用。用户已反馈加入后 =C-n= / =C-p= 恢复移动，
 但原因里的两点仍未确认：Evil 被带进去后是否会留在复用的缓冲区里，以及最初“突然出现”那一刻的具体触发。
 若以后再次出现，先做上面的检查，再回到 [[file:../self_config.org][主 Org 的 Evil 基本操作]] 查看该设置是否还在。
+
+* M-x 和 , f f 调用的是哪个命令，Consult 替换它们了吗
+
+没有替换。=M-x= 和 =, ,= 调用 Emacs 内置的 =execute-extended-command=，=, f f= 调用内置的 =find-file=，
+本配置没有对它们做 remap。它们的候选界面变好，来自 Vertico（显示）、vertico-posframe（悬浮窗）、
+Orderless（匹配）、Marginalia（注释），不是 Consult。
+
+Consult 提供的是另一批命令（consult-buffer、consult-line、consult-ripgrep 等），
+本配置给它们绑定了新键位（如 =, b b=、=, s s=），原生键位（如 =C-x b=）仍调用原命令。
+按 Consult 3.10 源码核对，它没有提供 =M-x= 或 =find-file= 的替代命令。
+插件分层、命令与界面的区别、原生命令与 Consult 命令的对照表，
+统一维护在 [[file:../self_config.org::*命令、界面与增强：谁做了什么][主 Org：命令、界面与增强]]，这里不重复。
+想确认某个按键实际执行什么，用 =C-h k= 再按该键。来源：=init.el= 绑定与源码核对，未做运行验证。
 
 * 后续常见问题怎样记录
 

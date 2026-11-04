@@ -2382,6 +2382,66 @@ Avy 也支持标签阶段的 action dispatch，具体键和动作由 =avy-dispat
 它们不提供代码缓冲区内的弹出补全；后续 Corfu 负责那个界面。
 本配置不改 =completion-in-region-function=；候选动作由后文 Embark 独立提供。
 
+***** 命令、界面与增强：谁做了什么
+
+先分清两个概念：*命令* 是真正做事的函数（打开文件、切换缓冲区、搜索），
+*界面* 是命令向你要输入时显示候选的那一块。上面四个插件里，
+Vertico、Orderless、Marginalia 管界面，Consult 提供命令，两类插件的作用方式不同：
+
+| 插件 | 属于 | 改变了什么 | 对 =M-x=、=find-file= 等原生命令的影响 |
+|------+------+-----------+----------------------------------------|
+| Vertico | 界面 | 候选怎么显示（纵向列表） | 命令不变，输入界面变了 |
+| vertico-posframe | 界面 | 列表显示在哪里（悬浮窗） | 命令不变，位置变了 |
+| vertico-multiform | 界面 | 按命令或类别单独设置上面的显示方式 | 命令不变 |
+| vertico-directory | 界面 | 选文件路径时 =RET=、=DEL= 的目录行为 | 命令不变，只在输入文件路径时生效 |
+| vertico-quick | 界面 | 给候选加字母标签，按字母选 | 命令不变 |
+| Orderless | 界面 | 怎样匹配你输入的关键词 | 命令不变，匹配规则变了 |
+| Marginalia | 界面 | 候选旁边的说明文字 | 命令不变，只多了注释 |
+| Consult | 命令 | 提供一批新命令（搜索、切换、跳转），自带预览 | 不替换原生命令，需要调用这些新命令才会用到 |
+| Embark | 命令与界面 | 对候选或光标处目标执行动作（=C-.=） | 命令不变，多了动作菜单 |
+
+*原生命令的实际调用情况*（以 =init.el= 中的绑定为准）：
+
+| 你按的 | 实际调用的命令 | 是否被替换 | 候选界面里谁在起作用 |
+|--------+----------------+-----------+----------------------|
+| =M-x= | execute-extended-command | 否，Emacs 内置 | Vertico、posframe、Orderless、Marginalia |
+| =, ,= | execute-extended-command | 否，只是多一个键位 | 同上 |
+| =, f f= | find-file | 否，Emacs 内置 | 同上，选路径时再加 vertico-directory |
+
+所以 =M-x= 和 =, f f= 现在*没有*用到 Consult：它们仍是原来的命令，
+变化全部来自界面类插件。想确认实际执行了哪个命令，用 =C-h k= 加对应按键。
+
+*Consult 的命令与对应的原生命令*：本配置采用“给 Consult 命令绑新的键位”的方式，
+不用 =remap= 全局改写原生命令的键位，所以原生键位仍调用原来的命令。
+
+| Consult 命令 | 对应的原生功能 | 本配置里怎么调用 | 是否替换原生键位 |
+|--------------+----------------+------------------+------------------|
+| consult-buffer | switch-to-buffer（=C-x b=） | =, b b= | 否，=C-x b= 仍是原命令 |
+| consult-yank-pop | yank-pop（=M-y=） | =, e y= | 否，=M-y= 仍是原命令 |
+| consult-goto-line | goto-line（=M-g g=） | =, j n= | 否 |
+| consult-bookmark | bookmark-jump | =, f b= | 否 |
+| consult-line | isearch 类搜索 | =, s s= | 否，=C-s= 仍是 isearch |
+| consult-ripgrep | grep、rgrep 等外部文本搜索 | =, s r= | 否 |
+| consult-imenu／consult-outline | imenu／outline 跳转 | =, s i=／=, s o= | 否 |
+| consult-mark／consult-global-mark | 标记环跳转 | =, j m=／=, j M= | 否 |
+
+Consult 3.10 里还有一些命令（如 consult-recent-file、consult-history、consult-theme、consult-man、
+consult-find、consult-fd）这里未绑定快捷键，可用 =M-x= 加命令名调用；=M-x ^consult= 可列出全部。
+按 Consult 3.10 源码核对，它*没有*提供 =M-x= 或 =find-file= 的替代命令：
+常说的“用 Consult 替换 =M-x=”并不是 Consult 自带的功能，相关命令来自其他插件或自行改写。
+若想让原生键位也改用 Consult 命令（如 =C-x b= 改调用 consult-buffer），需要显式做键位重映射，
+本配置暂不这样做，原因是保持原生键位可用，出问题时便于对照。
+
+*一个功能如何由多个插件配合完成*，以 =, s s=（搜索当前缓冲区）为例：
+1. General 把 =, s s= 绑定到 consult-line，Consult 提供搜索和预览能力。
+2. Vertico 负责显示候选行；vertico-posframe 和 vertico-multiform 决定它显示在悬浮窗的哪个位置。
+3. Orderless 让你输入多个空格分隔的关键词来缩小结果。
+4. Marginalia 在支持的类别里补充说明；Embark 的 =C-.= 可对选中候选执行动作。
+去掉任何一层，命令仍可运行，只是少了对应的显示、匹配或注释效果。
+这也是为什么排查问题时先区分“命令”与“界面”：=C-n= 失效属于界面层（见
+[[file:guides/faq.org::*候选界面里 C-n／C-p 不再移动候选，变成补全或粘贴切换][常见问题]]），换命令不能解决。
+状态：来自 =init.el= 绑定和 Consult 3.10 源码核对；未做运行验证。
+
 ***** Vertico：候选列表与确认方式
 
 [[https://github.com/minad/vertico][Vertico]] 接管标准 minibuffer 补全的候选显示。
